@@ -20,6 +20,7 @@
     "clsx": "^1.1.1",
     "framer-motion": "^6.2.8",
     "fs": "^0.0.1-security",
+    "googleapis": "^171.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.7",
