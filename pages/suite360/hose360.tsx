@@ -15,8 +15,8 @@ const HoseBuilder = () => {
     window.__PUBLIC_PATH__ = publicRuntimeConfig.staticFolder || '/suite360/static/';
     
     const scripts = [
-      '/suite360/static/js/453.10421dcd.js',
-      '/suite360/static/js/main.3d928830.js'
+      '/suite360/static/js/453.6ea64725.js',
+      '/suite360/static/js/main.2febfb0c.js'
     ];
 
     const loadScriptSequentially = async (scripts: string[]) => {
@@ -60,7 +60,7 @@ const HoseBuilder = () => {
             position: relative;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            margin-top: 30px;
+            margin-top: 100px;
           }
 
           #root {

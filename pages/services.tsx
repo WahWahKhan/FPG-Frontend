@@ -129,8 +129,9 @@ const Services = () => {
         <div className="w-full wrapper text-black flex relative z-10">
           <div className="h-full w-full">
             {/* Header Section */}
+            <div className="wrapper px-8 md:px-12  flex flex-col gap-10 mb-32">
             <div className="flex flex-col gap-4 p-8 pt-16">
-              <div className="font-bold text-5xl sm:text-6xl text-black-500 mb-8">
+              <div className="text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-semibold text-slate-200/50 ">
                 Services
               </div>
             </div>
@@ -345,6 +346,7 @@ const Services = () => {
           }
         `
       }} />
+    </div>
     </div>
   );
 };

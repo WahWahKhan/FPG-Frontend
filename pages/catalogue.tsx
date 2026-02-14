@@ -63,10 +63,11 @@ const CataloguePage = () => {
 
   return (
     <div className="wrapper px-8 md:px-12  flex flex-col gap-10 mb-32">
-      <div className="text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-semibold text-slate-200/50 ">
-        Products
-      </div>
-      <div className="flex flex-col gap-12">
+            <div className="flex flex-col gap-4 p-8 pt-16">
+              <div className="text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-semibold text-slate-200/50 ">
+               Products
+              </div>
+             <div className="flex flex-col gap-12">
         {categories.map((category: Category, i) => (
           <ProductSlider
             products={category.subCategories}
@@ -79,6 +80,7 @@ const CataloguePage = () => {
             description={category.description}
           />
         ))}
+      </div>
       </div>
     </div>
   );

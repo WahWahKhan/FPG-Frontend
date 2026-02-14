@@ -11,8 +11,8 @@ type searchParams = {
   title: string | null;
   categories: string | null;
   subCategories: string | null;
-  subSubCategories: string | null;  // NEW: Level 3 for 4-deep products
-  finalProducts: string | null;     // NEW: Level 4 for 4-deep products
+  subSubCategories: string | null;
+  finalProducts: string | null;
   extraParams?: string | null;
 };
 
@@ -22,8 +22,8 @@ const Search = () => {
     title: null, 
     categories: null, 
     subCategories: null, 
-    subSubCategories: null,  // NEW
-    finalProducts: null,     // NEW
+    subSubCategories: null,
+    finalProducts: null,
     extraParams: null
   });
   const [data, setData] = useState<any>([]);
@@ -35,30 +35,31 @@ const Search = () => {
   const [searchMode, setSearchMode] = useState<'quick' | 'part'>('quick');
   const [partSearchQuery, setPartSearchQuery] = useState<string>('');
   const [partSearchResults, setPartSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);  // NEW: Store Level 3 data
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [wordSearchQuery, setWordSearchQuery] = useState<string>('');
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('Fetching categories for search...');
+
         const response = await axios.get('/api/getAllProducts');
-        console.log('Categories response:', response.data);
         
         if (response.data && response.data.categories) {
-          setData(response.data.categories);
-          console.log('Categories loaded successfully:', response.data.categories.length);
+          // Filter out hidden subcategories from each category
+          const visibleCategories = response.data.categories.map((category: any) => ({
+            ...category,
+            subCategories: category.subCategories?.filter(
+              (subCat: any) => subCat.slug !== 'hydraulic-hoses-custom-hose-assembly'
+            ) || []
+          }));
           
-          // DEBUG: Log the structure of the first category to understand data format
-          if (response.data.categories.length > 0) {
-            console.log('=== SEARCH DEBUG: First category structure ===');
-            console.log('First category:', response.data.categories[0]);
-            if (response.data.categories[0].subCategories?.length > 0) {
-              console.log('First subcategory:', response.data.categories[0].subCategories[0]);
-              if (response.data.categories[0].subCategories[0].series?.length > 0) {
-                console.log('First series:', response.data.categories[0].subCategories[0].series[0]);
+          setData(visibleCategories);
+          
+          if (visibleCategories.length > 0) {
+            if (visibleCategories[0].subCategories?.length > 0) {
+              if (visibleCategories[0].subCategories[0].series?.length > 0) {
               }
             }
           }
@@ -70,19 +71,53 @@ const Search = () => {
       } catch (err: any) {
         console.error('Error fetching categories:', err);
         setError(err.message || 'Failed to load search data');
+        setData([]);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchCategories();
   }, []);
 
-  // Extract values to avoid dependency warning
+  // Word Search Logic - API handles filtering now
+  useEffect(() => {
+    const searchProducts = async () => {
+      if (!wordSearchQuery.trim()) {
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        
+        const response = await axios.post('/api/searchProducts', {
+          query: wordSearchQuery,
+          searchType: 'general'
+        });
+        
+        if (response.data.products && response.data.products.length > 0) {
+          // No frontend filtering needed - API already filtered
+          setFilteredData(response.data.products);
+        } else {
+          setFilteredData([]);
+        }
+        
+      } catch (error: any) {
+        console.error('Word search error:', error);
+        setFilteredData([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchProducts, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [wordSearchQuery]);
+
   const categoryTitle = selectedCategory.title;
   const categoryName = selectedCategory.categories;
 
-  // Part Number Search Logic
+  // Part Number Search Logic - API handles filtering now
   useEffect(() => {
     const searchPartNumbers = async () => {
       if (!partSearchQuery.trim() || searchMode !== 'part') {
@@ -92,28 +127,23 @@ const Search = () => {
   
       setIsSearching(true);
       try {
-        console.log(`Searching for: FPG-${partSearchQuery}`);
         
         const response = await axios.post('/api/searchProducts', {
           query: `FPG-${partSearchQuery}`,
           searchType: 'partNumber'
         });
         
-        console.log('Search response:', response.data);
-        
         if (response.data.products && response.data.products.length > 0) {
+          // No frontend filtering needed - API already filtered
           setPartSearchResults(response.data.products);
-          console.log(`Found ${response.data.products.length} matching products`);
         } else {
           setPartSearchResults([]);
-          console.log('No products found');
         }
         
       } catch (error: any) {
         console.error('Part search error:', error);
         setPartSearchResults([]);
         
-        // Handle specific error cases
         if (error.response?.status === 400) {
           console.log('Search query too short or invalid');
         } else if (error.response?.status === 500) {
@@ -126,7 +156,6 @@ const Search = () => {
       }
     };
   
-    // Debounce search by 300ms
     const debounceTimer = setTimeout(searchPartNumbers, 300);
     return () => clearTimeout(debounceTimer);
   }, [partSearchQuery, searchMode]);
@@ -134,32 +163,48 @@ const Search = () => {
   useEffect(() => {
     let newFilteredData: any[] = [];
 
-    // Only filter if we have both title and categories selected
     if (categoryTitle && categoryName && data.length > 0) {
-      console.log('Filtering data for:', { title: categoryTitle, category: categoryName });
       
       data.forEach((product: any) => {
         if (product.title === categoryTitle) {
-          console.log('Found matching product:', product.title);
-          console.log('Product subCategories:', product.subCategories);
           
           product.subCategories.forEach((cat: any) => {
             if (cat.title.toLowerCase().includes(categoryName.toLowerCase())) {
-              console.log('Found matching category:', cat.title);
               if (cat.series && cat.series.length > 0) {
-                // Show all series in the category - no subcategory filtering
                 newFilteredData = [...newFilteredData, ...cat.series];
               }
             }
           });
         }
       });
-      
-      console.log('Filtered results:', newFilteredData.length);
     }
     
     setFilteredData(newFilteredData);
   }, [categoryTitle, categoryName, data]);
+
+  // Filter products for Quick Search category navigation (local filtering only)
+  const filteredProducts = data.filter((product: any) => {
+    if (!wordSearchQuery.trim()) return true;
+    
+    const searchLower = wordSearchQuery.toLowerCase();
+    const searchTerms = searchLower.split(' ').filter(term => term.length > 0);
+    
+    const titleMatches = searchTerms.every(term => 
+      product.title.toLowerCase().includes(term)
+    );
+    
+    const subCategoryMatches = product.subCategories?.some((cat: any) =>
+      searchTerms.every(term => cat.title.toLowerCase().includes(term))
+    );
+    
+    const seriesMatches = product.subCategories?.some((cat: any) =>
+      cat.series?.some((series: any) =>
+        searchTerms.every(term => series.title.toLowerCase().includes(term))
+      )
+    );
+    
+    return titleMatches || subCategoryMatches || seriesMatches;
+  });
 
   const variants = {
     initial: { opacity: 0, x: -100 },
@@ -198,10 +243,8 @@ const Search = () => {
         Search
       </div>
       
-      {/* Header-Style Glass Morphism Tabs */}
       <div className="wrapper flex flex-col gap-8 md:gap-12 items-center px-2 sm:px-6 md:px-10">
         <div className="w-full flex justify-center mb-4">
-          {/* Container with exact same styling as header actions */}
           <div 
             style={{
               background: "rgba(0, 0, 0, 0.15)",
@@ -213,7 +256,6 @@ const Search = () => {
             }}
           >
             <div className="flex items-center gap-1">
-              {/* Quick Search Tab */}
               <button
                 onClick={() => setSearchMode('quick')}
                 className="relative overflow-hidden"
@@ -230,9 +272,7 @@ const Search = () => {
                   position: "relative",
                   whiteSpace: "nowrap",
                   minWidth: "max-content",
-                  // Active/Inactive styling
                   ...(searchMode === 'quick' ? {
-                    // Active tab - Yellow gradient like header hover
                     background: `radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)`,
                     border: "1px solid rgba(255, 215, 0, 0.9)",
                     color: "#000",
@@ -244,7 +284,6 @@ const Search = () => {
                       inset 0 -1px 0 rgba(255, 215, 0, 0.4)
                     `
                   } : {
-                    // Inactive tab - Default glass
                     background: `radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 20%, rgba(255, 255, 255, 0.15) 70%, rgba(240, 240, 240, 0.2) 100%), rgba(255, 255, 255, 0.15)`,
                     backdropFilter: "blur(15px)",
                     border: "1px solid rgba(255, 255, 255, 0.4)",
@@ -274,7 +313,6 @@ const Search = () => {
                   }
                 }}
               >
-                {/* Glass shine effect */}
                 <span
                   style={{
                     position: "absolute",
@@ -291,7 +329,6 @@ const Search = () => {
                 Quick Search
               </button>
 
-              {/* Part Number Search Tab */}
               <button
                 onClick={() => setSearchMode('part')}
                 className="relative overflow-hidden"
@@ -308,9 +345,7 @@ const Search = () => {
                   position: "relative",
                   whiteSpace: "nowrap",
                   minWidth: "max-content",
-                  // Active/Inactive styling
                   ...(searchMode === 'part' ? {
-                    // Active tab - Yellow gradient like header hover
                     background: `radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)`,
                     border: "1px solid rgba(255, 215, 0, 0.9)",
                     color: "#000",
@@ -322,7 +357,6 @@ const Search = () => {
                       inset 0 -1px 0 rgba(255, 215, 0, 0.4)
                     `
                   } : {
-                    // Inactive tab - Default glass
                     background: `radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 20%, rgba(255, 255, 255, 0.15) 70%, rgba(240, 240, 240, 0.2) 100%), rgba(255, 255, 255, 0.15)`,
                     backdropFilter: "blur(15px)",
                     border: "1px solid rgba(255, 255, 255, 0.4)",
@@ -352,7 +386,6 @@ const Search = () => {
                   }
                 }}
               >
-                {/* Glass shine effect */}
                 <span
                   style={{
                     position: "absolute",
@@ -372,14 +405,66 @@ const Search = () => {
           </div>
         </div>
         
-        {/* Conditional Search Interface */}
         {searchMode === 'quick' ? (
-          // EXISTING QUICK SEARCH
           <div className="w-full p-4 sm:p-5 sm:px-8 rounded-md shadow-lg hover:shadow-xl transition duration-200">
+            <div className="mb-6">
+              <div className="w-full max-w-sm sm:max-w-lg md:max-w-2xl mx-auto px-1 sm:px-2 md:px-0">
+                <div className="relative">
+                  <div className="flex items-stretch w-full border-2 border-yellow-400 rounded-xl bg-white shadow-md focus-within:shadow-lg transition-shadow duration-200 overflow-hidden">
+                    <div className="px-3 sm:px-4 py-3 bg-yellow-100 text-gray-700 font-medium border-r border-yellow-300 text-sm sm:text-base flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={wordSearchQuery}
+                      onChange={(e) => setWordSearchQuery(e.target.value)}
+                      placeholder="Search by keyword (e.g., valve, hose, fitting)..."
+                      className="
+                        flex-1 min-w-0 px-3 sm:px-4 py-3 focus:outline-none
+                        text-gray-800 text-sm sm:text-base
+                        placeholder:text-gray-400 placeholder:text-xs sm:placeholder:text-sm
+                      "
+                    />
+                    {wordSearchQuery && (
+                      <button
+                        onClick={() => {
+                          setWordSearchQuery('');
+                          setFilteredData([]); 
+                          setOpen('');
+                          setSelectedCategory({
+                            title: null,
+                            categories: null,
+                            subCategories: null,
+                            subSubCategories: null,
+                            finalProducts: null,
+                            extraParams: null,
+                          });
+                        }}
+                        className="mr-2 my-2 bg-white border-2 border-yellow-400 rounded-full w-10 h-10 flex items-center justify-center hover:bg-yellow-50 transition-colors flex-shrink-0"
+                        aria-label="Clear search"
+                      >
+                        <span className="text-yellow-400 text-2xl font-bold leading-none">×</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <p className="text-xs sm:text-sm text-gray-500 mt-3 text-center leading-relaxed px-2">
+                  Type keywords to instantly filter categories below
+                  {wordSearchQuery && (
+                    <span className="block mt-1 text-yellow-600 font-medium">
+                      {isSearching ? 'Searching...' : `Found ${filteredData.length} matching product${filteredData.length === 1 ? '' : 's'}`}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
             <div>
               <div>
-                {/* Dynamic categories from database */}
-                {data.map((product: any, index: number) => (
+                {filteredProducts.map((product: any, index: number) => (
                   <div
                     key={index}
                     className="flex flex-col md:flex-row justify-start items-start my-2"
@@ -392,8 +477,8 @@ const Search = () => {
                           title: product.title,
                           categories: null,
                           subCategories: null,
-                          subSubCategories: null,  // ADD: Reset all deeper levels
-                          finalProducts: null,     // ADD: Reset all deeper levels
+                          subSubCategories: null,
+                          finalProducts: null,
                           extraParams: null,
                         });
                         setOpen(product.title);
@@ -412,7 +497,7 @@ const Search = () => {
                     {open === product.title && (
                       <AnimatePresence>
                         <motion.div
-                          key={product.title} // Add key prop here
+                          key={product.title}
                           variants={variants}
                           initial="initial"
                           animate="animate"
@@ -437,14 +522,12 @@ const Search = () => {
                                   key={catIndex}
                                   onClick={() => {
                                     console.log('Selected category:', category.title);
-                                    console.log('=== SEARCH DEBUG: Category object ===');
-                                    console.log('Full category object:', category);
                                     setSelectedCategory({
                                       ...selectedCategory,
                                       categories: category.title,
-                                      subCategories: null,     // Reset deeper levels
-                                      subSubCategories: null,  // Reset deeper levels  
-                                      finalProducts: null      // Reset deeper levels
+                                      subCategories: null,
+                                      subSubCategories: null,
+                                      finalProducts: null
                                     });
                                   }}
                                 >
@@ -454,7 +537,6 @@ const Search = () => {
                             </motion.div>
                           </div>
                           
-                          {/* Show series as sub-categories if a category is selected */}
                           {selectedCategory.categories && (
                             <div className="mt-3 sm:mt-2">
                               <span className="text-sm sm:text-md font-bold text-black">
@@ -473,44 +555,25 @@ const Search = () => {
                                       onClick={async () => {
                                         console.log('=== SUB-CATEGORY SELECTION ===');
                                         console.log('Selected sub-category:', series.title);
-                                        console.log('Series object:', series);
                                         
-                                        // FIXED: Better detection for 4-level vs 3-level products
-                                        // For Steel Tubes (3-level): FPG-SSTI should navigate directly
-                                        // For Hydraulic Adaptors (4-level): Should show more tabs
-                                        
-                                        // Check if the parent category suggests 4-level structure
                                         const parentCategory = selectedCategory.title;
                                         const is4LevelCategory = parentCategory === 'Hydraulic Adaptors';
                                         
-                                        console.log('Parent category:', parentCategory);
-                                        console.log('Is 4-level category?', is4LevelCategory);
-                                        
                                         if (is4LevelCategory) {
-                                          // Show as another level in search for 4-level categories
-                                          console.log('4-LEVEL: Showing more tabs');
-                                          console.log('Fetching Level 3 data for series ID:', series.id);
-                                          
-                                          // Fetch Level 3 data using the series ID
                                           try {
                                             const response = await axios.post('/api/getAllSeries', {
                                               data: { slug: series.slug }
                                             });
-                                            console.log('Level 3 data response:', response.data);
                                             
                                             if (response.data.series && response.data.series.length > 0) {
                                               setLevel3Data(response.data.series);
-                                              console.log('Level 3 data loaded:', response.data.series.length, 'items');
                                             } else {
-                                              // Fallback: try getProducts API
                                               const fallbackResponse = await axios.post('/api/getProducts', {
                                                 data: { id: series.id }
                                               });
-                                              console.log('Level 3 fallback response:', fallbackResponse.data);
                                               
                                               if (fallbackResponse.data.series && fallbackResponse.data.series.length > 0) {
                                                 setLevel3Data(fallbackResponse.data.series);
-                                                console.log('Level 3 fallback data loaded:', fallbackResponse.data.series.length, 'items');
                                               }
                                             }
                                           } catch (error) {
@@ -525,15 +588,8 @@ const Search = () => {
                                             finalProducts: null
                                           });
                                         } else {
-                                          // 3-level: Navigate directly to final product
-                                          console.log('3-LEVEL: Navigating to final product');
-                                          
                                           if (series.id) {
-                                            const targetUrl = `/products/${series.id}`;
-                                            console.log('Target URL:', targetUrl);
-                                            router.push(targetUrl);
-                                          } else {
-                                            console.error('No series ID for navigation');
+                                            router.push(`/products/${series.id}`);
                                           }
                                         }
                                       }}
@@ -545,7 +601,6 @@ const Search = () => {
                             </div>
                           )}
                           
-                          {/* NEW: Show sub-sub-categories for 4-level deep products */}
                           {selectedCategory.subCategories && level3Data.length > 0 && (
                             <div className="mt-3 sm:mt-2">
                               <span className="text-sm sm:text-md font-bold text-black">
@@ -560,18 +615,8 @@ const Search = () => {
                                     `}
                                     key={level3Index}
                                     onClick={() => {
-                                      console.log('=== LEVEL 3 NAVIGATION ===');
-                                      console.log('Selected Level 3 item:', level3Item.title);
-                                      console.log('Level 3 object:', level3Item);
-                                      
-                                      // Navigate to final product table
                                       if (level3Item.id) {
-                                        const targetUrl = `/products/${level3Item.id}`;
-                                        console.log('FINAL NAVIGATION: Direct to product table');
-                                        console.log('Target URL:', targetUrl);
-                                        router.push(targetUrl);
-                                      } else {
-                                        console.error('No ID found for Level 3 item');
+                                        router.push(`/products/${level3Item.id}`);
                                       }
                                     }}
                                   >
@@ -582,7 +627,6 @@ const Search = () => {
                             </div>
                           )}
                           
-                          {/* Show loading state for Level 3 */}
                           {selectedCategory.subCategories && level3Data.length === 0 && (
                             <div className="mt-3 sm:mt-2">
                               <span className="text-sm sm:text-md font-bold text-black">
@@ -600,18 +644,28 @@ const Search = () => {
                     )}
                   </div>
                 ))}
+                
+                {wordSearchQuery && filteredProducts.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="text-gray-500 mb-4">
+                      <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-lg font-medium">No categories found matching &quot;{wordSearchQuery}&quot;</p>
+                      <p className="text-sm mt-2">Try different keywords or clear the search</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ) : (
-          // IMPROVED PART NUMBER SEARCH - Mobile Optimized
           <div className="w-full p-4 sm:p-5 sm:px-8 rounded-md shadow-lg hover:shadow-xl transition duration-200">
             <div className="flex flex-col items-center gap-4 sm:gap-6">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center px-2">
                 Search by Part Number
               </h2>
               
-              {/* Enhanced Part Number Search Input - Mobile First */}
               <div className="w-full max-w-sm sm:max-w-lg md:max-w-2xl px-1 sm:px-2 md:px-0">
                 <div className="relative">
                   <div className="flex items-stretch w-full border-2 border-yellow-400 rounded-xl bg-white shadow-md focus-within:shadow-lg transition-shadow duration-200 overflow-hidden">
@@ -637,7 +691,6 @@ const Search = () => {
                   )}
                 </div>
                 
-                {/* Enhanced Search Instructions */}
                 <p className="text-xs sm:text-sm text-gray-500 mt-3 text-center leading-relaxed px-2">
                   Type part number without <span className="font-medium">&quot;FPG-&quot;</span> prefix. 
                   <br className="sm:hidden" />
@@ -645,7 +698,6 @@ const Search = () => {
                 </p>
               </div>
               
-              {/* Enhanced Part Search Results */}
               {partSearchQuery && (
                 <div className="w-full text-center px-2">
                   {partSearchResults.length > 0 ? (
@@ -671,7 +723,6 @@ const Search = () => {
           </div>
         )}
         
-        {/* Enhanced data availability info */}
         <div className="text-xs sm:text-sm text-gray-500 text-center px-2">
           {searchMode === 'quick' ? (
             <>

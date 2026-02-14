@@ -50,6 +50,7 @@ const transformTitle = (fullTitle: string): { shortTitle: string; subtitle: stri
     return { shortTitle: 'Suction Hose', subtitle: '' };
   }
   
+  
   // Valve categories
   if (fullTitle.includes('Balancing Valves')) {
     return { shortTitle: 'Balancing Valves', subtitle: '' };
@@ -161,13 +162,11 @@ const createSearchVariants = (query: string): string[] => {
   
   // Remove duplicates and return
   const uniqueVariants = [...new Set(variants)];
-  console.log(`Search variants generated:`, uniqueVariants);
   return uniqueVariants;
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<ProductResponse>) => {
   try {
-    console.log('searchProducts API called with:', req.body);
     
     const { query, searchType }: SearchRequestBody = req.body;
     
@@ -177,8 +176,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ProductResponse
         products: []
       });
     }
-
-    console.log(`Searching for: "${query}" (type: ${searchType})`);
     
     // Generate search variants to handle product variations
     const searchVariants = createSearchVariants(query);
@@ -188,8 +185,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ProductResponse
       limit: 1000,
       expand: ['images']
     });
-
-    console.log(`Found ${categoriesResponse.results.length} categories to search through`);
 
     if (!categoriesResponse.results || categoriesResponse.results.length === 0) {
       return res.status(200).json({
@@ -216,6 +211,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ProductResponse
           return categoryName.includes(variant);
         });
       })
+      .filter((category: Category) => {
+        const hiddenPrefixes = [
+          'build-my-hose',
+          'hydraulic-hoses-custom-hose-assembly',
+          'burder-tubes'  // ADD THIS - catches Forklift Tubes, Loader Tubes, etc.
+        ];
+        const categorySlug = category.slug?.toLowerCase() || '';
+        
+        const isHidden = hiddenPrefixes.some(prefix => categorySlug.startsWith(prefix));
+        
+        if (isHidden) {
+        }
+        
+        return !isHidden;
+      })
+
       .map((category: Category): TransformedProduct => {
         const { shortTitle, subtitle } = transformTitle(category.name);
         
@@ -257,8 +268,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<ProductResponse
         
         return aName.localeCompare(bName);
       });
-
-    console.log(`Returning ${matchingCategories.length} matching categories`);
 
     res.status(200).json({
       products: matchingCategories,

@@ -8,6 +8,7 @@ const LinksFooter = (props: Props) => {
     <div className="flex flex-col items-center md:items-start md:flex-row gap-8 md:gap-28 ">
       <div className="flex flex-col gap-3 items-center md:items-start">
         <h3 className="header-link-footer">Navigate</h3>
+        <LinkFooter href="/catalogue">Downloads</LinkFooter>
         <LinkFooter href="/catalogue">Products</LinkFooter>
         <LinkFooter href="/services">Services</LinkFooter>
         <LinkFooter href="/design">Design</LinkFooter>

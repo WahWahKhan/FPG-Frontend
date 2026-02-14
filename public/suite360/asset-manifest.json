@@ -1,10 +1,10 @@
 {
   "files": {
     "main.css": "/static/css/main.4c47a88f.css",
-    "main.js": "/static/js/main.3d928830.js",
+    "main.js": "/static/js/main.2febfb0c.js",
     "static/js/331.d16c3da6.chunk.js": "/static/js/331.d16c3da6.chunk.js",
     "static/js/159.6cd2578e.chunk.js": "/static/js/159.6cd2578e.chunk.js",
-    "static/js/453.10421dcd.js": "/static/js/453.10421dcd.js",
+    "static/js/453.6ea64725.js": "/static/js/453.6ea64725.js",
     "static/media/welcome_hose.gif": "/static/media/welcome_hose.67df8d6e34ff3b937ce7.gif",
     "static/media/end2_thread_diagram.gif": "/static/media/end2_thread_diagram.97f265e884c8dc4cc496.gif",
     "static/media/end1_thread_diagram.gif": "/static/media/end1_thread_diagram.7ed55b5a6dfab7ad944e.gif",
@@ -28,21 +28,16 @@
     "static/media/pressure_testing_diagram.png": "/static/media/pressure_testing_diagram.83b36996404409dd76e2.png",
     "static/media/metal_spiral.png": "/static/media/metal_spiral.e78daadc5d9751c2f31f.png",
     "static/media/logo.png": "/static/media/logo.0d9d3db8f1cb51c399ce.png",
-    "static/media/feedback2.png": "/static/media/feedback2.6a6565cae94991f4e85c.png",
     "static/media/bsp_female_45.png": "/static/media/bsp_female_45.d8a9c41ae44b6fcf3c80.png",
     "static/media/bsp_female_90.png": "/static/media/bsp_female_90.9e6db798f816ea1cc0af.png",
     "static/media/orfs_male_straight.png": "/static/media/orfs_male_straight.f1895c84bf2762c66569.png",
     "static/media/Ferrule.PNG": "/static/media/Ferrule.79d8d261f1f4050c01d3.PNG",
-    "static/media/feedback3.png": "/static/media/feedback3.86556b0574857ee8f369.png",
     "static/media/nylon_sleeve.png": "/static/media/nylon_sleeve.b6f54ae0bfbb057b0c57.png",
-    "static/media/feedback5.png": "/static/media/feedback5.043d2b7edc46dbb8c119.png",
-    "static/media/feedback4.png": "/static/media/feedback4.eeec96eb220f89b7a04d.png",
     "static/media/bsp_banjo.png": "/static/media/bsp_banjo.a46d56c03d0497430baf.png",
     "static/media/orfs_female_straight.png": "/static/media/orfs_female_straight.3c98117daa087d468e8d.png",
     "static/media/315_degrees.png": "/static/media/315_degrees.20ed89a5a297ab34a76c.png",
     "static/media/bsp_female_straight.png": "/static/media/bsp_female_straight.e935258844ba0b2c4706.png",
     "static/media/225_degrees.png": "/static/media/225_degrees.190b88d4539cf851341a.png",
-    "static/media/feedback6.png": "/static/media/feedback6.5b7a9ce9e633f3b1ea99.png",
     "static/media/bsp_male_straight_parallel.png": "/static/media/bsp_male_straight_parallel.38dc9753c26d6eb181a3.png",
     "static/media/270_degrees.png": "/static/media/270_degrees.d296a0f23d517d45210c.png",
     "static/media/135_degrees.png": "/static/media/135_degrees.6da6ce9d6b893dacfea7.png",
@@ -53,7 +48,6 @@
     "static/media/hose_cross_section.png": "/static/media/hose_cross_section.cff40d55278ff7ac8f37.png",
     "static/media/90_degrees.png": "/static/media/90_degrees.728cf4dc932c48812d19.png",
     "static/media/45_degrees.png": "/static/media/45_degrees.11d0e59e4812fd389a17.png",
-    "static/media/feedback1.png": "/static/media/feedback1.675da931de4d4db5010a.png",
     "static/media/metric_light_female_90.png": "/static/media/metric_light_female_90.f8b15ea1827c6a593d5e.png",
     "static/media/metric_light_female_45.png": "/static/media/metric_light_female_45.59f3634a823eda19da7e.png",
     "static/media/0_degrees.png": "/static/media/0_degrees.20881bbe3ea2ffcc8030.png",
@@ -72,14 +66,14 @@
     "serve.json": "/serve.json",
     "config.js": "/config.js",
     "main.4c47a88f.css.map": "/static/css/main.4c47a88f.css.map",
-    "main.3d928830.js.map": "/static/js/main.3d928830.js.map",
+    "main.2febfb0c.js.map": "/static/js/main.2febfb0c.js.map",
     "331.d16c3da6.chunk.js.map": "/static/js/331.d16c3da6.chunk.js.map",
     "159.6cd2578e.chunk.js.map": "/static/js/159.6cd2578e.chunk.js.map",
-    "453.10421dcd.js.map": "/static/js/453.10421dcd.js.map"
+    "453.6ea64725.js.map": "/static/js/453.6ea64725.js.map"
   },
   "entrypoints": [
-    "static/js/453.10421dcd.js",
+    "static/js/453.6ea64725.js",
     "static/css/main.4c47a88f.css",
-    "static/js/main.3d928830.js"
+    "static/js/main.2febfb0c.js"
   ]
 }
