@@ -40,7 +40,7 @@ const InAppChat: React.FC<InAppChatProps> = ({
   hideWhenCartOpen = false
 }) => {
   const router = useRouter();
-  const isPWAPage = router.pathname === '/suite360';
+  const isPWAPage = router.pathname.startsWith('/suite360');
   
   const [scale, setScale] = useState(1);
   const [modalOpacity, setModalOpacity] = useState(0);
@@ -270,7 +270,7 @@ const InAppChat: React.FC<InAppChatProps> = ({
         id="fpg-chat-button"
         style={{
           position: 'fixed',
-          bottom: '20px',
+          bottom: '100px',
           right: '20px',
           zIndex: buttonZIndex,
           transform: `scale(${scale})`,

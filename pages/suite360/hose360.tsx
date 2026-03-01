@@ -16,7 +16,7 @@ const HoseBuilder = () => {
     
     const scripts = [
       '/suite360/static/js/453.6ea64725.js',
-      '/suite360/static/js/main.2febfb0c.js'
+      '/suite360/static/js/main.dc12a15a.js'
     ];
 
     const loadScriptSequentially = async (scripts: string[]) => {
@@ -116,7 +116,7 @@ const HoseBuilder = () => {
 
           #fpg-chat-button {
             position: fixed !important;
-            bottom: 20px !important;
+            bottom: 100px !important;
             right: 20px !important;
             z-index: 10000 !important;
             pointer-events: auto !important;

@@ -32,7 +32,7 @@ const Footer = () => {
           </div>
 
           <div className="flex gap-2">
-            {/* Facebook - Add link */}
+            {/* Facebook */}
             <a 
               href="https://www.facebook.com/share/1754zF77w4/?mibextid=wwXlfr" 
               target="_blank" 
@@ -42,15 +42,14 @@ const Footer = () => {
               <IconButton Icon={BsFacebook} />
             </a>
             
-            {/* Instagram - Add link */}
-            <a 
-              href="https://www.instagram.com/fluidpowergroup" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:no-underline"
+            {/* Instagram */}
+            <button
+              onClick={() => window.open('https://www.instagram.com/fluidpowergroup/', '_blank', 'noopener,noreferrer')}
+              className="hover:no-underline bg-transparent border-0 p-0 cursor-pointer"
+              aria-label="Visit our Instagram"
             >
               <IconButton Icon={BsInstagram} />
-            </a>
+            </button>
           </div>
         </div>
       </div>
