@@ -116,7 +116,7 @@ const HoseBuilder = () => {
 
           #fpg-chat-button {
             position: fixed !important;
-            bottom: 100px !important;
+            bottom: 60px !important;
             right: 20px !important;
             z-index: 10000 !important;
             pointer-events: auto !important;

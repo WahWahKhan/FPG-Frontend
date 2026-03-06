@@ -31,7 +31,7 @@ const Footer = () => {
             All Rights Reserved - {new Date().getFullYear()} FluidPower Group
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 md:mr-32">
             {/* Facebook */}
             <a 
               href="https://www.facebook.com/share/1754zF77w4/?mibextid=wwXlfr" 

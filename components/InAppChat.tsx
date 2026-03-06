@@ -270,7 +270,7 @@ const InAppChat: React.FC<InAppChatProps> = ({
         id="fpg-chat-button"
         style={{
           position: 'fixed',
-          bottom: '100px',
+          bottom: '60px',
           right: '20px',
           zIndex: buttonZIndex,
           transform: `scale(${scale})`,
