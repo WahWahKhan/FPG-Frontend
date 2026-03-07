@@ -83,7 +83,7 @@ export default function Function360PriceBar() {
               onClick={() => setIsExpanded(true)}
               style={{
                 position: 'fixed',
-                bottom: '100px',
+                bottom: '120px',
                 right: '30px',
                 zIndex: 50,
                 ...PRICE_BAR_DARK,
@@ -162,7 +162,7 @@ export default function Function360PriceBar() {
                   transition={{ duration: 0.3 }}
                   style={{
                     position: 'fixed',
-                    bottom: '100px',
+                    bottom: '120px',
                     right: '30px',
                     zIndex: 60,
                     ...PRICE_BAR_DARK,
@@ -239,7 +239,7 @@ export default function Function360PriceBar() {
               onClick={() => setIsExpanded(true)}
               style={{
                 position: 'fixed',
-                bottom: '90px',
+                bottom: '120px',
                 left: '20px',
                 right: '20px',
                 zIndex: 50,
