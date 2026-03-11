@@ -51,7 +51,7 @@ const HoseBuilder = () => {
   return (
     <>
       <Head>
-        <title>Hose Builder - Fluid Power Group</title>
+        <title>Hose360 - Fluid Power Group</title>
         <meta name="description" content="Build your own custom hydraulic hose online. Select hose size, end fittings, cut length and quantity. Done in under 5 minutes. Order direct from FluidPower Group." />
         <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover" />
         
