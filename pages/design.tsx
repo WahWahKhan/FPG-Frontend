@@ -2,9 +2,15 @@ import ItemDesignHome from "@/views/Home/DesignHome/ItemDesignHome";
 import { ItemDesignsHome } from "@/views/Home/DesignHome/ItemDesignHome";
 import db from "db";
 import type { NextPage } from "next";
+import Head from 'next/head';
 
 const Design: NextPage = () => {
   return (
+    <>
+    <Head>
+      <title>Design | FluidPower Group</title>
+      <meta name="description" content="Custom hydraulic system design, build and installation. Our engineers also offer 3D design and drafting services. Talk to us about your project." />
+    </Head>
     <div className="flex flex-col w-full">
       {/* Design Section - Moved from homepage */}
       <div className="wrapper px-8 md:px-12  flex flex-col gap-10 mb-32">
@@ -23,6 +29,7 @@ const Design: NextPage = () => {
       </div>
       </div>
     </div>
+    </>
   );
 };
 

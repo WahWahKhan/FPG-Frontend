@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useFunction360 } from '../../../context/Function360Context';
+import Head from 'next/head';
 
 // Animation variants
 const fadeInUp = {
@@ -43,6 +44,11 @@ export default function Start() {
   };
 
   return (
+    <>
+    <Head>
+      <title>Function360 | FluidPower Group</title>
+      <meta name="description" content="Configure your custom hydraulic function kit online. Choose from diverter valves, quick couplings, adaptors, hoses and electrical systems for your equipment." />
+    </Head>
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-6 py-20">
       {/* Background gradient */}
       <div
@@ -274,5 +280,6 @@ export default function Start() {
         }}
       />
     </div>
+    </>
   );
 }

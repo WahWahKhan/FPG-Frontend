@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import { FiHelpCircle, FiX } from "react-icons/fi";
+import Head from 'next/head';
 
 interface Product {
   id: string;
@@ -63,6 +64,11 @@ const BuyPage = () => {
   const [rotation, setRotation] = useState(720);
 
   return (
+    <>
+    <Head>
+      <title>Suite360 | FluidPower Group</title>
+      <meta name="description" content="Build your custom hydraulic solution with Suite360. Configure custom hose assemblies, tractor hydraulic kits and function kits online in minutes." />
+    </Head>
     <div 
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
       style={{
@@ -519,6 +525,7 @@ const BuyPage = () => {
         </motion.div>
       )}
     </div>
+    </>
   );
 };
 

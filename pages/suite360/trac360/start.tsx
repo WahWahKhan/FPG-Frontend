@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { useTrac360 } from '../../../context/Trac360Context';
+import Head from 'next/head';
 
 // Animation variants
 const fadeInUp = {
@@ -42,6 +43,11 @@ export default function Start() {
   };
 
   return (
+    <>
+    <Head>
+      <title>Trac360 | FluidPower Group</title>
+      <meta name="description" content="Get complete hydraulic solution for your tractors. Select Valves, hoses, fittings, adaptors, joysticks and cables — matched precisely to your specs." />
+    </Head>
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-6 py-20">
       {/* Background gradient */}
       <div
@@ -274,5 +280,6 @@ export default function Start() {
         }}
       />
     </div>
+    </>
   );
 }

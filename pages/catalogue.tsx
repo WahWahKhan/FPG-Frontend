@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import axios from "axios";
 import { Category } from "types/products";
 import Loading from "@/modules/Loading";
+import Head from 'next/head';
 
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
@@ -62,6 +63,11 @@ const CataloguePage = () => {
   const categories: Category[] = data.categories;
 
   return (
+    <>
+      <Head>
+        <title>Products | FluidPower Group</title>
+        <meta name="description" content="Browse our full range of hydraulic hoses, steel tubes, fittings, adaptors, valves, quick couplings and accessories. Quality hydraulic products Australia-wide." />
+      </Head>
     <div className="wrapper px-8 md:px-12  flex flex-col gap-10 mb-32">
             <div className="flex flex-col gap-4 p-8 pt-16">
               <div className="text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-semibold text-slate-200/50 ">
@@ -83,6 +89,7 @@ const CataloguePage = () => {
       </div>
       </div>
     </div>
+    </>
   );
 };
 
