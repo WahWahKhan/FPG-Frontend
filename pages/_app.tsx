@@ -62,6 +62,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
       <main className="flex-grow">
         <Head>
           <title>FluidPower Group</title>
+          <meta name="google-site-verification" content="_gR0pKYQplY_yqDv8fZIJfD_FWFNrKhcgWpvGf9kMFg" />
         </Head>
 
         <AnimatePresence
