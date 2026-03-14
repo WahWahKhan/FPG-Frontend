@@ -41,6 +41,11 @@
     <changefreq>monthly</changefreq>
   </url>
   <url>
+    <loc>https://www.fluidpowergroup.com.au/about</loc>
+    <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://www.fluidpowergroup.com.au/contact</loc>
     <priority>0.7</priority>
     <changefreq>monthly</changefreq>
