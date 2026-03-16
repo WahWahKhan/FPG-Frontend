@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import db from "db";
+import Head from 'next/head';
 
 const Services = () => {
   const [hoveredService, setHoveredService] = useState<string | null>(null);
@@ -121,6 +122,11 @@ const Services = () => {
   ];
 
   return (
+    <>
+    <Head>
+        <title>Design | FluidPower Group</title>
+        <meta name="description" content="Offering Range of Services including Tube Bending, Hose Assembly, Laser Sheet Metal Cutting, Sheet Metal Press Bending, Tube Flaring & Cutting Ring Assembly and Pressure Testing." />
+      </Head>
     <div className="flex flex-col w-full">
       <div className="bg-white min-h-screen relative overflow-hidden">
         {/* Background gradient overlay */}
@@ -348,6 +354,7 @@ const Services = () => {
       }} />
     </div>
     </div>
+    </>
   );
 };
 

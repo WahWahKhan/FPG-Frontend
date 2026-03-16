@@ -56,11 +56,14 @@ function AppContent({ Component, pageProps, router }: AppProps) {
     };
   }, [nextRouter.events]);
 
+  const canonicalUrl = `https://www.fluidpowergroup.com.au${nextRouter.asPath.split('?')[0]}`;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header categories={categories} />
       <main className="flex-grow">
         <Head>
+          <link rel="canonical" href={canonicalUrl} />
           <meta name="description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions. Strength & reliability delivered." />
           <meta name="google-site-verification" content="_gR0pKYQplY_yqDv8fZIJfD_FWFNrKhcgWpvGf9kMFg" />
         </Head>
