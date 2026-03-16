@@ -124,7 +124,7 @@ const Services = () => {
   return (
     <>
     <Head>
-        <title>Design | FluidPower Group</title>
+        <title>Services | FluidPower Group</title>
         <meta name="description" content="Offering Range of Services including Tube Bending, Hose Assembly, Laser Sheet Metal Cutting, Sheet Metal Press Bending, Tube Flaring & Cutting Ring Assembly and Pressure Testing." />
       </Head>
     <div className="flex flex-col w-full">
