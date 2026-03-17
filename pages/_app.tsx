@@ -116,6 +116,25 @@ function AppContent({ Component, pageProps, router }: AppProps) {
               })
             }}
           />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "FluidPower Group",
+                "url": "https://www.fluidpowergroup.com.au",
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "https://www.fluidpowergroup.com.au/catalogue?search={search_term_string}"
+                  },
+                  "query-input": "required name=search_term_string"
+                }
+              })
+            }}
+          />
         </Head>
 
         <AnimatePresence
