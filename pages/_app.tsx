@@ -66,6 +66,55 @@ function AppContent({ Component, pageProps, router }: AppProps) {
           <link rel="canonical" href={canonicalUrl} />
           <meta name="description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions. Strength & reliability delivered." />
           <meta name="google-site-verification" content="_gR0pKYQplY_yqDv8fZIJfD_FWFNrKhcgWpvGf9kMFg" />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "LocalBusiness",
+                "name": "FluidPower Group",
+                "description": "Australia's hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom hydraulic solutions.",
+                "url": "https://www.fluidpowergroup.com.au",
+                "telephone": "+61409517333",
+                "email": "info@fluidpowergroup.com.au",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "44a Murrell St",
+                  "addressLocality": "Wangaratta",
+                  "addressRegion": "VIC",
+                  "postalCode": "3677",
+                  "addressCountry": "AU"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": -36.3582,
+                  "longitude": 146.3132
+                },
+                "openingHoursSpecification": [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Monday"],
+                    "opens": "08:00",
+                    "closes": "17:00"
+                  },
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": ["Saturday", "Sunday"],
+                    "opens": "09:00",
+                    "closes": "17:00"
+                  }
+                ],
+                "sameAs": [
+                  "https://www.instagram.com/fluidpowergroup/",
+                  "https://www.facebook.com/p/FluidPower-Group-100067417586106/"
+                ],
+                "priceRange": "$$",
+                "currenciesAccepted": "AUD",
+                "paymentAccepted": "PayPal",
+                "areaServed": "Australia"
+              })
+            }}
+          />
         </Head>
 
         <AnimatePresence
