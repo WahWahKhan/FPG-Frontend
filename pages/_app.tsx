@@ -77,6 +77,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
                 "url": "https://www.fluidpowergroup.com.au",
                 "telephone": "+61409517333",
                 "email": "info@fluidpowergroup.com.au",
+                "image": "https://www.fluidpowergroup.com.au/logo.png",
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": "44a Murrell St",
