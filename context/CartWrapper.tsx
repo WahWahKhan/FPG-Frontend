@@ -45,7 +45,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
         sessionStorage.getItem('viewingOrderConfirmation') === 'true';
       
       if (isViewingOrderConfirmation) {
-        console.log('[Website Cart] User viewing order confirmation - keeping empty cart');
         return { open: false, items: [] };
       }
 
@@ -60,14 +59,12 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
         // Check if cart is less than 1 hour old
         if (now - saved < oneHourInMs) {
           const parsedCart = JSON.parse(savedCart);
-          console.log('[Website Cart] Loaded from localStorage:', parsedCart.items?.length || 0, 'items');
           return {
             open: false, // Always start with cart closed
             items: parsedCart.items || []
           };
         } else {
           // Cart expired, clear it
-          console.log('[Website Cart] Cart expired, clearing localStorage');
           localStorage.removeItem('shopping-cart');
           localStorage.removeItem('cart-timestamp');
         }
@@ -92,7 +89,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
       // 🔧 FIX: Don't update cart if viewing order confirmation
       const isViewingOrderConfirmation = sessionStorage.getItem('viewingOrderConfirmation') === 'true';
       if (isViewingOrderConfirmation) {
-        console.log('[Website Cart] Ignoring storage change - viewing order confirmation');
         return;
       }
 
@@ -100,7 +96,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
       if (e.key === 'shopping-cart' && e.newValue) {
         try {
           const updatedCart = JSON.parse(e.newValue);
-          console.log('[Website Cart] Detected cart update from PWA:', updatedCart.items?.length || 0, 'items');
           
           setCart(prevCart => ({
             open: prevCart.open, // Preserve current open state
@@ -155,7 +150,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
         // 1. We're on order-confirmation page
         // 2. Cart is empty
         if (currentData.items?.length === 0 && cart.items.length === 0) {
-          console.log('[Website Cart] Not saving empty cart - viewing order confirmation');
           return;
         }
         // If cart has items (new order being added), allow save to proceed
@@ -173,7 +167,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
           // 🔧 CRITICAL FIX: If this is a user action (delete/clear), ALWAYS save to localStorage
           // Don't sync back - user is deliberately removing items
           if (isUserAction.current) {
-            console.log('[Website Cart] User action detected - saving state to localStorage');
             localStorage.setItem('shopping-cart', JSON.stringify(cart));
             localStorage.setItem('cart-timestamp', Date.now().toString());
             isUserAction.current = false; // Reset flag
@@ -240,7 +233,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
           : itemCart.id !== item.id;
         
         if (!shouldKeep) {
-          console.log('[Website Cart] Deleting item by', deleteBy, ':', deleteBy === 'cartId' ? item.cartId : item.id);
         }
         
         return shouldKeep;
@@ -258,7 +250,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   };
 
   const clearCart = () => {
-    console.log('🗑️ Clearing cart UI state');
     
     // 🔧 Mark as user action to prevent sync-back from localStorage
     isUserAction.current = true;

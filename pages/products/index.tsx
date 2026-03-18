@@ -114,8 +114,6 @@ const ProductsPage = () => {
         setPagination({ page: 1, limit: 20, total: 0, hasNext: false });
         setProducts([]);
         setSeries([]);
-        
-        console.log('Fetching data for:', targetSlugOrId);
 
         // FIXED: Cache categories to avoid repeated API calls
         let categoriesData = categoryCache.get('categories');
@@ -206,7 +204,6 @@ const ProductsPage = () => {
           setSeries([]);
           setProducts([]);
         } else {
-          console.log('Showing main categories');
           setSeries([]);
           setProducts([]);
         }

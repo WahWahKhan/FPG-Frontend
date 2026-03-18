@@ -83,7 +83,6 @@ export function Function360Provider({ children }: Function360ProviderProps) {
       const isNewSession = !sessionStorage.getItem('function360-session-active');
 
       if (isNewSession && !isPageReload) {
-        console.log('[FUNCTION360] New session detected, clearing all data');
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_TIMESTAMP_KEY);
         sessionStorage.setItem('function360-session-active', 'true');
@@ -102,10 +101,8 @@ export function Function360Provider({ children }: Function360ProviderProps) {
 
         if (now - saved < SESSION_DURATION) {
           const parsedConfig = JSON.parse(savedConfig);
-          console.log('[FUNCTION360] Restored config from localStorage');
           setConfig(parsedConfig);
         } else {
-          console.log('[FUNCTION360] Session expired, clearing localStorage');
           localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem(STORAGE_TIMESTAMP_KEY);
         }
@@ -124,7 +121,6 @@ export function Function360Provider({ children }: Function360ProviderProps) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
       localStorage.setItem(STORAGE_TIMESTAMP_KEY, Date.now().toString());
-      console.log('[FUNCTION360] Saved config to localStorage');
     } catch (error) {
       console.error('[FUNCTION360] Error saving to localStorage:', error);
     }
@@ -194,7 +190,6 @@ export function Function360Provider({ children }: Function360ProviderProps) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_TIMESTAMP_KEY);
-      console.log('[FUNCTION360] Configuration reset');
     }
   }, []);
 

@@ -1,5 +1,11 @@
-import Footer from '@/modules/Footer';
-import Header from '@/modules/Header';
+// /pages/products/[id].tsx
+// SSR conversion: getServerSideProps added at bottom
+// Data fetching useEffect removed — products/series now arrive as props, fully rendered for Googlebot
+// Scroll useEffect kept — client-side UX only, not data fetching
+// useState for items/subcategories kept — required for cart quantity interactions
+// fetchProducts and fetchSeriesDetails imported from new utilities
+// getProducts.ts and getSeriesDetails.ts API routes remain completely untouched
+
 import {
   DescriptionProduct,
   ImageProduct,
@@ -9,99 +15,65 @@ import {
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
 import { IItemCart } from 'types/cart';
-import axios from 'axios';
 import { useRouter } from 'next/router';
-import Loading from '@/modules/Loading';
-// Import the sorting utility
+import { GetServerSideProps } from 'next';
+import { fetchProducts } from 'utils/swell/fetchProducts';
+import { fetchSeriesDetails, ISeries } from 'utils/swell/fetchSeriesDetails';
 import { sortProductsAlphanumerically } from '../../utils/productSorting';
 
-type ISeries = {
-  name: string;
-  description: string;
-  images: string[];
-};
+interface ProductPageProps {
+  initialItems: IItemCart[];
+  initialSubcategories: any[];
+  series: ISeries | null;
+}
 
-const ProductPage = () => {
+const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPageProps) => {
   const router = useRouter();
   const id = router.query.id;
-  const [items, setItems] = useState<IItemCart[]>([]);
-  const [series, setSeries] = useState<ISeries>();
-  const [subcategories, setSubcategories] = useState<any[]>([]);
 
+  // items needs useState — user can change quantities for cart interactions
+  // Reset items whenever the page id changes (new product page navigation)
+  const [items, setItems] = useState<IItemCart[]>(initialItems);
+  useEffect(() => {
+    setItems(initialItems);
+  }, [id, initialItems]);
+
+  // Keep scroll UX — purely client-side, unrelated to data fetching
   useEffect(() => {
     if (router.isReady && id) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [id, router.isReady]);
 
-  useEffect(() => {
-    const products = async () => {
-      try {
-        const prod = await axios.post(
-          `/api/getProducts`,
-          { data: { id } }
-        );
-        console.log('API Response:', prod.data);
-        return prod;
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        return undefined;
-      }
-    };
-
-    const seriesDetails = async () => {
-      const details = await axios.post(
-        `/api/getSeriesDetails`,
-        { data: { id } }
-      );
-      return details;
-    };
-
-    products().then((result: any) => {
-      if (result?.data) {
-        // Check if we got series data (subcategories)
-        if (result.data.series && result.data.series.length > 0) {
-          console.log('📂 Found subcategories, displaying grid');
-          // Sort the subcategories using the new utility
-          const sortedSubcategories = sortProductsAlphanumerically(result.data.series);
-          setSubcategories(sortedSubcategories);
-          setItems([]); // Clear products
-        } else if (result.data.products && result.data.products.length > 0) {
-          console.log('📦 Found products, displaying table');
-          
-          // Use the new general sorting utility instead of the complex custom logic
-          const sortedProducts = sortProductsAlphanumerically(result.data.products);
-          
-          setItems(sortedProducts);
-          setSubcategories([]);
-        }
-      }
-    });
-
-    seriesDetails().then((result: any) => {
-      setSeries(result.data.series);
-    });
-  }, [id]);
-
-  if (series == null) {
-    return <Loading />;
+  // If series failed to load server-side, show a clean error
+  if (!series) {
+    return (
+      <div className="wrapper px-8 md:px-12 py-12 min-h-screen flex flex-col items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Category Not Found</h2>
+          <p className="text-gray-600">This category could not be loaded. Please try again.</p>
+        </div>
+      </div>
+    );
   }
 
   // If we have subcategories, show them in a grid
-  if (subcategories.length > 0) {
+  if (initialSubcategories.length > 0) {
     return (
       <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
-        {/* Just show the category title and grid - no large product image */}
         <div className="wrapper px-8 md:px-12">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold">{series?.name}</h1>
             {series?.description && (
-              <p className="text-gray-600 mt-2">{series.description}</p>
+              <div
+                className="text-gray-600 mt-2"
+                dangerouslySetInnerHTML={{ __html: series.description }}
+              />
             )}
           </div>
-          <GridProducts 
-            seriesList={subcategories} 
-            showDescription={true} 
+          <GridProducts
+            seriesList={initialSubcategories}
+            showDescription={true}
           />
         </div>
       </div>
@@ -110,15 +82,15 @@ const ProductPage = () => {
 
   // Default: show products in table format
   return (
-    <div className="pt-10 pb-12  lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
+    <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
       <div className="max-w-2xl lg:max-w-full w-full mx-auto mb-4">
-        <div className="grid grid-cols-12 h-full space-y-6 lg:space-y-0 space-x-0 lg:space-x-6 mx-auto  wrapper   px-8 md:px-12 overflow-hidden">
+        <div className="grid grid-cols-12 h-full space-y-6 lg:space-y-0 space-x-0 lg:space-x-6 mx-auto wrapper px-8 md:px-12 overflow-hidden">
           <ImageProduct images={series.images} />
           <DescriptionProduct items={items[0]} series={series} />
         </div>
       </div>
       {items.length !== 0 && <TableProduct items={items} setItems={setItems} />}
-      <div className="max-w-2xl lg:max-w-full w-full mx-auto ">
+      <div className="max-w-2xl lg:max-w-full w-full mx-auto">
         <OrderSummaryProduct
           items={items}
           series={series}
@@ -129,6 +101,45 @@ const ProductPage = () => {
       </div>
     </div>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { id } = context.params as { id: string };
+
+  try {
+    // Run both Swell calls in parallel — same data, just fetched server-side now
+    const [productResult, series] = await Promise.all([
+      fetchProducts(id),
+      fetchSeriesDetails(id)
+    ]);
+
+    // Apply same sorting as before — just moved server-side
+    const initialItems = productResult.products.length > 0
+      ? sortProductsAlphanumerically(productResult.products)
+      : [];
+
+    const initialSubcategories = productResult.series.length > 0
+      ? sortProductsAlphanumerically(productResult.series)
+      : [];
+
+    return {
+      props: {
+        initialItems,
+        initialSubcategories,
+        series
+      }
+    };
+  } catch (err: any) {
+    console.error('getServerSideProps error in [id].tsx:', err);
+
+    return {
+      props: {
+        initialItems: [],
+        initialSubcategories: [],
+        series: null
+      }
+    };
+  }
 };
 
 export default ProductPage;
