@@ -14,6 +14,7 @@ import {
 } from '@/views/Product';
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
+import Head from 'next/head';
 import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
@@ -83,6 +84,52 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
   // Default: show products in table format
   return (
     <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
+      <Head>
+        <title>{series.name} | FluidPower Group</title>
+        <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "ItemList",
+              "name": series.name,
+              "description": series.description || "",
+              "url": `https://www.fluidpowergroup.com.au/products/${id}`,
+              "numberOfItems": items.length,
+              "itemListElement": items
+                .filter(item => item.price && item.price > 0)
+                .map((item, index) => ({
+                  "@type": "ListItem",
+                  "position": index + 1,
+                  "item": {
+                    "@type": "Product",
+                    "name": item.name,
+                    "mpn": item.name,
+                    "image": series.images[0] || "",
+                    "description": series.description || "",
+                    "brand": {
+                      "@type": "Brand",
+                      "name": "FluidPower Group"
+                    },
+                    "offers": {
+                      "@type": "Offer",
+                      "priceCurrency": "AUD",
+                      "price": item.price,
+                      "availability": (item.stock ?? 0) > 0
+                        ? "https://schema.org/InStock"
+                        : "https://schema.org/OutOfStock",
+                      "seller": {
+                        "@type": "Organization",
+                        "name": "FluidPower Group"
+                      }
+                    }
+                  }
+                }))
+            })
+          }}
+        />
+      </Head>
       <div className="max-w-2xl lg:max-w-full w-full mx-auto mb-4">
         <div className="grid grid-cols-12 h-full space-y-6 lg:space-y-0 space-x-0 lg:space-x-6 mx-auto wrapper px-8 md:px-12 overflow-hidden">
           <ImageProduct images={series.images} />
