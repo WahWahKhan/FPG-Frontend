@@ -73,6 +73,13 @@ function AppContent({ Component, pageProps, router }: AppProps) {
                 "@context": "https://schema.org",
                 "@type": "LocalBusiness",
                 "name": "FluidPower Group",
+                "alternateName": [
+                  "Fluid Power Group",
+                  "FluidPower",
+                  "Fluid Power",
+                  "FPG",
+                  "FluidPower Group Wangaratta"
+                ],
                 "description": "Australia's hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom hydraulic solutions.",
                 "url": "https://www.fluidpowergroup.com.au",
                 "telephone": "+61409517333",
