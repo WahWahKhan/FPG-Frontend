@@ -1,6 +1,6 @@
 // /utils/swell/fetchProducts.ts
 // Extracted from /pages/api/getProducts.ts
-// Used by both the API route and getServerSideProps in [id].tsx
+// Used by both the API route and getServerSideProps in [id].tsx and [slug].tsx
 // DO NOT modify getProducts.ts — it remains intact and still handles API requests
 
 import swell from "utils/swell/swellinit";
@@ -84,10 +84,9 @@ export type FetchProductsResult = {
   series: any[];
 };
 
+// Fetch by UUID — used by [id].tsx (unchanged behaviour)
 export const fetchProducts = async (categoryId: string): Promise<FetchProductsResult> => {
   try {
-
-    // Mirror the original loadAll path from getProducts.ts exactly
     const maxItems = 200;
     let currentPage = 1;
     const all: any[] = [];
@@ -133,7 +132,7 @@ export const fetchProducts = async (categoryId: string): Promise<FetchProductsRe
       return { products: productList, series: [] };
     }
 
-    // No products found — check for subcategories instead
+    // No products — check for subcategories instead
     const subcategoriesResp = await Promise.race([
       swell.get('/categories', { where: { parent_id: categoryId } }),
       new Promise<never>((_, reject) =>
@@ -160,11 +159,30 @@ export const fetchProducts = async (categoryId: string): Promise<FetchProductsRe
       return { products: [], series: seriesData };
     }
 
-    // Nothing found
     return { products: [], series: [] };
 
   } catch (err: any) {
     console.error('fetchProducts error:', err.message);
     return { products: [], series: [] };
+  }
+};
+
+// Fetch by slug — used by [slug].tsx
+// Resolves slug → UUID via Swell, then delegates to fetchProducts()
+// Defensive: returns null if slug not found so [slug].tsx can return 404
+export const fetchProductsBySlug = async (slug: string): Promise<FetchProductsResult | null> => {
+  try {
+    const response = await swell.get('/categories', {
+      where: { slug },
+      limit: 1
+    });
+
+    const category = response?.results?.[0];
+    if (!category) return null;
+
+    return fetchProducts(category.id);
+  } catch (err: any) {
+    console.error('fetchProductsBySlug error:', err.message);
+    return null;
   }
 };

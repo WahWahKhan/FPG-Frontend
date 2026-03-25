@@ -15,10 +15,14 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/contact', priority: '0.7', changefreq: 'monthly' },
 ];
 
-const flattenCategories = (categories: any[], depth = 0): { id: string; depth: number }[] => {
-  const result: { id: string; depth: number }[] = [];
+// Now carries slug alongside id and depth
+const flattenCategories = (
+  categories: any[],
+  depth = 0
+): { id: string; slug: string; depth: number }[] => {
+  const result: { id: string; slug: string; depth: number }[] = [];
   for (const cat of categories) {
-    result.push({ id: cat.id, depth });
+    result.push({ id: cat.id, slug: cat.slug, depth });
     if (cat.subCategories && cat.subCategories.length > 0) {
       result.push(...flattenCategories(cat.subCategories, depth + 1));
     }
@@ -26,29 +30,50 @@ const flattenCategories = (categories: any[], depth = 0): { id: string; depth: n
   return result;
 };
 
+const urlEntry = (loc: string, priority: string, changefreq: string) => `
+  <url>
+    <loc>${loc}</loc>
+    <priority>${priority}</priority>
+    <changefreq>${changefreq}</changefreq>
+  </url>`;
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const categories = await fetchCategories();
     const allCategories = flattenCategories(categories);
 
-    const staticXml = STATIC_URLS.map(({ loc, priority, changefreq }) => `
-  <url>
-    <loc>${loc}</loc>
-    <priority>${priority}</priority>
-    <changefreq>${changefreq}</changefreq>
-  </url>`).join('');
+    const staticXml = STATIC_URLS
+      .map(({ loc, priority, changefreq }) => urlEntry(loc, priority, changefreq))
+      .join('');
 
+    // Depth 0 = root categories (e.g. "Hydraulic Hoses") — these are top-level
+    // nav groupings on /catalogue, not individual pages, so excluded as before.
+    // Depth 1+ = real navigable pages.
     const dynamicXml = allCategories
       .filter(({ depth }) => depth > 0)
-      .map(({ id, depth }) => {
+      .flatMap(({ id, slug, depth }) => {
         const priority = depth === 1 ? '0.8' : '0.7';
-        return `
-  <url>
-    <loc>https://www.fluidpowergroup.com.au/products/${id}</loc>
-    <priority>${priority}</priority>
-    <changefreq>monthly</changefreq>
-  </url>`;
-      }).join('');
+
+        // Slug URL — the new canonical clean path (higher priority)
+        const slugEntry = urlEntry(
+          `https://www.fluidpowergroup.com.au/products/${slug}`,
+          priority,
+          'monthly'
+        );
+
+        // UUID URL — kept during transition so Google can follow existing
+        // indexed links and 301 redirect to the slug URL.
+        // Once Google Search Console confirms slug URLs are indexed and
+        // UUID URLs no longer appear in coverage, remove the uuidEntry lines.
+        const uuidEntry = urlEntry(
+          `https://www.fluidpowergroup.com.au/products/${id}`,
+          '0.5', // Lower priority signals to Google that slug is preferred
+          'monthly'
+        );
+
+        return [slugEntry, uuidEntry];
+      })
+      .join('');
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${staticXml}${dynamicXml}
@@ -61,12 +86,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (err) {
     console.error('Sitemap generation error:', err);
 
-    const fallbackXml = STATIC_URLS.map(({ loc, priority, changefreq }) => `
-  <url>
-    <loc>${loc}</loc>
-    <priority>${priority}</priority>
-    <changefreq>${changefreq}</changefreq>
-  </url>`).join('');
+    // Fallback — static URLs only, no dynamic categories
+    const fallbackXml = STATIC_URLS
+      .map(({ loc, priority, changefreq }) => urlEntry(loc, priority, changefreq))
+      .join('');
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${fallbackXml}

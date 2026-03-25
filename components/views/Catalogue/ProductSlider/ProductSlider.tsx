@@ -72,11 +72,7 @@ const ProductCard = ({
 }) => {
   return (
     <Anchor
-      href={
-        product.price
-          ? `$/products/${product.slug}`
-          : `/products?subcategory=${product.slug}`
-      }
+      href={`/products/${product.slug}`}
       className="hover:no-underline z-10"
     >
       <div 

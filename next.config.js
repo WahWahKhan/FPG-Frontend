@@ -65,7 +65,17 @@ const nextConfig = {
         source: '/hosebuilder/static/:path*',
         destination: '/suite360/static/:path*',
         permanent: true
-      }
+      },
+
+      // ========================================
+      // PHASE 2: QUERY STRING → SLUG REDIRECTS
+      // NOTE: These are handled dynamically in /middleware.ts
+      // because next.config.js redirects cannot read query param
+      // values and inject them into the destination path.
+      //
+      //   /products?subcategory=[slug]  →  /products/[slug]
+      //   /products?category=[slug]     →  /products/[slug]
+      // ========================================
     ]
   },
   

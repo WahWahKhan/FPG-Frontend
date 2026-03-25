@@ -5,6 +5,7 @@
 // useState for items/subcategories kept — required for cart quantity interactions
 // fetchProducts and fetchSeriesDetails imported from new utilities
 // getProducts.ts and getSeriesDetails.ts API routes remain completely untouched
+// Breadcrumbs (visual + schema) added — built server-side via fetchBreadcrumbs()
 
 import {
   DescriptionProduct,
@@ -15,20 +16,86 @@ import {
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
-import { fetchProducts } from 'utils/swell/fetchProducts';
-import { fetchSeriesDetails, ISeries } from 'utils/swell/fetchSeriesDetails';
+import { fetchProducts, fetchProductsBySlug } from 'utils/swell/fetchProducts';
+import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, ISeries, IBreadcrumb } from 'utils/swell/fetchSeriesDetails';
 import { sortProductsAlphanumerically } from '../../utils/productSorting';
 
 interface ProductPageProps {
   initialItems: IItemCart[];
   initialSubcategories: any[];
   series: ISeries | null;
+  breadcrumbs: IBreadcrumb[];
 }
 
-const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPageProps) => {
+// ---------------------------------------------------------------------------
+// Breadcrumb visual component — shared shape with [slug].tsx
+// ---------------------------------------------------------------------------
+const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
+  if (crumbs.length === 0) return null;
+
+  return (
+    <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2">
+      <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+        <li>
+          <Link href="/catalogue">
+            <a className="hover:text-gray-800 transition-colors duration-150">Products</a>
+          </Link>
+        </li>
+
+        {crumbs.map((crumb, index) => {
+          const isLast = index === crumbs.length - 1;
+          return (
+            <li key={crumb.id} className="flex items-center gap-1">
+              <span className="text-gray-300 select-none" aria-hidden="true">›</span>
+              {isLast ? (
+                <span className="font-medium text-gray-800" aria-current="page">
+                  {crumb.name}
+                </span>
+              ) : (
+                <Link href={`/products/${crumb.slug}`}>
+                  <a className="hover:text-gray-800 transition-colors duration-150">
+                    {crumb.name}
+                  </a>
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// BreadcrumbList schema.org JSON-LD
+// ---------------------------------------------------------------------------
+const buildBreadcrumbSchema = (crumbs: IBreadcrumb[]) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Products",
+      "item": "https://www.fluidpowergroup.com.au/catalogue"
+    },
+    ...crumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      "position": index + 2,
+      "name": crumb.name,
+      "item": `https://www.fluidpowergroup.com.au/products/${crumb.slug}`
+    }))
+  ]
+});
+
+// ---------------------------------------------------------------------------
+// Page component
+// ---------------------------------------------------------------------------
+const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }: ProductPageProps) => {
   const router = useRouter();
   const id = router.query.id;
 
@@ -61,7 +128,18 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
   // If we have subcategories, show them in a grid
   if (initialSubcategories.length > 0) {
     return (
-      <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
+      <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-4 sm:gap-8">
+        <Head>
+          <title>{series.name} | FluidPower Group</title>
+          <meta name="description" content={`Browse ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(buildBreadcrumbSchema(breadcrumbs)) }}
+          />
+        </Head>
+
+        <Breadcrumbs crumbs={breadcrumbs} />
+
         <div className="wrapper px-8 md:px-12">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold">{series?.name}</h1>
@@ -80,14 +158,23 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
       </div>
     );
   }
+
   const plainDescription = series.description ? series.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-  
+
   // Default: show products in table format
   return (
-    <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
+    <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-10 sm:gap-16">
       <Head>
         <title>{series.name} | FluidPower Group</title>
         <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+
+        {/* BreadcrumbList schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildBreadcrumbSchema(breadcrumbs)) }}
+        />
+
+        {/* ItemList + Product schema — unchanged from original */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -131,6 +218,9 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
           }}
         />
       </Head>
+
+      <Breadcrumbs crumbs={breadcrumbs} />
+
       <div className="max-w-2xl lg:max-w-full w-full mx-auto mb-4">
         <div className="grid grid-cols-12 h-full space-y-6 lg:space-y-0 space-x-0 lg:space-x-6 mx-auto wrapper px-8 md:px-12 overflow-hidden">
           <ImageProduct images={series.images} />
@@ -151,22 +241,48 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
   );
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// Matches standard UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+// Also matches MongoDB ObjectID: 24-character hex string (e.g. 634c0ba595e16400126463b2)
+// Both are used by Swell — UUIDs for some resources, ObjectIDs for others
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const OBJECT_ID_REGEX = /^[0-9a-f]{24}$/i;
+
+const isUuid = (value: string) => UUID_REGEX.test(value) || OBJECT_ID_REGEX.test(value);
+
+// ---------------------------------------------------------------------------
+// getServerSideProps
+// ---------------------------------------------------------------------------
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { id } = context.params as { id: string };
+  const { id: param } = context.params as { id: string };
 
   try {
-    // Run both Swell calls in parallel — same data, just fetched server-side now
+    // Detect whether param is a UUID or a human-readable slug and
+    // call the appropriate fetch functions accordingly.
+    // This lets a single [id].tsx handle both /products/abc123-uuid
+    // and /products/orfs-adapters without a second page file.
+    const isUuidParam = isUuid(param);
+
     const [productResult, series] = await Promise.all([
-      fetchProducts(id),
-      fetchSeriesDetails(id)
+      isUuidParam ? fetchProducts(param) : fetchProductsBySlug(param),
+      isUuidParam ? fetchSeriesDetails(param) : fetchSeriesDetailsBySlug(param)
     ]);
 
-    // Apply same sorting as before — just moved server-side
-    const initialItems = productResult.products.length > 0
+    if (!series) {
+      return { notFound: true };
+    }
+
+    // Breadcrumbs need series to be resolved first — sequential but fast
+    const breadcrumbs = await fetchBreadcrumbs(series);
+
+    const initialItems = productResult && productResult.products.length > 0
       ? sortProductsAlphanumerically(productResult.products)
       : [];
 
-    const initialSubcategories = productResult.series.length > 0
+    const initialSubcategories = productResult && productResult.series.length > 0
       ? sortProductsAlphanumerically(productResult.series)
       : [];
 
@@ -174,7 +290,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         initialItems,
         initialSubcategories,
-        series
+        series,
+        breadcrumbs
       }
     };
   } catch (err: any) {
@@ -184,7 +301,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         initialItems: [],
         initialSubcategories: [],
-        series: null
+        series: null,
+        breadcrumbs: []
       }
     };
   }

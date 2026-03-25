@@ -30,7 +30,7 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
           {subCategories.map((subCategory) => (
             <Anchor
               key={subCategory.id}
-              href={`/products?subcategory=${subCategory?.slug}`}
+              href={`/products/${subCategory?.slug}`}
               className="hover:no-underline"
             >
               <motion.div

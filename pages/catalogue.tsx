@@ -66,7 +66,7 @@ const CataloguePage = ({ categories, error }: CataloguePageProps) => {
                 title={category.title}
                 btn={{
                   title: "View All",
-                  href: `/products?category=${category.slug}`,
+                  href: `/products/${category.slug}`,
                 }}
                 key={i}
                 description={category.description}
