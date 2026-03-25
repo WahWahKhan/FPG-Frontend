@@ -80,7 +80,8 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
       </div>
     );
   }
-
+  const plainDescription = series.description ? series.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+  
   // Default: show products in table format
   return (
     <div className="pt-10 pb-12 lg:pt-14 lg:pb-20 flex flex-col gap-10 sm:gap-16">
@@ -94,7 +95,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
               "@context": "https://schema.org",
               "@type": "ItemList",
               "name": series.name,
-              "description": series.description || "",
+              "description": plainDescription,
               "url": `https://www.fluidpowergroup.com.au/products/${id}`,
               "numberOfItems": items.length,
               "itemListElement": items
@@ -107,7 +108,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series }: ProductPage
                     "name": item.name,
                     "mpn": item.name,
                     "image": series.images[0] || "",
-                    "description": series.description || "",
+                    "description": plainDescription,
                     "brand": {
                       "@type": "Brand",
                       "name": "FluidPower Group"
