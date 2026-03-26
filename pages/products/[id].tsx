@@ -38,8 +38,8 @@ const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2 text-lg">
-      <ol className="flex flex-wrap items-center gap-1 text-gray-500">
+    <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2">
+      <ol className="flex flex-wrap items-center gap-1 text-gray-500" style={{ fontSize: "1.5rem" }}>
         <li>
           <Link href="/catalogue">
             <a className="hover:text-gray-800 transition-colors duration-150">Products</a>
