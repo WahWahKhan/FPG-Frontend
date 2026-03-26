@@ -38,8 +38,8 @@ const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2">
-      <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+    <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2 text-lg">
+      <ol className="flex flex-wrap items-center gap-1 text-gray-500">
         <li>
           <Link href="/catalogue">
             <a className="hover:text-gray-800 transition-colors duration-150">Products</a>
@@ -283,7 +283,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       : [];
 
     const initialSubcategories = productResult && productResult.series.length > 0
-      ? sortProductsAlphanumerically(productResult.series)
+      ? sortProductsAlphanumerically(productResult.series.filter((s: any) => s.slug !== 'hydraulic-hoses-custom-hose-assembly'))
       : [];
 
     return {
