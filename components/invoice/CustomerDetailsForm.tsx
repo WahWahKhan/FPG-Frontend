@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { InvoiceCustomer, InvoiceShippingAddress, PAYMENT_TERMS, PaymentTerm } from '../../lib/invoice';
+import AutocompleteInput from './AutocompleteInput';
+import { CustomerSuggestion } from '../../pages/api/invoices/get-customers';
 
 interface CustomerDetailsFormProps {
   customer: InvoiceCustomer;
@@ -18,6 +20,9 @@ interface CustomerDetailsFormProps {
   onNotesChange: (notes: string) => void;
 }
 
+const INPUT_CLASS =
+  'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent';
+
 export default function CustomerDetailsForm({
   customer,
   shippingAddress: propShippingAddress,
@@ -33,21 +38,31 @@ export default function CustomerDetailsForm({
   onNotesChange
 }: CustomerDetailsFormProps) {
   const [sameAsBilling, setSameAsBilling] = useState(!propShippingAddress);
-  
-  // Internal state fallback in case parent doesn't provide callback
+
   const [internalShipping, setInternalShipping] = useState<InvoiceShippingAddress | null>(null);
-  
-  // Use internal state if no callback provided
+
   const effectiveShipping = onShippingAddressChange ? propShippingAddress : internalShipping;
   const setShipping = onShippingAddressChange || setInternalShipping;
-  
+
   const handleInputChange = (field: keyof InvoiceCustomer, value: string) => {
     onCustomerChange({ ...customer, [field]: value });
   };
 
+  // Called when user selects a suggestion — fills all customer fields at once
+  const handleAutofill = (suggestion: CustomerSuggestion) => {
+    onCustomerChange({
+      name: suggestion.name,
+      company: suggestion.company,
+      email: suggestion.email,
+      phone: suggestion.phone,
+      address: suggestion.address,
+      suburb: suggestion.suburb,
+      state: suggestion.state,
+      postcode: suggestion.postcode,
+    });
+  };
+
   const handleShippingChange = (field: keyof InvoiceShippingAddress, value: string) => {
-    
-    // Get current shipping or create new from billing
     const current = effectiveShipping || {
       company: customer.company || '',
       address: customer.address || '',
@@ -56,65 +71,60 @@ export default function CustomerDetailsForm({
       postcode: customer.postcode || '',
       phone: customer.phone || ''
     };
-    
-    // Update the field
-    const updated = { ...current, [field]: value };
-    
-    setShipping(updated);
+    setShipping({ ...current, [field]: value });
   };
 
   const handleSameAsBillingToggle = (checked: boolean) => {
     setSameAsBilling(checked);
-    
+
     if (checked) {
-      // Clear shipping address when same as billing
       setShipping(null);
     } else {
-      // Initialize with billing data when unchecked
-      const initialShipping = {
+      setShipping({
         company: customer.company || '',
         address: customer.address || '',
         suburb: customer.suburb || '',
         state: customer.state || '',
         postcode: customer.postcode || '',
         phone: customer.phone || ''
-      };
-      setShipping(initialShipping);
+      });
     }
   };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">Customer Details</h2>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Billing Address Section */}
         <div className="md:col-span-2">
           <h3 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Billing Address</h3>
         </div>
 
+        {/* Customer Name — autocomplete enabled */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Customer Name *
-          </label>
-          <input
-            type="text"
-            value={customer.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+          <AutocompleteInput
+            label="Customer Name"
             required
+            value={customer.name}
+            onChange={value => handleInputChange('name', value)}
+            onSelect={handleAutofill}
+            placeholder="Start typing to search..."
+            displayField="name"
+            inputClassName={INPUT_CLASS}
           />
         </div>
 
+        {/* Company Name — autocomplete enabled */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Company Name
-          </label>
-          <input
-            type="text"
+          <AutocompleteInput
+            label="Company Name"
             value={customer.company}
-            onChange={(e) => handleInputChange('company', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            onChange={value => handleInputChange('company', value)}
+            onSelect={handleAutofill}
+            placeholder="Start typing to search..."
+            displayField="company"
+            inputClassName={INPUT_CLASS}
           />
         </div>
 
@@ -126,7 +136,7 @@ export default function CustomerDetailsForm({
             type="email"
             value={customer.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
             required
           />
         </div>
@@ -139,7 +149,7 @@ export default function CustomerDetailsForm({
             type="tel"
             value={customer.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
             required
           />
         </div>
@@ -152,7 +162,7 @@ export default function CustomerDetailsForm({
             type="text"
             value={customer.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
             required
           />
         </div>
@@ -165,7 +175,7 @@ export default function CustomerDetailsForm({
             type="text"
             value={customer.suburb}
             onChange={(e) => handleInputChange('suburb', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
             required
           />
         </div>
@@ -179,7 +189,7 @@ export default function CustomerDetailsForm({
               type="text"
               value={customer.state}
               onChange={(e) => handleInputChange('state', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              className={INPUT_CLASS}
               required
             />
           </div>
@@ -191,7 +201,7 @@ export default function CustomerDetailsForm({
               type="text"
               value={customer.postcode}
               onChange={(e) => handleInputChange('postcode', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              className={INPUT_CLASS}
               required
             />
           </div>
@@ -227,7 +237,7 @@ export default function CustomerDetailsForm({
                 type="text"
                 value={effectiveShipping?.company || ''}
                 onChange={(e) => handleShippingChange('company', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                className={INPUT_CLASS}
                 placeholder="Enter company name"
               />
             </div>
@@ -240,7 +250,7 @@ export default function CustomerDetailsForm({
                 type="tel"
                 value={effectiveShipping?.phone || ''}
                 onChange={(e) => handleShippingChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                className={INPUT_CLASS}
                 placeholder="Enter phone number"
               />
             </div>
@@ -253,7 +263,7 @@ export default function CustomerDetailsForm({
                 type="text"
                 value={effectiveShipping?.address || ''}
                 onChange={(e) => handleShippingChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                className={INPUT_CLASS}
                 placeholder="Enter street address"
                 required={!sameAsBilling}
               />
@@ -267,7 +277,7 @@ export default function CustomerDetailsForm({
                 type="text"
                 value={effectiveShipping?.suburb || ''}
                 onChange={(e) => handleShippingChange('suburb', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                className={INPUT_CLASS}
                 placeholder="Enter suburb"
                 required={!sameAsBilling}
               />
@@ -282,7 +292,7 @@ export default function CustomerDetailsForm({
                   type="text"
                   value={effectiveShipping?.state || ''}
                   onChange={(e) => handleShippingChange('state', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className={INPUT_CLASS}
                   placeholder="State"
                   required={!sameAsBilling}
                 />
@@ -295,7 +305,7 @@ export default function CustomerDetailsForm({
                   type="text"
                   value={effectiveShipping?.postcode || ''}
                   onChange={(e) => handleShippingChange('postcode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className={INPUT_CLASS}
                   placeholder="Postcode"
                   required={!sameAsBilling}
                 />
@@ -304,7 +314,7 @@ export default function CustomerDetailsForm({
           </>
         )}
 
-        {/* Other Details */}
+        {/* Invoice Details */}
         <div className="md:col-span-2 mt-4">
           <h3 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Invoice Details</h3>
         </div>
@@ -318,7 +328,7 @@ export default function CustomerDetailsForm({
             value={poNumber}
             onChange={(e) => onPONumberChange(e.target.value)}
             placeholder="Leave empty for N/A"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -349,9 +359,13 @@ export default function CustomerDetailsForm({
             max="100"
             step="0.01"
             value={discount === 0 ? '' : discount}
-            onChange={(e) => onDiscountChange(e.target.value === '' ? 0 : Math.min(100, Math.max(0, parseFloat(e.target.value))))}
+            onChange={(e) =>
+              onDiscountChange(
+                e.target.value === '' ? 0 : Math.min(100, Math.max(0, parseFloat(e.target.value)))
+              )
+            }
             placeholder="Enter discount percentage (e.g., 10)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
           />
         </div>
 
@@ -364,7 +378,7 @@ export default function CustomerDetailsForm({
             onChange={(e) => onNotesChange(e.target.value)}
             rows={3}
             placeholder="Additional notes, special instructions, etc."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            className={INPUT_CLASS}
           />
         </div>
       </div>

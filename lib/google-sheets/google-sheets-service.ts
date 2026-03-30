@@ -7,6 +7,7 @@ import { google } from 'googleapis';
 export interface InvoiceSheetRow {
   invoiceNumber: string;
   customerName: string;
+  customerEmail: string;
   invoiceDate: string;
   dueDate: string;
   totalAmount: number;
@@ -18,11 +19,17 @@ export interface InvoiceSheetRow {
   remindersSent: number;
   lastModified: string;
   notes: string;
+  // Columns O-T (added for autocomplete)
+  contactName: string;
+  phone: string;
+  address: string;
+  suburb: string;
+  state: string;
+  postcode: string;
 }
 
 // Initialize Google Sheets API with service account
 const getGoogleSheetsClient = async () => {
-  // Service account credentials should be stored in environment variables
   const credentials = {
     type: 'service_account',
     project_id: process.env.GOOGLE_PROJECT_ID,
@@ -46,6 +53,8 @@ const getGoogleSheetsClient = async () => {
 
 /**
  * Append a new invoice row to Google Sheets
+ * Columns A-N: existing tracking data
+ * Columns O-T: customer detail fields for autocomplete
  */
 export async function appendInvoiceToSheet(
   invoiceData: any,
@@ -53,7 +62,7 @@ export async function appendInvoiceToSheet(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const sheets = await getGoogleSheetsClient();
-    
+
     const now = new Date().toLocaleString('en-AU', {
       year: 'numeric',
       month: '2-digit',
@@ -63,27 +72,34 @@ export async function appendInvoiceToSheet(
       hour12: true
     });
 
-    // Prepare row data matching the column structure
     const row = [
-        invoiceData.invoiceNumber,
-        invoiceData.customer.company || invoiceData.customer.name,
-        invoiceData.customer.email,  // ADD THIS LINE
-        formatDate(invoiceData.invoiceDate),
-        formatDate(invoiceData.dueDate),
-        invoiceData.total,
-        'Unpaid',
-        '',
-        invoiceData.poNumber || '',
-        invoiceData.paymentTerms,
-        now,
-        0,
-        now,
-        invoiceData.notes || ''
-      ];
+      // A-N: existing columns
+      invoiceData.invoiceNumber,                              // A: Invoice Number
+      invoiceData.customer.name,                                  // B: Customer Name (contact name, matches invoice)
+      invoiceData.customer.email,                             // C: Customer Email
+      formatDate(invoiceData.invoiceDate),                    // D: Invoice Date
+      formatDate(invoiceData.dueDate),                        // E: Due Date
+      invoiceData.total,                                      // F: Total Amount
+      'Unpaid',                                               // G: Payment Status
+      '',                                                     // H: Payment Date
+      invoiceData.poNumber || '',                             // I: PO Number
+      invoiceData.paymentTerms,                               // J: Payment Terms
+      now,                                                    // K: Email Sent
+      0,                                                      // L: Reminders Sent
+      now,                                                    // M: Last Modified
+      invoiceData.notes || '',                                // N: Notes
+      // O-T: new customer detail columns
+      invoiceData.customer.name || '',                        // O: Contact Name
+      invoiceData.customer.phone || '',                       // P: Phone
+      invoiceData.customer.address || '',                     // Q: Address
+      invoiceData.customer.suburb || '',                      // R: Suburb
+      invoiceData.customer.state || '',                       // S: State
+      invoiceData.customer.postcode || '',                    // T: Postcode
+    ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:M', // Adjust range based on your sheet name
+      range: 'Sheet1!A:T',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [row],
@@ -94,9 +110,9 @@ export async function appendInvoiceToSheet(
     return { success: true };
   } catch (error: any) {
     console.error('❌ Error appending to Google Sheets:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to write to Google Sheets' 
+    return {
+      success: false,
+      error: error.message || 'Failed to write to Google Sheets'
     };
   }
 }
@@ -112,22 +128,21 @@ export async function updateInvoiceStatus(
   try {
     const sheets = await getGoogleSheetsClient();
 
-    // Find the row with matching invoice number
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:M',
+      range: 'Sheet1!A:N',
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row, index) => 
-      index > 0 && row[0] === invoiceNumber // Skip header row
+    const rowIndex = rows.findIndex((row, index) =>
+      index > 0 && row[0] === invoiceNumber
     );
 
     if (rowIndex === -1) {
       return { success: false, error: 'Invoice not found in sheet' };
     }
 
-    const actualRowNumber = rowIndex + 1; // +1 for 1-based indexing
+    const actualRowNumber = rowIndex + 1;
     const now = new Date().toLocaleString('en-AU', {
       year: 'numeric',
       month: '2-digit',
@@ -137,18 +152,17 @@ export async function updateInvoiceStatus(
       hour12: true
     });
 
-    // Update payment status (column F), payment date (column G), and last modified (column L)
     const updates = [
       {
-        range: `Sheet1!F${actualRowNumber}`,
+        range: `Sheet1!G${actualRowNumber}`,
         values: [[status]]
       },
       {
-        range: `Sheet1!G${actualRowNumber}`,
+        range: `Sheet1!H${actualRowNumber}`,
         values: [[status === 'Paid' ? now : '']]
       },
       {
-        range: `Sheet1!L${actualRowNumber}`,
+        range: `Sheet1!M${actualRowNumber}`,
         values: [[now]]
       }
     ];
@@ -165,9 +179,9 @@ export async function updateInvoiceStatus(
     return { success: true };
   } catch (error: any) {
     console.error('❌ Error updating invoice status:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to update invoice status' 
+    return {
+      success: false,
+      error: error.message || 'Failed to update invoice status'
     };
   }
 }
@@ -182,14 +196,13 @@ export async function incrementReminderCount(
   try {
     const sheets = await getGoogleSheetsClient();
 
-    // Find the row with matching invoice number
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:M',
+      range: 'Sheet1!A:N',
     });
 
     const rows = response.data.values || [];
-    const rowIndex = rows.findIndex((row, index) => 
+    const rowIndex = rows.findIndex((row, index) =>
       index > 0 && row[0] === invoiceNumber
     );
 
@@ -198,7 +211,7 @@ export async function incrementReminderCount(
     }
 
     const actualRowNumber = rowIndex + 1;
-    const currentCount = parseInt(rows[rowIndex][10]) || 0; // Column K (index 10)
+    const currentCount = parseInt(rows[rowIndex][11]) || 0; // Column L (index 11)
     const newCount = currentCount + 1;
 
     const now = new Date().toLocaleString('en-AU', {
@@ -210,18 +223,17 @@ export async function incrementReminderCount(
       hour12: true
     });
 
-    // Update reminder count (column K) and last modified (column L)
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: sheetId,
       requestBody: {
         valueInputOption: 'USER_ENTERED',
         data: [
           {
-            range: `Sheet1!K${actualRowNumber}`,
+            range: `Sheet1!L${actualRowNumber}`,
             values: [[newCount]]
           },
           {
-            range: `Sheet1!L${actualRowNumber}`,
+            range: `Sheet1!M${actualRowNumber}`,
             values: [[now]]
           }
         ],
@@ -232,9 +244,9 @@ export async function incrementReminderCount(
     return { success: true };
   } catch (error: any) {
     console.error('❌ Error incrementing reminder count:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to increment reminder count' 
+    return {
+      success: false,
+      error: error.message || 'Failed to increment reminder count'
     };
   }
 }
@@ -249,10 +261,9 @@ export async function batchUpdateInvoicesAsPaid(
   try {
     const sheets = await getGoogleSheetsClient();
 
-    // Get all rows
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:M',
+      range: 'Sheet1!A:N',
     });
 
     const rows = response.data.values || [];
@@ -268,29 +279,28 @@ export async function batchUpdateInvoicesAsPaid(
     const updates: any[] = [];
     let updatedCount = 0;
 
-    // Find all matching invoices and prepare batch updates
     rows.forEach((row, index) => {
       if (index === 0) return; // Skip header
 
       const invoiceNumber = row[0];
       if (invoiceNumbers.includes(invoiceNumber)) {
         const actualRowNumber = index + 1;
-        
+
         updates.push(
           {
-            range: `Sheet1!F${actualRowNumber}`,
+            range: `Sheet1!G${actualRowNumber}`,
             values: [['Paid']]
           },
           {
-            range: `Sheet1!G${actualRowNumber}`,
+            range: `Sheet1!H${actualRowNumber}`,
             values: [[now]]
           },
           {
-            range: `Sheet1!L${actualRowNumber}`,
+            range: `Sheet1!M${actualRowNumber}`,
             values: [[now]]
           }
         );
-        
+
         updatedCount++;
       }
     });
@@ -309,10 +319,10 @@ export async function batchUpdateInvoicesAsPaid(
     return { success: true, updatedCount };
   } catch (error: any) {
     console.error('❌ Error batch updating invoices:', error);
-    return { 
-      success: false, 
+    return {
+      success: false,
       updatedCount: 0,
-      error: error.message || 'Failed to batch update invoices' 
+      error: error.message || 'Failed to batch update invoices'
     };
   }
 }
