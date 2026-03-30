@@ -39,7 +39,7 @@ const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
 
   return (
     <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2">
-      <ol className="flex flex-wrap items-center gap-1 text-gray-500" style={{ fontSize: "1.5rem" }}>
+      <ol className="flex flex-wrap items-center gap-1 text-gray-500" style={{ fontSize: "1.125rem" }}>
         <li>
           <Link href="/catalogue">
             <a className="hover:text-gray-800 transition-colors duration-150">Products</a>
@@ -131,6 +131,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
       <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-4 sm:gap-8">
         <Head>
           <title>{series.name} | FluidPower Group</title>
+          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
           <meta name="description" content={`Browse ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
           <script
             type="application/ld+json"
@@ -166,6 +167,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
     <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-10 sm:gap-16">
       <Head>
         <title>{series.name} | FluidPower Group</title>
+          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
         <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
 
         {/* BreadcrumbList schema */}
