@@ -1,6 +1,6 @@
 // components/invoice/InvoiceTrackingTable.tsx
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface InvoiceRecord {
@@ -42,15 +42,12 @@ const InvoiceTrackingTable = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
-  
-  const ITEMS_PER_PAGE = 20;
+  const [isOpen, setIsOpen] = useState(true);   // open by default
+  const [jumpInput, setJumpInput] = useState('');
 
-  // Fetch invoices from Google Sheets
-  useEffect(() => {
-    fetchInvoices();
-  }, [sheetId, refreshTrigger]);
+  const ITEMS_PER_PAGE = 10;
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
       const response = await fetch(csvUrl);
@@ -134,7 +131,12 @@ const InvoiceTrackingTable = ({
       setError(`Unable to load invoices. ${err.message}`);
       setLoading(false);
     }
-  };
+  }, [sheetId]);
+
+  // Fetch on mount and when sheetId or refreshTrigger changes
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices, refreshTrigger]);
 
   // Calculate days overdue
   const calculateDaysOverdue = (dueDate: string): number => {
@@ -237,48 +239,93 @@ const InvoiceTrackingTable = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading invoices...</span>
-        </div>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <button
+          onClick={() => setIsOpen(o => !o)}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+        >
+          <div>
+            <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
+            <p className="text-blue-100 text-sm mt-1">Loading invoices...</p>
+          </div>
+          <svg className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="p-8 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading invoices...</span>
+          </div>
+        )}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="flex items-start">
-          <svg className="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div className="ml-3">
-            <h3 className="text-red-800 font-semibold">Error Loading Invoices</h3>
-            <p className="text-red-700 text-sm mt-1">{error}</p>
-            <button
-              onClick={fetchInvoices}
-              className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-            >
-              Retry
-            </button>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <button
+          onClick={() => setIsOpen(o => !o)}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+        >
+          <div>
+            <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
+            <p className="text-blue-100 text-sm mt-1">Error loading invoices</p>
           </div>
-        </div>
+          <svg className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="bg-red-50 border border-red-200 m-4 rounded-lg p-6">
+            <div className="flex items-start">
+              <svg className="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="ml-3">
+                <h3 className="text-red-800 font-semibold">Error Loading Invoices</h3>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <button
+                  onClick={fetchInvoices}
+                  className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          📊 Invoice Tracking & Management
-        </h2>
-        <p className="text-blue-100 text-sm mt-1">
-          {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''} found
-        </p>
-      </div>
+      {/* ── Collapsible Header ── */}
+      <button
+        onClick={() => setIsOpen(o => !o)}
+        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+        aria-expanded={isOpen}
+      >
+        <div>
+          <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
+          <p className="text-blue-100 text-sm mt-1">
+            {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''} found
+          </p>
+        </div>
+        <svg
+          className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
 
       {/* Filters & Search */}
       <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
@@ -469,27 +516,81 @@ const InvoiceTrackingTable = ({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages} ({filteredInvoices.length} total)
-          </div>
-          <div className="flex gap-2">
+        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+
+          {/* Left: summary */}
+          <span className="text-sm text-gray-600">
+            Page <span className="font-semibold text-gray-800">{currentPage}</span> of{' '}
+            <span className="font-semibold text-gray-800">{totalPages}</span>
+            {' '}·{' '}{filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''}
+          </span>
+
+          {/* Centre: prev / page numbers / next */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
-              ← Previous
+              ← Prev
             </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+              return start + i;
+            }).map(p => (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition ${
+                  p === currentPage
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               Next →
             </button>
           </div>
+
+          {/* Right: jump to page */}
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              const n = parseInt(jumpInput);
+              if (!isNaN(n) && n >= 1 && n <= totalPages) {
+                setCurrentPage(n);
+                setJumpInput('');
+              }
+            }}
+            className="flex items-center gap-1.5"
+          >
+            <label className="text-xs text-gray-500 whitespace-nowrap">Go to page</label>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={jumpInput}
+              onChange={e => setJumpInput(e.target.value)}
+              placeholder={String(totalPages)}
+              className="w-16 px-2 py-1.5 text-xs text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              type="submit"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            >
+              Go
+            </button>
+          </form>
         </div>
+      )}
+        </>
       )}
     </div>
   );
