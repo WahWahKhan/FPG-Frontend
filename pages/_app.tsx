@@ -12,6 +12,7 @@ import Head from "next/head";
 import "styles/globals.css";
 import axios from "axios";
 import { Category } from "types/products";
+import Script from 'next/script';
 
 // Create a new component that has access to CartContext
 function AppContent({ Component, pageProps, router }: AppProps) {
@@ -60,6 +61,20 @@ function AppContent({ Component, pageProps, router }: AppProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      
+      <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-1868GVBDGX"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-1868GVBDGX');
+          `}
+        </Script>
+        
       <Header categories={categories} />
       <main className="flex-grow">
         <Head>
