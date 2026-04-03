@@ -4,6 +4,11 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 
+// ─── Adjust these to change truncation behaviour ───────────────────────────
+const DESKTOP_LINE_CLAMP = 4; // lines shown in left column before Read more appears
+const MOBILE_LINE_CLAMP = 4;  // lines shown on mobile before Read more appears
+// ───────────────────────────────────────────────────────────────────────────
+
 interface IProductSliderProps {
   title: string;
   description: string;
@@ -14,14 +19,13 @@ interface IProductSliderProps {
   };
 }
 
-// NEW: Memoized HTML stripping function
+// Memoized HTML stripping function
 const createHtmlStripper = () => {
   const cache = new Map<string, string>();
   
   return (html: string): string => {
     if (!html) return '';
     
-    // Check cache first
     if (cache.has(html)) {
       return cache.get(html)!;
     }
@@ -34,13 +38,12 @@ const createHtmlStripper = () => {
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
+      .replace(/&mdash;/g, '—')
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Cache the result
     cache.set(html, cleaned);
     
-    // Prevent memory leaks - limit cache size
     if (cache.size > 1000) {
       const firstKey = cache.keys().next().value;
       cache.delete(firstKey);
@@ -50,7 +53,107 @@ const createHtmlStripper = () => {
   };
 };
 
-// NEW: Product Card Component (removed React.memo for now)
+// ─── Desktop: truncated description with click popover ────────────────────
+const DesktopDescription = ({ text }: { text: string }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+
+
+  if (!text) return null;
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Truncated text */}
+      <div
+        className="font-light text-sm text-gray-700"
+        style={{
+          display: '-webkit-box',
+          WebkitLineClamp: DESKTOP_LINE_CLAMP,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {text}
+      </div>
+
+      {/* Read more link */}
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-1 text-sm font-bold text-gray-900 underline underline-offset-2 bg-transparent border-none p-0 cursor-pointer focus:outline-none" style={{ WebkitTapHighlightColor: "transparent", outline: "none" }}
+      >
+        Read more
+      </button>
+
+      {/* Popover — overlays on top, no layout shift */}
+      {open && (
+        <div className="absolute z-50 top-0 left-0 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-sm text-gray-700 font-light leading-relaxed">
+          {/* Scrollable content area */}
+          <div
+            ref={scrollRef}
+            style={{ maxHeight: '140px', overflowY: 'auto' }}
+            className="pr-1"
+          >
+            <p>{text}</p>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            className="mt-3 text-sm font-bold text-gray-900 underline underline-offset-2 bg-transparent border-none p-0 cursor-pointer focus:outline-none" style={{ WebkitTapHighlightColor: "transparent", outline: "none" }}
+          >
+            Read less
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Mobile: truncated description with Read more / Read less ─────────────
+const MobileDescription = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!text) return null;
+
+  return (
+    <div className="text-sm text-gray-700 font-light">
+      <div
+        style={
+          !expanded
+            ? {
+                display: '-webkit-box',
+                WebkitLineClamp: MOBILE_LINE_CLAMP,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }
+            : undefined
+        }
+      >
+        {text}
+      </div>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="mt-1 text-sm font-bold text-gray-900 underline underline-offset-2 bg-transparent border-none p-0 cursor-pointer focus:outline-none" style={{ WebkitTapHighlightColor: "transparent", outline: "none" }}
+      >
+        {expanded ? 'Read less' : 'Read more'}
+      </button>
+    </div>
+  );
+};
+
+// ─── Product Card ──────────────────────────────────────────────────────────
 const ProductCard = ({ 
   product, 
   index, 
@@ -90,14 +193,12 @@ const ProductCard = ({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
-        {/* NEW: Lazy Image Component */}
         <LazyImage
           src={product.image || "/product-4.png"}
           alt="product"
           className="w-full h-36 mb-4 rounded-lg"
         />
         
-        {/* Text content */}
         <div className="flex-1 flex flex-col justify-center text-center">
           <h3 className={`font-bold transition-all duration-500 ${
             isHovered ? 'text-lg' : 'text-base'
@@ -164,7 +265,7 @@ const ProductCard = ({
   );
 };
 
-// NEW: Lazy Image Component (removed React.memo for now)
+// ─── Lazy Image ────────────────────────────────────────────────────────────
 const LazyImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
@@ -180,7 +281,7 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
       },
       { 
         threshold: 0.1,
-        rootMargin: '50px' // Load images 50px before they come into view
+        rootMargin: '50px'
       }
     );
 
@@ -214,6 +315,7 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
   );
 };
 
+// ─── Main ProductSlider ────────────────────────────────────────────────────
 const ProductSlider = ({
   title,
   description,
@@ -224,10 +326,8 @@ const ProductSlider = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // NEW: Create memoized HTML stripper
   const stripHtml = useMemo(() => createHtmlStripper(), []);
 
-  // NEW: Process products once and memoize
   const processedProducts = useMemo(() => {
     return products
       .filter(product => product.slug !== 'hydraulic-hoses-custom-hose-assembly')
@@ -239,16 +339,13 @@ const ProductSlider = ({
       }));
   }, [products, stripHtml]);
 
-  // NEW: Virtual scrolling state
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 6 });
-  const BUFFER_SIZE = 3; // Render 3 extra items on each side
+  const BUFFER_SIZE = 3;
 
-  // Memoized scroll to tile function
   const scrollToTile = useCallback((index: number) => {
     if (scrollRef.current) {
       const tileWidth = 280;
       setCurrentIndex(index);
-      
       scrollRef.current.scrollTo({
         left: index * tileWidth,
         behavior: 'smooth'
@@ -256,7 +353,6 @@ const ProductSlider = ({
     }
   }, []);
 
-  // NEW: Update visible range based on scroll
   const updateVisibleRange = useCallback(() => {
     if (scrollRef.current) {
       const scrollLeft = scrollRef.current.scrollLeft;
@@ -273,7 +369,6 @@ const ProductSlider = ({
     }
   }, [products.length]);
 
-  // Optimized scroll handling
   useEffect(() => {
     let scrollTimeout: NodeJS.Timeout;
     
@@ -299,7 +394,6 @@ const ProductSlider = ({
             setCurrentIndex(boundedIndex);
           }
           
-          // Update visible range
           updateVisibleRange();
         }
       }, 100);
@@ -308,8 +402,6 @@ const ProductSlider = ({
     const scrollElement = scrollRef.current;
     if (scrollElement) {
       scrollElement.addEventListener('scroll', handleScroll, { passive: true });
-      
-      // Initial visible range calculation
       updateVisibleRange();
       
       return () => {
@@ -319,12 +411,10 @@ const ProductSlider = ({
     }
   }, [currentIndex, products.length, updateVisibleRange]);
 
-  // NEW: Get visible products
   const visibleProducts = useMemo(() => {
     return processedProducts.slice(visibleRange.start, visibleRange.end);
   }, [processedProducts, visibleRange]);
 
-  // Memoized hover handlers
   const handleMouseEnter = useCallback((index: number) => {
     setHoveredIndex(visibleRange.start + index);
   }, [visibleRange.start]);
@@ -333,12 +423,14 @@ const ProductSlider = ({
     setHoveredIndex(null);
   }, []);
 
+  const cleanDescription = stripHtml(description);
+
   return (
     <div className="w-full flex flex-col gap-8 lg:pl-16">
-      {/* Mobile title */}
+      {/* Mobile title + description */}
       <motion.div className="flex lg:hidden flex-col shrink-0 w-full justify-center gap-4 px-4">
         <h2 className="text-3xl font-semibold">{stripHtml(title)}</h2>
-        <div>{stripHtml(description)}</div>
+        <MobileDescription text={cleanDescription} />
       </motion.div>
 
       {/* Desktop layout */}
@@ -355,13 +447,12 @@ const ProductSlider = ({
             className="flex gap-4 pb-4 pl-1 pr-12 pt-16"
             style={{ width: 'max-content' }}
           >
-            {/* Desktop title */}
+            {/* Desktop title + description */}
             <div className="hidden lg:flex flex-col shrink-0 w-56 h-72 justify-center py-4 gap-4 bg-white">
               <h2 className="text-3xl font-semibold">{stripHtml(title)}</h2>
-              <div className="font-light">{stripHtml(description)}</div>
+              <DesktopDescription text={cleanDescription} />
             </div>
 
-            {/* NEW: Virtual scrolling - only render visible items */}
             {/* Spacer for items before visible range */}
             {visibleRange.start > 0 && (
               <div style={{ width: visibleRange.start * 280, flexShrink: 0 }} />
