@@ -15,14 +15,14 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/contact', priority: '0.7', changefreq: 'monthly' },
 ];
 
-// Now carries slug alongside id and depth
+// Carries slug and depth — id removed after UUID sitemap entries were retired
 const flattenCategories = (
   categories: any[],
   depth = 0
-): { id: string; slug: string; depth: number }[] => {
-  const result: { id: string; slug: string; depth: number }[] = [];
+): { slug: string; depth: number }[] => {
+  const result: { slug: string; depth: number }[] = [];
   for (const cat of categories) {
-    result.push({ id: cat.id, slug: cat.slug, depth });
+    result.push({ slug: cat.slug, depth });
     if (cat.subCategories && cat.subCategories.length > 0) {
       result.push(...flattenCategories(cat.subCategories, depth + 1));
     }
@@ -51,27 +51,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // Depth 1+ = real navigable pages.
     const dynamicXml = allCategories
       .filter(({ depth }) => depth > 0)
-      .flatMap(({ id, slug, depth }) => {
+      .map(({ slug, depth }) => {
         const priority = depth === 1 ? '0.8' : '0.7';
-
-        // Slug URL — the new canonical clean path (higher priority)
-        const slugEntry = urlEntry(
+        return urlEntry(
           `https://www.fluidpowergroup.com.au/products/${slug}`,
           priority,
           'monthly'
         );
-
-        // UUID URL — kept during transition so Google can follow existing
-        // indexed links and 301 redirect to the slug URL.
-        // Once Google Search Console confirms slug URLs are indexed and
-        // UUID URLs no longer appear in coverage, remove the uuidEntry lines.
-        const uuidEntry = urlEntry(
-          `https://www.fluidpowergroup.com.au/products/${id}`,
-          '0.5', // Lower priority signals to Google that slug is preferred
-          'monthly'
-        );
-
-        return [slugEntry, uuidEntry];
       })
       .join('');
 

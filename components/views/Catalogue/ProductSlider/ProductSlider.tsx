@@ -203,55 +203,9 @@ const ProductCard = ({
           <h3 className={`font-bold transition-all duration-500 ${
             isHovered ? 'text-lg' : 'text-base'
           }`}>
-            {isHovered && product.shortTitle ? (
-              <div>
-                <div>{stripHtml(product.shortTitle)}</div>
-                <div className="text-sm font-normal text-gray-700 mt-1">
-                  {(() => {
-                    let combinedText = '';
-                    let additionalDetail = '';
-                    
-                    if (product.subtitle) {
-                      const cleanSubtitle = stripHtml(product.subtitle).replace(/[()]/g, '');
-                      
-                      if (product.description) {
-                        let desc = stripHtml(product.description);
-                        desc = desc.replace(/.*\([A-Z]+\)\s*/g, '');
-                        desc = desc.replace(/^[A-Z]+\s+/g, '');
-                        desc = desc.trim();
-                        
-                        if (product.shortTitle && stripHtml(product.shortTitle).includes('Wire Braided Hose')) {
-                          const finishMatch = desc.match(/(Two Wire Wrap and Smooth Finish|Wire Wrap and Smooth Finish|Smooth Finish)/i);
-                          if (finishMatch) {
-                            additionalDetail = finishMatch[0];
-                            desc = desc.replace(finishMatch[0], '').replace(/\s+/g, ' ').trim();
-                          }
-                        }
-                        
-                        combinedText = `${cleanSubtitle} ${desc}`;
-                      } else {
-                        combinedText = cleanSubtitle;
-                      }
-                    } else if (product.description) {
-                      combinedText = stripHtml(product.description);
-                    }
-                    
-                    return (
-                      <div>
-                        <div>{combinedText}</div>
-                        {additionalDetail && (
-                          <div className="text-xs text-gray-600 mt-1">{additionalDetail}</div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            ) : (
-              <div className="truncate">
-                {stripHtml(product.title.replace(/ORing/g, 'O-Ring'))}
-              </div>
-            )}
+            <div className="truncate">
+              {stripHtml((product.shortTitle || product.title).replace(/ORing/g, 'O-Ring'))}
+            </div>
           </h3>
           
           {product.price && (
