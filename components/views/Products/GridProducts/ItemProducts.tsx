@@ -36,7 +36,7 @@ const ItemProducts = ({ item, showDescription = false }: { item: any, showDescri
   }
 
   return (
-    <Anchor href={`/products/${item.id}`}>
+    <Anchor href={`/products/${item.slug}`}>
       <motion.div 
         className="flex flex-col w-full max-w-sm mx-auto cursor-pointer border-slate-800 border-[1px] p-4 h-full shadow-xl rounded-2xl"
         initial={{ y: 0 }}
