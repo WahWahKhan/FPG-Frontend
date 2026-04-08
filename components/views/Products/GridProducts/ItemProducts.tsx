@@ -3,11 +3,21 @@ import Anchor from "@/modules/Anchor";
 import { motion } from "framer-motion";
 import OptimizedImage from "../../../../utils/OptimizedImage";
 
+// ─── Adjust this to change the font size of tile descriptions ─────────────
+const TILE_DESCRIPTION_FONT_SIZE = '0.9rem'; // equivalent to text-xs, try '0.8rem', '0.875rem' (text-sm), etc.
+// ───────────────────────────────────────────────────────────────────────────
+
 const ItemProducts = ({ item, showDescription = false }: { item: any, showDescription?: boolean }) => {
   const getDescriptions = (description: string) => {
     const text = description.split("<br>")[0];
     const stripped = text.replace(/(<([^>]+)>)/ig, "").replace(/&nbsp;/g, "");
-    return stripped + "...";
+    return stripped
+      .replace(/&deg;/g, '°')
+      .replace(/&amp;/g, '&')
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"');
   }
 
   if (!item) {
@@ -71,7 +81,7 @@ const ItemProducts = ({ item, showDescription = false }: { item: any, showDescri
         
         {showDescription && (
           <div className="text-center">
-            <span className="text-xs font-semibold text-slate-700">
+            <span className="font-semibold text-slate-700" style={{ textAlign: 'justify', textAlignLast: 'center', display: 'block', fontSize: TILE_DESCRIPTION_FONT_SIZE }}>
               {item.description && getDescriptions(item.description)}
             </span>
           </div>

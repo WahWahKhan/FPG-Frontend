@@ -16,6 +16,10 @@ import {
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+
+// ─── Adjust this to change how many lines show before "Read more" ──────────
+const CATEGORY_DESCRIPTION_LINE_CLAMP = 3;
+// ───────────────────────────────────────────────────────────────────────────
 import Link from 'next/link';
 import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
@@ -93,6 +97,39 @@ const buildBreadcrumbSchema = (crumbs: IBreadcrumb[]) => ({
 });
 
 // ---------------------------------------------------------------------------
+// CategoryDescription — clamped with Read more / Read less (desktop only)
+// ---------------------------------------------------------------------------
+const CategoryDescription = ({ description }: { description: string }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-2 flex flex-col items-center">
+      <div
+        className="text-gray-600 text-center w-full"
+        style={{
+          maxWidth: '680px',
+          textAlign: 'justify',
+          ...(!expanded ? {
+            display: '-webkit-box',
+            WebkitLineClamp: CATEGORY_DESCRIPTION_LINE_CLAMP,
+            WebkitBoxOrient: 'vertical' as const,
+            overflow: 'hidden',
+          } : {})
+        }}
+        dangerouslySetInnerHTML={{ __html: description }}
+      />
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="mt-1 text-sm font-bold text-gray-900 underline underline-offset-2 bg-transparent border-none p-0 cursor-pointer focus:outline-none"
+        style={{ WebkitTapHighlightColor: 'transparent', outline: 'none' }}
+      >
+        {expanded ? 'Read less' : 'Read more'}
+      </button>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }: ProductPageProps) => {
@@ -145,15 +182,12 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold">{series?.name}</h1>
             {series?.description && (
-              <div
-                className="text-gray-600 mt-2"
-                dangerouslySetInnerHTML={{ __html: series.description }}
-              />
+              <CategoryDescription description={series.description} />
             )}
           </div>
           <GridProducts
             seriesList={initialSubcategories}
-            showDescription={true}
+            showDescription={series.slug !== 'jic-adapters'}
           />
         </div>
       </div>

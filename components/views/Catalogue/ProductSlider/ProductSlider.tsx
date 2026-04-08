@@ -46,7 +46,7 @@ const createHtmlStripper = () => {
     
     if (cache.size > 1000) {
       const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
+      if (firstKey !== undefined) cache.delete(firstKey);
     }
     
     return cleaned;
