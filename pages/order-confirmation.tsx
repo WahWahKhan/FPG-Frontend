@@ -70,7 +70,7 @@ interface Function360Order {
   pdfDataUrl?: string;
   function360OrderNumber?: string;
   cartId?: number;
-  configuration?: any; // Function360Config type
+  configuration?: any;
 }
 
 interface OrderData {
@@ -93,11 +93,15 @@ export default function OrderConfirmation() {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [testingMode, setTestingMode] = useState(false);
-  
+
   // PDF Modal state
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDFUrl, setCurrentPDFUrl] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
+
+  // ✅ UPDATED: Direct link to Google review compose screen
+  const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=ChIJfy1tJfHbJmsRpwIYaODkxxo';
 
   // Detect mobile on mount
   useEffect(() => {
@@ -109,143 +113,114 @@ export default function OrderConfirmation() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // ✅ UPDATED: Delay increased to 5000ms so customers can review their order first
+  useEffect(() => {
+    if (!orderData) return;
+    const timer = window.setTimeout(() => setShowReviewPopup(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [orderData]);
+
   // CRITICAL: Prevent cart-based redirects on this page
   useEffect(() => {
-    // Set a flag to tell other components not to redirect
     sessionStorage.setItem('viewingOrderConfirmation', 'true');
     console.log('Order confirmation page loaded - redirect protection enabled');
-    
+
     return () => {
-      // Clean up when leaving the page
       sessionStorage.removeItem('viewingOrderConfirmation');
-      localStorage.removeItem('lastOrder'); // ✅ CRITICAL FIX: Clear old order to prevent redirect loops
+      localStorage.removeItem('lastOrder');
       console.log('Leaving order confirmation page - cleared lastOrder');
     };
   }, []);
 
-  // Load order data from localStorage
   // ============================================================================
-// 🆕 FIXED: Load order data by merging metadata + PDFs from cart
-// ============================================================================
-
-useEffect(() => {
-  const loadOrderData = () => {
-    try {
-      // Clear the order completing flag
-      sessionStorage.removeItem('orderCompleting');
-      
-      // ✅ STEP 1: Read lightweight order metadata
-      const storedOrder = localStorage.getItem('lastOrder');
-      if (!storedOrder) {
-        console.warn('⚠️ No order metadata found');
-        setIsLoading(false);
-        return;
-      }
-      
-      const parsedOrder: OrderData = JSON.parse(storedOrder);
-      console.log('📋 Order metadata loaded:', parsedOrder.orderNumber);
-      
-      // ✅ STEP 2: Read shopping cart with PDFs
-      const storedCart = localStorage.getItem('shopping-cart');
-
-      if (storedCart) {
-        // 🔧 CRITICAL FIX: Parse the cart object first
-        const cartObject = JSON.parse(storedCart);
-        
-        // 🔧 Extract items array from cart object
-        const cartItems: IItemCart[] = cartObject.items || [];
-        
-        console.log('📦 Shopping cart loaded with', cartItems.length, 'items');
-        
-        // ✅ STEP 3a: Merge PDFs from cart into PWA orders
-        if (parsedOrder.pwaOrders && parsedOrder.pwaOrders.length > 0) {
-          parsedOrder.pwaOrders = parsedOrder.pwaOrders.map((order: PWAOrder) => {
-            // Find matching cart item by cartId or id
-            const cartItem = cartItems.find((item: IItemCart) => 
-              item.cartId === order.cartId || item.id === order.id
-            );
-            
-            if (cartItem && cartItem.pdfDataUrl) {
-              console.log('✅ PDF found for PWA:', order.name);
-              return {
-                ...order,
-                pdfDataUrl: cartItem.pdfDataUrl // Get PDF from original cart
-              };
-            }
-            
-            console.warn('⚠️ No PDF found for PWA:', order.name);
-            return order;
-          });
-        }
-        
-        // ✅ STEP 3b: Merge PDFs from cart into Trac360 orders
-        if (parsedOrder.trac360Orders && parsedOrder.trac360Orders.length > 0) {
-          parsedOrder.trac360Orders = parsedOrder.trac360Orders.map((order: Trac360Order) => {
-            // Find matching cart item by cartId or id
-            const cartItem = cartItems.find((item: IItemCart) => 
-              item.cartId === order.cartId || item.id === order.id
-            );
-            
-            if (cartItem && cartItem.pdfDataUrl) {
-              console.log('✅ PDF found for Trac360:', order.name);
-              return {
-                ...order,
-                pdfDataUrl: cartItem.pdfDataUrl // Get PDF from original cart
-              };
-            }
-            
-            console.warn('⚠️ No PDF found for Trac360:', order.name);
-            return order;
-          });
-        }
-
-        // ✅ STEP 3c: Merge PDFs from cart into Function360 orders
-        if (parsedOrder.function360Orders && parsedOrder.function360Orders.length > 0) {
-          parsedOrder.function360Orders = parsedOrder.function360Orders.map((order: Function360Order) => {
-            // Find matching cart item by cartId or id
-            const cartItem = cartItems.find((item: IItemCart) => 
-              item.cartId === order.cartId || item.id === order.id
-            );
-            
-            if (cartItem && cartItem.pdfDataUrl) {
-              console.log('✅ PDF found for Function360:', order.name);
-              return {
-                ...order,
-                pdfDataUrl: cartItem.pdfDataUrl // Get PDF from original cart
-              };
-            }
-            
-            console.warn('⚠️ No PDF found for Function360:', order.name);
-            return order;
-          });
-        }
-      }
-      
-      // ✅ STEP 4: Set the merged data
-      setOrderData(parsedOrder);
-      
-      // ✅ Use CURRENT environment setting, not saved one
-      const currentTestingMode = process.env.NEXT_PUBLIC_TESTING_MODE === 'true';
-      setTestingMode(currentTestingMode);
-      
-      console.log('✅ Order data merged and ready for display');
-      
-    } catch (error) {
-      console.error('❌ Error loading order data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  loadOrderData();
-}, []);
-
+  // Load order data by merging metadata + PDFs from cart
   // ============================================================================
-// 🆕 CLEANUP: Remove localStorage when leaving order-confirmation page
-// ============================================================================
-
   useEffect(() => {
-    // Cleanup function runs when component unmounts (user navigates away)
+    const loadOrderData = () => {
+      try {
+        sessionStorage.removeItem('orderCompleting');
+
+        const storedOrder = localStorage.getItem('lastOrder');
+        if (!storedOrder) {
+          console.warn('⚠️ No order metadata found');
+          setIsLoading(false);
+          return;
+        }
+
+        const parsedOrder: OrderData = JSON.parse(storedOrder);
+        console.log('📋 Order metadata loaded:', parsedOrder.orderNumber);
+
+        const storedCart = localStorage.getItem('shopping-cart');
+
+        if (storedCart) {
+          const cartObject = JSON.parse(storedCart);
+          const cartItems: IItemCart[] = cartObject.items || [];
+
+          console.log('📦 Shopping cart loaded with', cartItems.length, 'items');
+
+          if (parsedOrder.pwaOrders && parsedOrder.pwaOrders.length > 0) {
+            parsedOrder.pwaOrders = parsedOrder.pwaOrders.map((order: PWAOrder) => {
+              const cartItem = cartItems.find((item: IItemCart) =>
+                item.cartId === order.cartId || item.id === order.id
+              );
+              if (cartItem && cartItem.pdfDataUrl) {
+                console.log('✅ PDF found for PWA:', order.name);
+                return { ...order, pdfDataUrl: cartItem.pdfDataUrl };
+              }
+              console.warn('⚠️ No PDF found for PWA:', order.name);
+              return order;
+            });
+          }
+
+          if (parsedOrder.trac360Orders && parsedOrder.trac360Orders.length > 0) {
+            parsedOrder.trac360Orders = parsedOrder.trac360Orders.map((order: Trac360Order) => {
+              const cartItem = cartItems.find((item: IItemCart) =>
+                item.cartId === order.cartId || item.id === order.id
+              );
+              if (cartItem && cartItem.pdfDataUrl) {
+                console.log('✅ PDF found for Trac360:', order.name);
+                return { ...order, pdfDataUrl: cartItem.pdfDataUrl };
+              }
+              console.warn('⚠️ No PDF found for Trac360:', order.name);
+              return order;
+            });
+          }
+
+          if (parsedOrder.function360Orders && parsedOrder.function360Orders.length > 0) {
+            parsedOrder.function360Orders = parsedOrder.function360Orders.map((order: Function360Order) => {
+              const cartItem = cartItems.find((item: IItemCart) =>
+                item.cartId === order.cartId || item.id === order.id
+              );
+              if (cartItem && cartItem.pdfDataUrl) {
+                console.log('✅ PDF found for Function360:', order.name);
+                return { ...order, pdfDataUrl: cartItem.pdfDataUrl };
+              }
+              console.warn('⚠️ No PDF found for Function360:', order.name);
+              return order;
+            });
+          }
+        }
+
+        setOrderData(parsedOrder);
+
+        const currentTestingMode = process.env.NEXT_PUBLIC_TESTING_MODE === 'true';
+        setTestingMode(currentTestingMode);
+
+        console.log('✅ Order data merged and ready for display');
+      } catch (error) {
+        console.error('❌ Error loading order data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrderData();
+  }, []);
+
+  // ============================================================================
+  // Cleanup localStorage when leaving order-confirmation page
+  // ============================================================================
+  useEffect(() => {
     return () => {
       console.log('🧹 Cleaning up: User leaving order-confirmation page');
       localStorage.removeItem('shopping-cart');
@@ -256,9 +231,8 @@ useEffect(() => {
   }, []);
 
   // ============================================================================
-  // 🆕 CLEANUP: Also handle browser/tab close
+  // Also handle browser/tab close
   // ============================================================================
-
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log('🧹 Cleaning up: Browser/tab closing');
@@ -266,12 +240,9 @@ useEffect(() => {
       localStorage.removeItem('lastOrder');
       localStorage.removeItem('cart-timestamp');
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Format currency
@@ -289,7 +260,7 @@ useEffect(() => {
     });
   };
 
-  // Handle PDF viewing - Updated to support modal on desktop and new window on mobile
+  // Handle PDF viewing
   const handleViewPDF = (pdfDataUrl: string | undefined, orderNumber: string | undefined) => {
     if (!pdfDataUrl) {
       alert('PDF not available');
@@ -297,7 +268,6 @@ useEffect(() => {
     }
 
     if (isMobile) {
-      // Open in new window for mobile
       try {
         const newWindow = window.open('', '_blank');
         if (newWindow) {
@@ -323,7 +293,6 @@ useEffect(() => {
         alert('Unable to open PDF. Please try again.');
       }
     } else {
-      // Open modal for desktop
       setCurrentPDFUrl(pdfDataUrl);
       setShowPDFModal(true);
     }
@@ -412,21 +381,21 @@ useEffect(() => {
         <div className="max-w-4xl mx-auto">
           {/* Main Card */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            
+
             {/* Header Section */}
             <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-8 sm:px-10 sm:py-12 text-center">
               <div className="mx-auto mb-6 flex justify-center">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
-                  <svg 
-                    className="w-12 h-12 text-green-500" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-12 h-12 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={3} 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
@@ -465,7 +434,7 @@ useEffect(() => {
             {/* Products Section */}
             <div className="px-6 py-8 sm:px-10 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Items</h2>
-              
+
               {/* Website Products */}
               {orderData.websiteProducts && orderData.websiteProducts.length > 0 && (
                 <div className="space-y-4 mb-6">
@@ -500,7 +469,7 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* PWA Orders - Updated with removed badges, removed order IDs, and new button styling */}
+              {/* PWA Orders */}
               {orderData.pwaOrders && orderData.pwaOrders.length > 0 && (
                 <div className="space-y-4">
                   {orderData.pwaOrders.map((pwaOrder, index) => (
@@ -638,6 +607,7 @@ useEffect(() => {
                   ))}
                 </div>
               )}
+
               {/* Function 360 Orders */}
               {orderData.function360Orders && orderData.function360Orders.length > 0 && (
                 <div className="space-y-4 mt-6">
@@ -667,8 +637,8 @@ useEffect(() => {
                              'Electric 3rd & 4th Function'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Components: {function360Order.configuration?.selectedComponents 
-                              ? Object.values(function360Order.configuration.selectedComponents).filter(Boolean).length 
+                            Components: {function360Order.configuration?.selectedComponents
+                              ? Object.values(function360Order.configuration.selectedComponents).filter(Boolean).length
                               : 0}
                           </p>
                         </div>
@@ -718,7 +688,7 @@ useEffect(() => {
                   ))}
                 </div>
               )}
-              </div>
+            </div>
 
             {/* Order Summary Section */}
             <div className="px-6 py-8 sm:px-10 bg-gray-50 border-b border-gray-200">
@@ -777,14 +747,14 @@ useEffect(() => {
                 <div className="flex items-start">
                   <span className="text-yellow-500 font-bold mr-3 text-lg">3.</span>
                   <p>Questions? Contact us at{' '}
-                    <a 
-                      href={`mailto:${testingMode 
+                    <a
+                      href={`mailto:${testingMode
                         ? (process.env.NEXT_PUBLIC_BUSINESS_EMAIL_TEST || 'info@agcomponents.com.au')
                         : (process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'info@agcomponents.com.au')
                       }`}
                       className="text-blue-600 hover:underline font-semibold"
                     >
-                      {testingMode 
+                      {testingMode
                         ? (process.env.NEXT_PUBLIC_BUSINESS_EMAIL_TEST || 'info@agcomponents.com.au')
                         : (process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'info@agcomponents.com.au')
                       }
@@ -798,12 +768,10 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* CTA Button - Updated with glass morphism design from ItemCart */}
+            {/* CTA Buttons */}
             <div className="px-6 py-8 sm:px-10 text-center">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-
-                 {/* Suite360 */}
-                 <button
+                <button
                   onClick={() => router.push('/suite360')}
                   className="cursor-pointer transition-all duration-300 inline-block font-bold text-lg"
                   style={{
@@ -828,7 +796,6 @@ useEffect(() => {
                   Suite360
                 </button>
 
-                {/* Browse button */}
                 <button
                   onClick={() => router.push('/catalogue')}
                   className="cursor-pointer transition-all duration-300 inline-block font-bold text-lg"
@@ -853,11 +820,8 @@ useEffect(() => {
                 >
                   Browse Products
                 </button>
-
-               
               </div>
             </div>
-
           </div>
 
           {/* Footer */}
@@ -865,14 +829,14 @@ useEffect(() => {
             <div className="mb-4">
               <p className="font-semibold text-gray-900 mb-2">FluidPower Group</p>
               <p>
-                <a 
-                  href={`mailto:${testingMode 
+                <a
+                  href={`mailto:${testingMode
                     ? (process.env.NEXT_PUBLIC_BUSINESS_EMAIL_TEST || 'info@agcomponents.com.au')
                     : (process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'info@agcomponents.com.au')
                   }`}
                   className="text-blue-600 hover:underline"
                 >
-                  {testingMode 
+                  {testingMode
                     ? (process.env.NEXT_PUBLIC_BUSINESS_EMAIL_TEST || 'info@agcomponents.com.au')
                     : (process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'info@agcomponents.com.au')
                   }
@@ -883,7 +847,7 @@ useEffect(() => {
                 </a>
               </p>
               <p>
-                <a 
+                <a
                   href="https://fluidpowergroup.com.au"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -900,9 +864,79 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* PDF Modal - Only for desktop - Same close button properties as checkout */}
+      {/* ✅ UPDATED: Google Review Modal - centered overlay, much more prominent */}
+      {showReviewPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.55)' }}
+          onClick={() => setShowReviewPopup(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white rounded-3xl p-8 text-center"
+            style={{ boxShadow: '0 24px 60px rgba(0,0,0,0.2)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowReviewPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition text-2xl leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {/* Google G logo */}
+            <div className="flex justify-center mb-4">
+              <svg width="48" height="48" viewBox="0 0 48 48">
+                <path fill="#4285F4" d="M44.5 20H24v8h11.7C34.2 33.6 29.7 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 2.9l6-6C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.2-4z"/>
+                <path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.8 1.1 7.9 2.9l6-6C34.5 6.1 29.5 4 24 4c-7.7 0-14.4 4.4-17.7 10.7z"/>
+                <path fill="#FBBC05" d="M24 44c5.4 0 10.3-1.9 14.1-5l-6.5-5.3C29.8 35.5 27 36.5 24 36.5c-5.7 0-10.5-3.8-12.2-9l-6.6 5.1C8.9 39.8 15.9 44 24 44z"/>
+                <path fill="#EA4335" d="M44.5 20H24v8h11.7c-.8 2.3-2.3 4.3-4.3 5.7l6.5 5.3C42 35.3 44.5 30 44.5 24c0-1.3-.1-2.7-.2-4z"/>
+              </svg>
+            </div>
+
+            {/* Stars */}
+            <div className="flex justify-center gap-1 mb-4">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <svg key={s} width="32" height="32" viewBox="0 0 24 24" fill="#FACC15">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              ))}
+            </div>
+
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Enjoyed your ordering experience?</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Help other customers find us by leaving a quick Google review. It takes less than 30 seconds!
+            </p>
+
+            <a
+              href={GOOGLE_REVIEW_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-3 rounded-full font-bold text-black text-base transition-all duration-200 mb-3"
+              style={{
+                background: "radial-gradient(ellipse at center, rgba(250,204,21,0.9) 20%, rgba(250,204,21,0.7) 60%, rgba(255,215,0,0.8) 100%)",
+                border: "1px solid rgba(255,215,0,0.9)",
+                boxShadow: "0 10px 30px rgba(250,204,21,0.4)",
+                textDecoration: "none"
+              }}
+            >
+              Leave a Google Review
+            </a>
+
+            <button
+              onClick={() => setShowReviewPopup(false)}
+              className="block w-full py-2 rounded-full text-sm text-gray-400 hover:text-gray-600 transition bg-transparent border-0 cursor-pointer"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Modal - Only for desktop */}
       {!isMobile && showPDFModal && currentPDFUrl && typeof document !== 'undefined' && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[9999] flex items-center justify-center"
           style={{
             background: "rgba(0, 0, 0, 0.7)",
@@ -910,11 +944,11 @@ useEffect(() => {
           }}
           onClick={() => setShowPDFModal(false)}
         >
-          <div 
+          <div
             className="relative w-11/12 h-5/6 bg-white rounded-lg shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button - Same properties as checkout code */}
+            {/* Close button */}
             <button
               onClick={() => setShowPDFModal(false)}
               className="absolute top-4 right-4 z-10 transition-all duration-200 flex items-center justify-center"
@@ -940,15 +974,13 @@ useEffect(() => {
                 <FiX style={{ width: "100%", height: "100%", minWidth: "20px", minHeight: "20px" }} />
               </div>
             </button>
-            
-            {/* PDF object for better mobile support */}
+
             <object
               data={currentPDFUrl}
               type="application/pdf"
               className="w-full h-full"
               style={{ border: "none" }}
             >
-              {/* Fallback for mobile - download link */}
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <p className="mb-4 text-gray-700">Unable to display PDF in browser.</p>
                 <a
