@@ -10,7 +10,7 @@ import LinksFooter from "./LinksFooter/LinksFooter";
 const Footer = () => {
   // Add router check
   const router = useRouter();
-  const isBuyPage = router.pathname.includes('/buy') || router.asPath.includes('/buy');
+  const isBuyPage = router.pathname.includes('/suite360') || router.asPath.includes('/suite360');
 
   // Return null (nothing) when on Buy page
   if (isBuyPage) {

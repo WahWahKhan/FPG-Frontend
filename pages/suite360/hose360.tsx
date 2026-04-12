@@ -12,6 +12,9 @@ declare global {
 
 const HoseBuilder = () => {
   useEffect(() => {
+    // Lock outer page scroll — PWA manages its own scroll internally
+    document.body.style.overflow = 'hidden';
+
     // PHASE 2: Updated paths
     window.__PUBLIC_PATH__ = publicRuntimeConfig.staticFolder || '/suite360/static/';
     
@@ -42,6 +45,7 @@ const HoseBuilder = () => {
     loadScriptSequentially(scripts).catch(console.error);
 
     return () => {
+      document.body.style.overflow = '';
       document.querySelectorAll('script[src^="/suite360/"]').forEach(script => {
         script.remove();
       });
@@ -57,12 +61,12 @@ const HoseBuilder = () => {
         
         <style>{`
           .hosebuilder-container {
-            height: calc(100vh - 120px);
+            height: calc(100vh - 100px);
             width: 100%;
             position: relative;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden;
             margin-top: 100px;
+            z-index: 1;
           }
 
           #root {
@@ -130,10 +134,7 @@ const HoseBuilder = () => {
             pointer-events: auto !important;
           }
 
-          .hosebuilder-container {
-            position: relative;
-            z-index: 1;
-          }
+
         `}</style>
         <link rel="icon" type="image/png" sizes="16x16" href="/suite360/favicon-16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/suite360/favicon-32.png" />

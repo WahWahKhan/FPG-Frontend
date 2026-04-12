@@ -344,7 +344,7 @@ export default function OrderConfirmation() {
               e.currentTarget.style.boxShadow = "0 10px 30px rgba(250, 204, 21, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.8), inset 0 3px 10px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 215, 0, 0.4)";
             }}
           >
-            Return to Catalogue
+            Return to Products
           </button>
         </div>
       </div>
