@@ -588,8 +588,8 @@ const Search = () => {
                                             finalProducts: null
                                           });
                                         } else {
-                                          if (series.id) {
-                                            router.push(`/products/${series.id}`);
+                                          if (series.slug) {
+                                            router.push(`/products/${series.slug}`);
                                           }
                                         }
                                       }}
@@ -615,8 +615,8 @@ const Search = () => {
                                     `}
                                     key={level3Index}
                                     onClick={() => {
-                                      if (level3Item.id) {
-                                        router.push(`/products/${level3Item.id}`);
+                                      if (level3Item.slug) {
+                                        router.push(`/products/${level3Item.slug}`);
                                       }
                                     }}
                                   >

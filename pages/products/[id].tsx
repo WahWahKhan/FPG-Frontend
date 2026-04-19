@@ -219,7 +219,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
               "@type": "ItemList",
               "name": series.name,
               "description": plainDescription,
-              "url": `https://www.fluidpowergroup.com.au/products/${id}`,
+              "url": `https://www.fluidpowergroup.com.au/products/${series.slug}`,
               "numberOfItems": items.length,
               "itemListElement": items
                 .filter(item => item.price && item.price > 0)
