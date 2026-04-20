@@ -100,7 +100,7 @@ export default function InvoiceControls({
             });
             
             if (customOrderPdfs.length > 0) {
-              console.log(`📎 Found ${customOrderPdfs.length} custom order PDF(s) to attach`);
+              console.log(`🔎 Found ${customOrderPdfs.length} custom order PDF(s) to attach`);
             }
           }
         } catch (error) {
@@ -130,6 +130,20 @@ export default function InvoiceControls({
         const result = await response.json();
 
         if (response.ok && result.success) {
+          // Write invoice to Google Sheets tracking
+          try {
+            const sheetResponse = await fetch('/api/invoices/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ invoiceData: lastGeneratedInvoice })
+            });
+            const sheetResult = await sheetResponse.json();
+            if (!sheetResponse.ok || !sheetResult.success) {
+              alert('⚠️ Invoice emailed successfully, but failed to save to the tracking sheet. Please add this invoice manually.');
+            }
+          } catch {
+            alert('⚠️ Invoice emailed successfully, but failed to save to the tracking sheet. Please add this invoice manually.');
+          }
           // Redirect to success page
           router.push('/email-success?type=invoice');
         } else {
