@@ -64,6 +64,7 @@ export async function appendInvoiceToSheet(
     const sheets = await getGoogleSheetsClient();
 
     const now = new Date().toLocaleString('en-AU', {
+      timeZone: 'Australia/Melbourne',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -144,6 +145,7 @@ export async function updateInvoiceStatus(
 
     const actualRowNumber = rowIndex + 1;
     const now = new Date().toLocaleString('en-AU', {
+      timeZone: 'Australia/Melbourne',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -215,6 +217,7 @@ export async function incrementReminderCount(
     const newCount = currentCount + 1;
 
     const now = new Date().toLocaleString('en-AU', {
+      timeZone: 'Australia/Melbourne',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -268,6 +271,7 @@ export async function batchUpdateInvoicesAsPaid(
 
     const rows = response.data.values || [];
     const now = new Date().toLocaleString('en-AU', {
+      timeZone: 'Australia/Melbourne',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
