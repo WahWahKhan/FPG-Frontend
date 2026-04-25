@@ -45,6 +45,20 @@ const products: Product[] = [
   },
 ];
 
+const Title360 = ({ title, color }: { title: string; color: string }) => {
+  const base = title.endsWith('0') ? title.slice(0, -1) : title;
+  return (
+    <span className="inline-flex items-center" style={{ gap: '1px' }}>
+      <span style={{ color }}>{base}</span>
+      <img
+        src="/circular-arrow.svg"
+        alt="0"
+        style={{ width: '0.78em', height: '0.78em', display: 'inline-block' }}
+      />
+    </span>
+  );
+};
+
 const BuyPage = () => {
   const router = useRouter();
   const [learnMoreModal, setLearnMoreModal] = useState<string | null>(null);
@@ -316,13 +330,10 @@ const BuyPage = () => {
                   </div>
 
                   {/* Title */}
-                  <h2 
+                  <h2
                     className="text-3xl sm:text-4xl font-bold mb-3"
-                    style={{ 
-                      color: product.isActive ? "#4A4A4A" : "#999",
-                    }}
                   >
-                    {product.title}
+                    <Title360 title={product.title} color={product.isActive ? "#4A4A4A" : "#999"} />
                   </h2>
 
                   {/* Description */}
@@ -457,11 +468,8 @@ const BuyPage = () => {
               </div>
 
               {/* Title */}
-              <h3 
-                className="text-3xl font-bold text-center mb-4"
-                style={{ color: "#4A4A4A" }}
-              >
-                {selectedProduct.title}
+              <h3 className="text-3xl font-bold text-center mb-4">
+                <Title360 title={selectedProduct.title} color="#4A4A4A" />
               </h3>
 
               {/* Description */}
