@@ -142,20 +142,38 @@ export default function CustomerDirectory() {
   const allVisibleSelected = emailCustomers.length > 0 && emailCustomers.every(c => selected.has(c.email));
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+    <div className="rounded-2xl shadow-md overflow-hidden mb-6">
 
-      {/* ── Header — blue gradient matching InvoiceTrackingTable ── */}
+      {/* ── Header ── */}
       <button
         onClick={() => setIsOpen(o => !o)}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+        className="w-full px-6 py-2.5 flex items-center justify-between text-left relative transition-all"
+        style={{
+          background: "radial-gradient(ellipse at top, rgba(255, 222, 110, 0.95) 0%, rgba(236, 180, 68, 0.92) 50%, rgba(210, 155, 50, 0.96) 100%)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 235, 130, 0.7)",
+          boxShadow: "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)"
+        }}
+        onMouseEnter={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.85), inset 0 4px 16px rgba(255,255,255,0.45), inset 0 -2px 0 rgba(170,120,20,0.45)";
+          b.style.filter = "brightness(1.06)";
+        }}
+        onMouseLeave={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)";
+          b.style.filter = "";
+        }}
         aria-expanded={isOpen}
       >
+        <span style={{ position:"absolute", top:"2px", left:"16px", right:"16px", height:"45%", background:"linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)", borderRadius:"40px 40px 20px 20px", pointerEvents:"none" }} />
         <div>
-          <h2 className="text-2xl font-bold text-white">👥 Customer Directory</h2>
-          <p className="text-blue-100 text-sm mt-1">Search, filter and contact customers</p>
+          <h2 className="text-2xl font-bold text-gray-900">👥 Customer Directory</h2>
+          <p className="text-gray-700 text-sm mt-1">Search, filter and contact customers</p>
         </div>
         <svg
-          className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -163,7 +181,7 @@ export default function CustomerDirectory() {
       </button>
 
       {isOpen && (
-        <div>
+        <div className="bg-white">
           {/* ── Filters ── */}
           <div className="p-4 bg-gray-50 border-b border-gray-100 space-y-3">
             <div className="flex flex-wrap gap-3">
@@ -282,11 +300,11 @@ export default function CustomerDirectory() {
                         title="Select / deselect all visible"
                       />
                     </th>
-                    <th className="px-3 py-3 text-left">Name</th>
                     <th className="px-3 py-3 text-left">Company</th>
                     <th className="px-3 py-3 text-left">Phone</th>
-                    <th className="px-3 py-3 text-left">Mobile</th>
                     <th className="px-3 py-3 text-left w-44">Email</th>
+                    <th className="px-3 py-3 text-left">Mobile</th>
+                    <th className="px-3 py-3 text-left">Name</th>
                     <th className="px-3 py-3 text-left">State</th>
                     {/* Wider actions column for mobile tap targets */}
                     <th className="px-3 py-3 text-center w-28">Actions</th>
@@ -308,13 +326,6 @@ export default function CustomerDirectory() {
                           }
                         </td>
 
-                        {/* Name */}
-                        <td className="px-3 py-2.5">
-                          <span className={c.isRole ? 'text-gray-400 italic text-xs' : 'text-gray-800 font-medium text-sm'}>
-                            {c.name || '—'}
-                          </span>
-                        </td>
-
                         {/* Company */}
                         <td className="px-3 py-2.5 text-gray-600 text-xs">{c.company || '—'}</td>
 
@@ -326,6 +337,14 @@ export default function CustomerDirectory() {
                           }
                         </td>
 
+                        {/* Email — truncated, narrow */}
+                        <td className="px-3 py-2.5 w-44 max-w-[11rem]">
+                          {c.email
+                            ? <span className="text-gray-600 text-xs block truncate" title={c.email}>{c.email}</span>
+                            : <span className="text-gray-300 text-xs">No email</span>
+                          }
+                        </td>
+
                         {/* Mobile */}
                         <td className="px-3 py-2.5">
                           {c.mobile
@@ -334,12 +353,11 @@ export default function CustomerDirectory() {
                           }
                         </td>
 
-                        {/* Email — truncated, narrow */}
-                        <td className="px-3 py-2.5 w-44 max-w-[11rem]">
-                          {c.email
-                            ? <span className="text-gray-600 text-xs block truncate" title={c.email}>{c.email}</span>
-                            : <span className="text-gray-300 text-xs">No email</span>
-                          }
+                        {/* Name */}
+                        <td className="px-3 py-2.5">
+                          <span className={c.isRole ? 'text-gray-400 italic text-xs' : 'text-gray-800 font-medium text-sm'}>
+                            {c.name || '—'}
+                          </span>
                         </td>
 
                         {/* State */}

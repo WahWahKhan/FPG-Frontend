@@ -239,23 +239,41 @@ const InvoiceTrackingTable = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="rounded-2xl shadow-md overflow-hidden">
         <button
           onClick={() => setIsOpen(o => !o)}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+          className="w-full px-6 py-2.5 flex items-center justify-between text-left relative transition-all"
+          style={{
+            background: "radial-gradient(ellipse at top, rgba(255, 222, 110, 0.95) 0%, rgba(236, 180, 68, 0.92) 50%, rgba(210, 155, 50, 0.96) 100%)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 235, 130, 0.7)",
+            boxShadow: "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)"
+          }}
+          onMouseEnter={e => {
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.85), inset 0 4px 16px rgba(255,255,255,0.45), inset 0 -2px 0 rgba(170,120,20,0.45)";
+            b.style.filter = "brightness(1.06)";
+          }}
+          onMouseLeave={e => {
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)";
+            b.style.filter = "";
+          }}
         >
+          <span style={{ position:"absolute", top:"2px", left:"16px", right:"16px", height:"45%", background:"linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)", borderRadius:"40px 40px 20px 20px", pointerEvents:"none" }} />
           <div>
-            <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
-            <p className="text-blue-100 text-sm mt-1">Loading invoices...</p>
+            <h2 className="text-2xl font-bold text-gray-900">📊 Invoice Tracking & Management</h2>
+            <p className="text-gray-700 text-sm mt-1">Loading invoices...</p>
           </div>
-          <svg className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          <svg className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         {isOpen && (
-          <div className="p-8 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="bg-white p-8 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ecb444]"></div>
             <span className="ml-3 text-gray-600">Loading invoices...</span>
           </div>
         )}
@@ -265,35 +283,55 @@ const InvoiceTrackingTable = ({
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="rounded-2xl shadow-md overflow-hidden">
         <button
           onClick={() => setIsOpen(o => !o)}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+          className="w-full px-6 py-2.5 flex items-center justify-between text-left relative transition-all"
+          style={{
+            background: "radial-gradient(ellipse at top, rgba(255, 222, 110, 0.95) 0%, rgba(236, 180, 68, 0.92) 50%, rgba(210, 155, 50, 0.96) 100%)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 235, 130, 0.7)",
+            boxShadow: "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)"
+          }}
+          onMouseEnter={e => {
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.85), inset 0 4px 16px rgba(255,255,255,0.45), inset 0 -2px 0 rgba(170,120,20,0.45)";
+            b.style.filter = "brightness(1.06)";
+          }}
+          onMouseLeave={e => {
+            const b = e.currentTarget as HTMLButtonElement;
+            b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)";
+            b.style.filter = "";
+          }}
         >
+          <span style={{ position:"absolute", top:"2px", left:"16px", right:"16px", height:"45%", background:"linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)", borderRadius:"40px 40px 20px 20px", pointerEvents:"none" }} />
           <div>
-            <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
-            <p className="text-blue-100 text-sm mt-1">Error loading invoices</p>
+            <h2 className="text-2xl font-bold text-gray-900">📊 Invoice Tracking & Management</h2>
+            <p className="text-gray-700 text-sm mt-1">Error loading invoices</p>
           </div>
-          <svg className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          <svg className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         {isOpen && (
-          <div className="bg-red-50 border border-red-200 m-4 rounded-lg p-6">
-            <div className="flex items-start">
-              <svg className="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="ml-3">
-                <h3 className="text-red-800 font-semibold">Error Loading Invoices</h3>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
-                <button
-                  onClick={fetchInvoices}
-                  className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-                >
-                  Retry
-                </button>
+          <div className="bg-white">
+            <div className="bg-red-50 border border-red-200 m-4 rounded-lg p-6">
+              <div className="flex items-start">
+                <svg className="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="ml-3">
+                  <h3 className="text-red-800 font-semibold">Error Loading Invoices</h3>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                  <button
+                    onClick={fetchInvoices}
+                    className="mt-3 text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+                  >
+                    Retry
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -303,21 +341,39 @@ const InvoiceTrackingTable = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="rounded-2xl shadow-md overflow-hidden">
       {/* ── Collapsible Header ── */}
       <button
         onClick={() => setIsOpen(o => !o)}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+        className="w-full px-6 py-2.5 flex items-center justify-between text-left relative transition-all"
+        style={{
+          background: "radial-gradient(ellipse at top, rgba(255, 222, 110, 0.95) 0%, rgba(236, 180, 68, 0.92) 50%, rgba(210, 155, 50, 0.96) 100%)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 235, 130, 0.7)",
+          boxShadow: "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)"
+        }}
+        onMouseEnter={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.85), inset 0 4px 16px rgba(255,255,255,0.45), inset 0 -2px 0 rgba(170,120,20,0.45)";
+          b.style.filter = "brightness(1.06)";
+        }}
+        onMouseLeave={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)";
+          b.style.filter = "";
+        }}
         aria-expanded={isOpen}
       >
+        <span style={{ position:"absolute", top:"2px", left:"16px", right:"16px", height:"45%", background:"linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)", borderRadius:"40px 40px 20px 20px", pointerEvents:"none" }} />
         <div>
-          <h2 className="text-2xl font-bold text-white">📊 Invoice Tracking & Management</h2>
-          <p className="text-blue-100 text-sm mt-1">
+          <h2 className="text-2xl font-bold text-gray-900">📊 Invoice Tracking & Management</h2>
+          <p className="text-gray-700 text-sm mt-1">
             {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''} found
           </p>
         </div>
         <svg
-          className={`w-6 h-6 text-white transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -325,7 +381,7 @@ const InvoiceTrackingTable = ({
       </button>
 
       {isOpen && (
-        <>
+        <div className="bg-white">
 
       {/* Filters & Search */}
       <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
@@ -590,7 +646,7 @@ const InvoiceTrackingTable = ({
           </form>
         </div>
       )}
-        </>
+        </div>
       )}
     </div>
   );

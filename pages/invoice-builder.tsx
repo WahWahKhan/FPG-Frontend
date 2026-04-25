@@ -286,19 +286,37 @@ export default function InvoiceBuilder() {
                   </div>
                 )}
 
-                {/* ── 2. Invoice Builder — collapsible, blue gradient header ── */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                {/* ── 2. Invoice Builder — collapsible ── */}
+                <div className="rounded-2xl shadow-md overflow-hidden mb-6">
                   <button
                     onClick={() => setBuilderOpen(o => !o)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between text-left hover:from-blue-700 hover:to-blue-800 transition-colors"
+                    className="w-full px-6 py-2.5 flex items-center justify-between text-left relative transition-all"
+                    style={{
+                      background: "radial-gradient(ellipse at top, rgba(255, 222, 110, 0.95) 0%, rgba(236, 180, 68, 0.92) 50%, rgba(210, 155, 50, 0.96) 100%)",
+                      backdropFilter: "blur(12px)",
+                      WebkitBackdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 235, 130, 0.7)",
+                      boxShadow: "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)"
+                    }}
+                    onMouseEnter={e => {
+                      const b = e.currentTarget as HTMLButtonElement;
+                      b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.85), inset 0 4px 16px rgba(255,255,255,0.45), inset 0 -2px 0 rgba(170,120,20,0.45)";
+                      b.style.filter = "brightness(1.06)";
+                    }}
+                    onMouseLeave={e => {
+                      const b = e.currentTarget as HTMLButtonElement;
+                      b.style.boxShadow = "inset 0 2px 0 rgba(255,255,255,0.75), inset 0 4px 12px rgba(255,255,255,0.3), inset 0 -2px 0 rgba(170,120,20,0.4)";
+                      b.style.filter = "";
+                    }}
                     aria-expanded={builderOpen}
                   >
+                    <span style={{ position:"absolute", top:"2px", left:"16px", right:"16px", height:"45%", background:"linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 50%, transparent 100%)", borderRadius:"40px 40px 20px 20px", pointerEvents:"none" }} />
                     <div>
-                      <h2 className="text-2xl font-bold text-white">📄 Create New Invoice</h2>
-                      <p className="text-blue-100 text-sm mt-1">Fill in customer details and line items</p>
+                      <h2 className="text-2xl font-bold text-gray-900">📄 Create New Invoice</h2>
+                      <p className="text-gray-700 text-sm mt-1">Fill in customer details and line items</p>
                     </div>
                     <svg
-                      className={`w-6 h-6 text-white transition-transform ${builderOpen ? 'rotate-180' : ''}`}
+                      className={`w-6 h-6 text-gray-900 transition-transform ${builderOpen ? 'rotate-180' : ''}`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -306,7 +324,7 @@ export default function InvoiceBuilder() {
                   </button>
 
                   {builderOpen && (
-                    <div className="p-4">
+                    <div className="bg-white p-4">
                       <CustomerDetailsForm
                         customer={customer}
                         shippingAddress={shippingAddress}
