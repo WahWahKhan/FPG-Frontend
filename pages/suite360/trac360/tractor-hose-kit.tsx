@@ -184,7 +184,7 @@ export default function TractorHoseKit() {
                   EXTRA
                 </span>
                 <span className="text-2xl font-bold text-center sm:text-left" style={{ color: COLORS.yellow.primary }}>
-                  A$120.00
+                  A$240.00
                 </span>
               </div>
               

@@ -1,10 +1,10 @@
 {
   "files": {
     "main.css": "/static/css/main.4c47a88f.css",
-    "main.js": "/static/js/main.dc12a15a.js",
+    "main.js": "/static/js/main.8e862659.js",
     "static/js/331.d16c3da6.chunk.js": "/static/js/331.d16c3da6.chunk.js",
     "static/js/159.6cd2578e.chunk.js": "/static/js/159.6cd2578e.chunk.js",
-    "static/js/453.6ea64725.js": "/static/js/453.6ea64725.js",
+    "static/js/453.60f80263.js": "/static/js/453.60f80263.js",
     "static/media/welcome_hose.gif": "/static/media/welcome_hose.67df8d6e34ff3b937ce7.gif",
     "static/media/end2_thread_diagram.gif": "/static/media/end2_thread_diagram.97f265e884c8dc4cc496.gif",
     "static/media/end1_thread_diagram.gif": "/static/media/end1_thread_diagram.7ed55b5a6dfab7ad944e.gif",
@@ -22,7 +22,10 @@
     "static/media/0_degrees_help.png": "/static/media/0_degrees_help.b49b966f6b2c13f31f4d.png",
     "static/media/fluidpower_logo.gif": "/static/media/fluidpower_logo.f824d7e688ef9ef11d04.gif",
     "static/media/line_of_sight.png": "/static/media/line_of_sight.4f0a57f6a517c4ed2702.png",
+    "static/media/Flange90_degree.png": "/static/media/Flange90_degree.9f4f61acf0d3200d2a12.png",
+    "static/media/Flange_straight.png": "/static/media/Flange_straight.cff7fd1300000d27f097.png",
     "static/media/hose_cut_length.png": "/static/media/hose_cut_length.b018e8064b70795f70f8.png",
+    "static/media/Flange45_degree.png": "/static/media/Flange45_degree.de337da6dd030c1e8abb.png",
     "static/media/hose_image.png": "/static/media/hose_image.2c0c8e43374a42b24022.png",
     "static/media/plastic_spiral.png": "/static/media/plastic_spiral.85f7df1d57122426fa58.png",
     "static/media/pressure_testing_diagram.png": "/static/media/pressure_testing_diagram.83b36996404409dd76e2.png",
@@ -39,6 +42,8 @@
     "static/media/bsp_female_straight.png": "/static/media/bsp_female_straight.e935258844ba0b2c4706.png",
     "static/media/225_degrees.png": "/static/media/225_degrees.190b88d4539cf851341a.png",
     "static/media/bsp_male_straight_parallel.png": "/static/media/bsp_male_straight_parallel.38dc9753c26d6eb181a3.png",
+    "static/media/code62_help.png": "/static/media/code62_help.9635d1f304b458ce9865.png",
+    "static/media/code61_help.png": "/static/media/code61_help.a7bda9a92d2e13f26ace.png",
     "static/media/270_degrees.png": "/static/media/270_degrees.d296a0f23d517d45210c.png",
     "static/media/135_degrees.png": "/static/media/135_degrees.6da6ce9d6b893dacfea7.png",
     "static/media/orfs_female_45.png": "/static/media/orfs_female_45.02de44bb4e19599f98f5.png",
@@ -66,14 +71,14 @@
     "serve.json": "/serve.json",
     "config.js": "/config.js",
     "main.4c47a88f.css.map": "/static/css/main.4c47a88f.css.map",
-    "main.dc12a15a.js.map": "/static/js/main.dc12a15a.js.map",
+    "main.8e862659.js.map": "/static/js/main.8e862659.js.map",
     "331.d16c3da6.chunk.js.map": "/static/js/331.d16c3da6.chunk.js.map",
     "159.6cd2578e.chunk.js.map": "/static/js/159.6cd2578e.chunk.js.map",
-    "453.6ea64725.js.map": "/static/js/453.6ea64725.js.map"
+    "453.60f80263.js.map": "/static/js/453.60f80263.js.map"
   },
   "entrypoints": [
-    "static/js/453.6ea64725.js",
+    "static/js/453.60f80263.js",
     "static/css/main.4c47a88f.css",
-    "static/js/main.dc12a15a.js"
+    "static/js/main.8e862659.js"
   ]
 }

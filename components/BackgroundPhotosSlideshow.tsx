@@ -9,7 +9,8 @@ const BackgroundPhotosSlideshow = () => {
     `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontC.jpg`,
     `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontD.jpg`,
     `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontE.jpg`,
-    `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontF.jpg`
+    `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontF.jpg`,
+    `${process.env.NEXT_PUBLIC_BASE_URL || ''}/frontG.jpg`
   ], []);
 
   const [selectedImage, setSelectedImage] = useState(images[0]);

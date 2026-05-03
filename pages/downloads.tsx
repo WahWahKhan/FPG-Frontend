@@ -7,6 +7,7 @@ interface DownloadFile {
   title: string;
   filename: string;
   size: string;
+  type: 'pdf';
   category?: string;
 }
 
@@ -16,30 +17,49 @@ const downloadFiles: DownloadFile[] = [
     title: "BSP Thread Information Sheet",
     filename: "BSP Thread Information Sheet.pdf",
     size: "238 KB",
+    type: "pdf",
   },
   {
     id: "hydraulic-crimp",
     title: "Hydraulic Hose Crimp Chart",
     filename: "Hydraulic Hose Crimp Chart.pdf",
     size: "185 KB",
+    type: "pdf",
   },
   {
     id: "jic-thread",
     title: "JIC Thread Information Sheet",
     filename: "JIC Thread Information Sheet.pdf",
     size: "242 KB",
+    type: "pdf",
   },
   {
     id: "metric-light",
     title: "METRIC Light Thread Information Sheet",
     filename: "METRIC Light Thread Information Sheet.pdf",
     size: "251 KB",
+    type: "pdf",
   },
   {
     id: "orfs-thread",
     title: "ORFS Thread Information Sheet",
     filename: "ORFS Thread Information Sheet.pdf",
     size: "245 KB",
+    type: "pdf",
+  },
+  {
+    id: "code61-flange",
+    title: "Code 61 Flange - SAE Flange Size Information",
+    filename: "code61_help.pdf",
+    size: "112 KB",
+    type: "pdf",
+  },
+  {
+    id: "code62-flange",
+    title: "Code 62 Flange - SAE Flange Size Information",
+    filename: "code62_help.pdf",
+    size: "113 KB",
+    type: "pdf",
   },
 ];
 
@@ -49,7 +69,7 @@ const DownloadsPage = () => {
   };
 
   const handleDownload = (e: React.MouseEvent, filename: string) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation();
     const link = document.createElement('a');
     link.href = `/downloads/${filename}`;
     link.download = filename;
@@ -59,7 +79,7 @@ const DownloadsPage = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full py-20 px-4 sm:px-6 lg:px-8"
       style={{
         background: `
@@ -73,14 +93,14 @@ const DownloadsPage = () => {
     >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-<div className="flex flex-col gap-4 p-8">
-  <div className="font-bold text-4xl sm:text-5xl text-yellow-500">
-    Downloads
-  </div>
-  <div className="text-xl text-yellow-600 sm:text-2xl font-light opacity-75">
-    Technical Documentation & Resources
-  </div>
-</div>
+        <div className="flex flex-col gap-4 p-8">
+          <div className="font-bold text-4xl sm:text-5xl text-yellow-500">
+            Downloads
+          </div>
+          <div className="text-xl text-yellow-600 sm:text-2xl font-light opacity-75">
+            Technical Documentation & Resources
+          </div>
+        </div>
 
         {/* Files Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -89,10 +109,10 @@ const DownloadsPage = () => {
               key={file.id}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                duration: 0.5, 
+              transition={{
+                duration: 0.5,
                 delay: index * 0.1,
-                ease: "easeOut" 
+                ease: "easeOut"
               }}
               onClick={() => handleView(file.filename)}
               className="cursor-pointer group relative"
@@ -171,7 +191,7 @@ const DownloadsPage = () => {
 
                 {/* Content */}
                 <div className="flex items-start gap-4">
-                  {/* PDF Icon */}
+                  {/* File Icon */}
                   <div
                     className="flex-shrink-0 transition-all duration-300"
                     style={{
@@ -191,13 +211,13 @@ const DownloadsPage = () => {
 
                   {/* File Info */}
                   <div className="flex-1 min-w-0 pt-1">
-                    <h3 
+                    <h3
                       className="text-lg font-semibold mb-1 pr-12 line-clamp-2"
                       style={{ color: "#4A4A4A" }}
                     >
                       {file.title}
                     </h3>
-                    <p 
+                    <p
                       className="text-sm font-medium"
                       style={{ color: "#999" }}
                     >
@@ -225,11 +245,11 @@ const DownloadsPage = () => {
           transition={{ delay: 0.8, duration: 0.6 }}
           className="text-center mt-12"
         >
-          <p 
+          <p
             className="text-sm"
             style={{ color: "#999" }}
           >
-            Click any card to view the PDF in your browser, or use the download button to save locally.
+            Click any card to view the file in your browser, or use the download button to save locally.
           </p>
         </motion.div>
       </div>

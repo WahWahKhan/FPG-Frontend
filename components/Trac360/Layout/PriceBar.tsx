@@ -74,7 +74,7 @@ export default function PriceBar() {
     if (config.operationType) {
       items.push({
         name: config.operationType.name,
-        price: 800,
+        price: 1250,
       });
     }
 

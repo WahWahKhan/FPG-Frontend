@@ -2,7 +2,7 @@
     "id": "tractor-hose-kit",
     "name": "Tractor Hose Kit",
     "description": "Tractor Hose Kit",
-    "basePrice": 120,
+    "basePrice": 240,
     "currency": "AUD",
     "swellProductId": "tractor-hose-kit-addon",
     "image": "/trac360/hose-kit.png",

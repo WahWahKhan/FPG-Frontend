@@ -31,7 +31,7 @@ const buyOptions: BuyOption[] = [
     description: "Tractor Hydraulics Configurator",
     href: "/suite360/trac360/start",  // ← CHANGED from /hosebuilder/trac360/start
     image: "/Trac360_Cart.png",
-    isActive: false,
+    isActive: true,
   },
   {
     id: "function360",
@@ -39,7 +39,7 @@ const buyOptions: BuyOption[] = [
     description: "Hydraulic Functions Configurator",
     href: "/suite360/function360/start",  // ← CHANGED from /hosebuilder/function360
     image: "/Function360.png",
-    isActive: false,
+    isActive: true,
   },
 ];
 

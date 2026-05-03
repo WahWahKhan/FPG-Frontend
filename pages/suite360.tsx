@@ -31,7 +31,7 @@ const products: Product[] = [
     description: "Tractor Hydraulics Configurator",
     href: "/suite360/trac360/start",  // ← CHANGED from /hosebuilder/trac360/start
     image: "/Trac360_Cart.png",
-    isActive: false,
+    isActive: true,
     learnMore: "Configure your tractor's hydraulic valve setup with our step-by-step guide. Choose your tractor model, valve location, and operation type to get a complete solution.",
   },
   {
@@ -40,7 +40,7 @@ const products: Product[] = [
     description: "Hydraulic Functions Configurator",
     href: "/suite360/function360/start",  // ← CHANGED from /hosebuilder/function360 (even though not active yet)
     image: "/Function360.png",
-    isActive: false,
+    isActive: true,
     learnMore: "Our next-generation product configurator is currently in development. Stay tuned for updates!",
   },
 ];
@@ -50,6 +50,7 @@ const Title360 = ({ title, color }: { title: string; color: string }) => {
   return (
     <span className="inline-flex items-center" style={{ gap: '1px' }}>
       <span style={{ color }}>{base}</span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/circular-arrow.svg"
         alt="0"
