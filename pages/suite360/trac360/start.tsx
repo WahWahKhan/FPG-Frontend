@@ -39,7 +39,7 @@ export default function Start() {
   }, [resetConfig]);
 
   const handleGetStarted = () => {
-    router.push('/hosebuilder/trac360/tractor-info');
+    router.push('/suite360/trac360/tractor-info');
   };
 
   return (

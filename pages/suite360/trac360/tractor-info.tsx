@@ -112,7 +112,7 @@ export default function TractorInfo() {
   
     // Handle back
     const handleBack = () => {
-      router.push('/hosebuilder/trac360/start');
+      router.push('/suite360/trac360/start');
     };
   
     // Close dropdowns when clicking outside

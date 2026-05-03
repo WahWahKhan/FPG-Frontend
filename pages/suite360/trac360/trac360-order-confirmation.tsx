@@ -60,7 +60,7 @@ export default function OrderConfirmation() {
 
   // Handle back
   const handleBack = () => {
-    router.push('/hosebuilder/trac360/additional-info');
+    router.push('/suite360/trac360/additional-info');
   };
 
   // ============================================================================
@@ -317,7 +317,7 @@ export default function OrderConfirmation() {
           tractorBrand: config.tractorInfo?.brand,
           tractorModel: config.tractorInfo?.model,
         });
-        router.push('/hosebuilder/trac360/tractor-info');
+        router.push('/suite360/trac360/tractor-info');
       }
     }
   }, [config, router, isHydrated]);

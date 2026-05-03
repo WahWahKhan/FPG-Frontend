@@ -111,7 +111,7 @@ export default function HoseProtection() {
 
   // Handle back
   const handleBack = () => {
-    router.push('/suite360suite360/trac360/tractor-hose-kit');
+    router.push('/suite360/trac360/tractor-hose-kit');
   };
 
   // Redirect if no valve setup or operation type selected
