@@ -38,8 +38,9 @@ export function calculateTotalPrice(config: Trac360Config): number {
  * console.log(`Total: A$${breakdown.total}`);
  */
 export function calculatePriceBreakdown(config: Trac360Config): PriceBreakdown {
-  // Base price from operation type selection (A$800)
-  const baseOperationPrice = config.operationType ? 1250 : 0;
+  // Path B (circuits flow): circuit price is the full base — no separate 1250
+  // Path A (direct to valve-adaptors): 1250 is the base
+  const baseOperationPrice = config.circuits ? 0 : (config.operationType ? 1250 : 0);
   
   // Circuit price (optional add-on, adds to base)
   const circuitPrice = config.circuits?.price || 0;

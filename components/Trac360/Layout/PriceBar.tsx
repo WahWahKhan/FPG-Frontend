@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/router';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { calculatePriceBreakdown, formatPrice } from '../../../utils/trac360/pricing';
 
@@ -39,6 +40,7 @@ const PRICE_BAR_DARK = {
  */
 export default function PriceBar() {
   const { config } = useTrac360();
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -60,29 +62,27 @@ export default function PriceBar() {
     setIsExpanded(false);
   }, [isMobile]);
 
-  // ✅ CRITICAL FIX: Show price bar only after operation type is selected
-  // This is when the valve price (A$800) is determined
-  if (!config.operationType) {
-    return null;
-  }
+  // Path A: show as soon as operation type is selected
+  // Path B (circuits page): hide until a circuit is selected
+  const onCircuitsPage = router.pathname === '/suite360/trac360/circuits';
+  if (!config.operationType) return null;
+  if (onCircuitsPage && !config.circuits) return null;
 
   // Get itemized list for expanded view
   const getItemizedList = () => {
     const items: Array<{ name: string; price: number }> = [];
 
-    // Base operation price
-    if (config.operationType) {
-      items.push({
-        name: config.operationType.name,
-        price: 1250,
-      });
-    }
-
-    // Circuit if selected
     if (config.circuits) {
+      // Path B: circuit price is the full base — show it as the base line item
       items.push({
         name: `${config.circuits.circuits}-Circuit Valve`,
         price: config.circuits.price,
+      });
+    } else if (config.operationType) {
+      // Path A: flat 1250 base from operation type
+      items.push({
+        name: config.operationType.name,
+        price: 1250,
       });
     }
 

@@ -391,7 +391,7 @@ export default function TractorInfo() {
                   value={driveType || ''}
                   onChange={(e) => setDriveType(e.target.value as '2WD' | '4WD')}
                   className="w-full text-center text-base font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
-                  style={{ color: COLORS.grey.dark }}
+                  style={{ color: COLORS.grey.dark, textAlignLast: 'center' }}
                 >
                   <option value="" disabled>2WD or 4WD</option>
                   {tractorData.driveTypes.map((type) => (
@@ -422,7 +422,7 @@ export default function TractorInfo() {
                   value={protectionType || ''}
                   onChange={(e) => setProtectionType(e.target.value as 'cab' | 'rops')}
                   className="w-full text-center text-base font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
-                  style={{ color: COLORS.grey.dark }}
+                  style={{ color: COLORS.grey.dark, textAlignLast: 'center' }}
                 >
                   <option value="" disabled>CABIN or ROPS</option>
                   {tractorData.protectionTypes.map((type) => (
