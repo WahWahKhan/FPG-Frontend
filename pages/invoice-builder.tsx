@@ -40,6 +40,7 @@ export default function InvoiceBuilder() {
   const [poNumber, setPONumber] = useState('');
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerm>('EOM 30');
   const [discount, setDiscount] = useState(0);
+  const [shippingCharge, setShippingCharge] = useState(-1);
   const [notes, setNotes] = useState('');
   const [hasGenerated, setHasGenerated] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -149,8 +150,9 @@ export default function InvoiceBuilder() {
     const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
     const discountAmount = subtotal * (discount / 100);
     const subtotalAfterDiscount = subtotal - discountAmount;
-    const gst = subtotalAfterDiscount * INVOICE_CONFIG.gstRate;
-    const total = subtotalAfterDiscount + gst;
+    const charge = shippingCharge <= 0 ? 0 : shippingCharge;
+    const gst = (subtotalAfterDiscount + charge) * INVOICE_CONFIG.gstRate;
+    const total = subtotalAfterDiscount + charge + gst;
     return { subtotal, discountAmount, gst, total };
   };
 
@@ -164,6 +166,7 @@ export default function InvoiceBuilder() {
     customer.suburb.trim() !== '' &&
     customer.state.trim() !== '' &&
     customer.postcode.trim() !== '' &&
+    shippingCharge >= 0 &&
     items.length > 0;
 
   const handleGenerate = () => {
@@ -186,6 +189,7 @@ export default function InvoiceBuilder() {
       items,
       subtotal: totals.subtotal,
       discountAmount: totals.discountAmount,
+      shippingCharge: shippingCharge <= 0 ? 0 : shippingCharge,
       gst: totals.gst,
       total: totals.total
     };
@@ -210,6 +214,7 @@ export default function InvoiceBuilder() {
     setShippingAddress(null);
     setPONumber('');
     setDiscount(0);
+    setShippingCharge(-1);
     setNotes('');
     setHasGenerated(false);
     setLastGeneratedInvoice(null);
@@ -228,6 +233,7 @@ export default function InvoiceBuilder() {
     items,
     subtotal: totals.subtotal,
     discountAmount: totals.discountAmount,
+    shippingCharge: shippingCharge <= 0 ? 0 : shippingCharge,
     gst: totals.gst,
     total: totals.total
   };
@@ -331,12 +337,14 @@ export default function InvoiceBuilder() {
                         poNumber={poNumber}
                         paymentTerms={paymentTerms}
                         discount={discount}
+                        shippingCharge={shippingCharge}
                         notes={notes}
                         onCustomerChange={setCustomer}
                         onShippingAddressChange={setShippingAddress}
                         onPONumberChange={setPONumber}
                         onPaymentTermsChange={setPaymentTerms}
                         onDiscountChange={setDiscount}
+                        onShippingChargeChange={setShippingCharge}
                         onNotesChange={setNotes}
                       />
 

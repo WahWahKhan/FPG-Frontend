@@ -259,7 +259,7 @@ export const generateInvoicePDF = (invoiceData: SupplierInvoiceData): jsPDF => {
   
   // Left side - Payment Details Box
   const boxWidth = colWidth - 5;
-  const boxHeight = 50;
+  const boxHeight = invoiceData.discount > 0 ? 62 : 56;
   
   doc.setFillColor(245, 245, 245);
   doc.rect(margin, footerY, boxWidth, boxHeight, 'F');
@@ -300,6 +300,13 @@ export const generateInvoicePDF = (invoiceData: SupplierInvoiceData): jsPDF => {
     doc.text(`Discount (${Math.round(invoiceData.discount)}%)`, totalsTextX, totalsY);
     doc.text(`-$${invoiceData.discountAmount.toFixed(2)}`, totalsBoxX + totalsBoxWidth - 10, totalsY, { align: 'right' });
   }
+
+  totalsY += 6;
+  doc.text('Shipping', totalsTextX, totalsY);
+  doc.text(
+    invoiceData.shippingCharge === 0 ? 'Free' : `$${invoiceData.shippingCharge.toFixed(2)}`,
+    totalsBoxX + totalsBoxWidth - 10, totalsY, { align: 'right' }
+  );
   
   totalsY += 6;
   doc.text('GST', totalsTextX, totalsY);

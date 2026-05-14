@@ -11,12 +11,14 @@ interface CustomerDetailsFormProps {
   poNumber: string;
   paymentTerms: PaymentTerm;
   discount: number;
+  shippingCharge: number;
   notes: string;
   onCustomerChange: (customer: InvoiceCustomer) => void;
   onShippingAddressChange?: (shipping: InvoiceShippingAddress | null) => void;
   onPONumberChange: (po: string) => void;
   onPaymentTermsChange: (terms: PaymentTerm) => void;
   onDiscountChange: (discount: number) => void;
+  onShippingChargeChange: (charge: number) => void;
   onNotesChange: (notes: string) => void;
 }
 
@@ -29,12 +31,14 @@ export default function CustomerDetailsForm({
   poNumber,
   paymentTerms,
   discount,
+  shippingCharge,
   notes,
   onCustomerChange,
   onShippingAddressChange,
   onPONumberChange,
   onPaymentTermsChange,
   onDiscountChange,
+  onShippingChargeChange,
   onNotesChange
 }: CustomerDetailsFormProps) {
   const [sameAsBilling, setSameAsBilling] = useState(!propShippingAddress);
@@ -366,6 +370,24 @@ export default function CustomerDetailsForm({
             }
             placeholder="Enter discount percentage (e.g., 10)"
             className={INPUT_CLASS}
+          />
+        </div>
+
+        <div className="col-span-1 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Shipping Charges *
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={shippingCharge < 0 ? '' : shippingCharge}
+            onChange={(e) =>
+              onShippingChargeChange(e.target.value === '' ? -1 : Math.max(0, parseFloat(e.target.value)))
+            }
+            placeholder="Enter 0 for Free"
+            className={INPUT_CLASS}
+            required
           />
         </div>
 

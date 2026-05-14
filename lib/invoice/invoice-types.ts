@@ -42,6 +42,7 @@ export interface SupplierInvoiceData {
   items: InvoiceLineItem[];
   subtotal: number;
   discountAmount: number;
+  shippingCharge: number;
   gst: number;
   total: number;
 }

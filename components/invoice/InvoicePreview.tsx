@@ -87,6 +87,12 @@ export default function InvoicePreview({ invoiceData }: InvoicePreviewProps) {
               </div>
             )}
             <div className="flex justify-between py-1 text-sm">
+              <span className="text-gray-700">Shipping:</span>
+              <span className="font-semibold text-gray-900">
+                {invoiceData.shippingCharge === 0 ? 'Free' : `$${invoiceData.shippingCharge.toFixed(2)}`}
+              </span>
+            </div>
+            <div className="flex justify-between py-1 text-sm">
               <span className="text-gray-700">GST (10%):</span>
               <span className="font-semibold text-gray-900">${invoiceData.gst.toFixed(2)}</span>
             </div>
