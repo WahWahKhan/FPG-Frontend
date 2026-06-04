@@ -220,6 +220,26 @@ export default function InvoiceBuilder() {
     setLastGeneratedInvoice(null);
   };
 
+  const handleSyncToTracker = async () => {
+    if (!lastGeneratedInvoice) return;
+    try {
+      const res = await fetch('/api/invoices/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceData: lastGeneratedInvoice })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        alert('✅ Invoice synced to tracker successfully.');
+        setTrackingRefresh(n => n + 1);
+      } else {
+        alert('⚠️ Failed to sync invoice to tracker. Please try again.');
+      }
+    } catch {
+      alert('⚠️ Failed to sync invoice to tracker. Please try again.');
+    }
+  };
+
   const previewData: SupplierInvoiceData = {
     invoiceNumber: `INV-${Date.now()}`,
     invoiceDate: new Date().toISOString().split('T')[0],
@@ -362,6 +382,7 @@ export default function InvoiceBuilder() {
                         hasGenerated={hasGenerated}
                         customerEmail={customer.email}
                         lastGeneratedInvoice={lastGeneratedInvoice}
+                        onSyncToTracker={handleSyncToTracker}
                       />
 
                       {hasGenerated && (

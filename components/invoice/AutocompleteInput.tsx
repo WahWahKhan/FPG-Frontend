@@ -34,9 +34,14 @@ export default function AutocompleteInput({
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const justSelected = useRef(false);
 
   // Fetch suggestions with 300ms debounce
   const fetchSuggestions = useCallback(async (query: string) => {
+    if (justSelected.current) {
+      justSelected.current = false;
+      return;
+    }
     if (query.length < 2) {
       setSuggestions([]);
       setIsOpen(false);
@@ -84,6 +89,7 @@ export default function AutocompleteInput({
   }, []);
 
   const handleSelect = (customer: CustomerSuggestion) => {
+    justSelected.current = true;
     onSelect(customer);
     setIsOpen(false);
     setSuggestions([]);

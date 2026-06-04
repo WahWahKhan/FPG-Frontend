@@ -9,7 +9,8 @@ interface InvoiceControlsProps {
   canGenerate: boolean;
   hasGenerated: boolean;
   customerEmail: string;
-  lastGeneratedInvoice?: any; // The invoice data from last generation
+  lastGeneratedInvoice?: any;
+  onSyncToTracker: () => Promise<void>;
 }
 
 export default function InvoiceControls({ 
@@ -18,10 +19,12 @@ export default function InvoiceControls({
   canGenerate,
   hasGenerated,
   customerEmail,
-  lastGeneratedInvoice
+  lastGeneratedInvoice,
+  onSyncToTracker
 }: InvoiceControlsProps) {
   const router = useRouter();
   const [isEmailSending, setIsEmailSending] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Email validation
@@ -30,6 +33,16 @@ export default function InvoiceControls({
   };
 
   const canEmail = hasGenerated && isValidEmail(customerEmail) && lastGeneratedInvoice;
+
+  const handleSyncClick = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await onSyncToTracker();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleEmailClick = () => {
     if (!canEmail) {
@@ -204,11 +217,12 @@ export default function InvoiceControls({
             <>
               <button
                 onClick={onGenerateAnother}
-                className="cursor-pointer transition-all duration-300 inline-block font-bold text-lg"
+                className="cursor-pointer transition-all duration-300 inline-block font-bold text-base"
                 style={{
-                  padding: "16px 32px",
+                  padding: "14px 24px",
                   borderRadius: "40px",
-                  minWidth: "220px",
+                  flex: "1 1 0",
+                  minWidth: "0",
                   background: "radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)",
                   backdropFilter: "blur(15px)",
                   border: "1px solid rgba(255, 215, 0, 0.9)",
@@ -228,15 +242,53 @@ export default function InvoiceControls({
               </button>
 
               <button
+                onClick={handleSyncClick}
+                disabled={isSyncing || !lastGeneratedInvoice}
+                className={`cursor-pointer transition-all duration-300 inline-block font-bold text-base ${
+                  (isSyncing || !lastGeneratedInvoice) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                style={{
+                  padding: "14px 24px",
+                  borderRadius: "40px",
+                  flex: "1 1 0",
+                  minWidth: "0",
+                  background: (!isSyncing && lastGeneratedInvoice)
+                    ? "radial-gradient(ellipse at center, rgba(16, 185, 129, 0.9) 20%, rgba(16, 185, 129, 0.7) 60%, rgba(5, 150, 105, 0.8) 100%)"
+                    : "rgba(229, 231, 235, 0.5)",
+                  backdropFilter: (!isSyncing && lastGeneratedInvoice) ? "blur(15px)" : "none",
+                  border: (!isSyncing && lastGeneratedInvoice) ? "1px solid rgba(16, 185, 129, 0.9)" : "1px solid rgba(209, 213, 219, 0.5)",
+                  color: (!isSyncing && lastGeneratedInvoice) ? "#fff" : "#9CA3AF",
+                  boxShadow: (!isSyncing && lastGeneratedInvoice)
+                    ? "0 10px 30px rgba(16, 185, 129, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 3px 10px rgba(255, 255, 255, 0.2)"
+                    : "none"
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSyncing && lastGeneratedInvoice) {
+                    e.currentTarget.style.transform = "translateY(-2px) scale(1.02)";
+                    e.currentTarget.style.boxShadow = "0 15px 40px rgba(16, 185, 129, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 4px 12px rgba(255, 255, 255, 0.3)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSyncing && lastGeneratedInvoice) {
+                    e.currentTarget.style.transform = "translateY(0px) scale(1)";
+                    e.currentTarget.style.boxShadow = "0 10px 30px rgba(16, 185, 129, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 3px 10px rgba(255, 255, 255, 0.2)";
+                  }
+                }}
+              >
+                {isSyncing ? '🔄 Syncing...' : '🔄 Sync to Invoice Tracker'}
+              </button>
+
+              <button
                 onClick={handleEmailClick}
                 disabled={!canEmail || isEmailSending}
-                className={`cursor-pointer transition-all duration-300 inline-block font-bold text-lg ${
+                className={`cursor-pointer transition-all duration-300 inline-block font-bold text-base ${
                   (!canEmail || isEmailSending) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 style={{
-                  padding: "16px 32px",
+                  padding: "14px 24px",
                   borderRadius: "40px",
-                  minWidth: "220px",
+                  flex: "1 1 0",
+                  minWidth: "0",
                   background: (canEmail && !isEmailSending)
                     ? "radial-gradient(ellipse at center, rgba(59, 130, 246, 0.9) 20%, rgba(59, 130, 246, 0.7) 60%, rgba(96, 165, 250, 0.8) 100%), rgba(59, 130, 246, 0.6)"
                     : "rgba(229, 231, 235, 0.5)",

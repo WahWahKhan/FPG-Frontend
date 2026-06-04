@@ -60,7 +60,9 @@ const InvoiceTrackingTable = ({
       const lines = csvText.split('\n').filter(line => line.trim());
       
       if (lines.length < 2) {
-        throw new Error('No invoice data found in spreadsheet');
+        setInvoices([]);
+        setLoading(false);
+        return;
       }
       
       const parsedInvoices: InvoiceRecord[] = [];
@@ -372,12 +374,26 @@ const InvoiceTrackingTable = ({
             {filteredInvoices.length} invoice{filteredInvoices.length !== 1 ? 's' : ''} found
           </p>
         </div>
-        <svg
-          className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {/* Right side: refresh + chevron */}
+        <div className="flex items-center gap-3 relative z-10">
+          <div
+            role="button"
+            onClick={(e) => { e.stopPropagation(); fetchInvoices(); }}
+            title="Refresh invoice tracker"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-800 bg-white/40 hover:bg-white/70 transition-colors border border-white/60"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </div>
+          <svg
+            className={`w-6 h-6 text-gray-900 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </button>
 
       {isOpen && (
@@ -565,7 +581,7 @@ const InvoiceTrackingTable = ({
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="mt-2 text-sm">No invoices found matching your filters</p>
+            <p className="mt-2 text-sm">You deleted everything smarty pants</p>
           </div>
         )}
       </div>
