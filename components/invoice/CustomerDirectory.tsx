@@ -1,9 +1,11 @@
 // components/invoice/CustomerDirectory.tsx
 // Collapsible customer directory panel for invoice-builder.tsx
 // Email feature: multi-select contacts → mailto: with all selected emails
+// Invoice Selected: single-select → pre-fill invoice builder customer fields
 // No Graph API required.
 
 import React, { useState, useEffect, useRef } from 'react';
+import { InvoiceCustomer } from '../../lib/invoice';
 
 interface CustomerRecord {
   name: string;
@@ -22,6 +24,10 @@ interface ApiResponse {
   pages: number;
   limit: number;
   customers: CustomerRecord[];
+}
+
+interface CustomerDirectoryProps {
+  onSelectForInvoice?: (customer: Partial<InvoiceCustomer>) => void;
 }
 
 const STATE_OPTIONS = [
@@ -65,7 +71,7 @@ function StateBadge({ label }: { label: string }) {
   );
 }
 
-export default function CustomerDirectory() {
+export default function CustomerDirectory({ onSelectForInvoice }: CustomerDirectoryProps) {
   const [isOpen, setIsOpen]           = useState(false);
   const [query, setQuery]             = useState('');
   const [stateFilter, setStateFilter] = useState('');
@@ -134,8 +140,33 @@ export default function CustomerDirectory() {
     return `mailto:${emails.join(',')}`;
   };
 
+  // Handle Invoice Selected — only works when exactly 1 customer is selected
+  const handleInvoiceSelected = () => {
+    if (selected.size !== 1 || !onSelectForInvoice) return;
+    const selectedEmail = Array.from(selected)[0];
+    const record = customers.find(c => c.email === selectedEmail);
+    if (!record) return;
+
+    // Map directory fields to InvoiceCustomer — address fields will be blank
+    const invoiceCustomer: Partial<InvoiceCustomer> = {
+      name: record.name || '',
+      company: record.company || '',
+      email: record.email || '',
+      phone: record.phone || record.mobile || '',
+      // address, suburb, postcode not available in directory — supplier fills these in
+      address: '',
+      suburb: '',
+      state: record.stateLabel !== 'Unknown' && record.stateLabel !== 'Mobile' ? record.stateLabel : '',
+      postcode: '',
+    };
+
+    onSelectForInvoice(invoiceCustomer);
+    clearSelection();
+  };
+
   const overLimit = selected.size > MAX_MAILTO;
   const overWarn  = selected.size > WARN_MAILTO && selected.size <= MAX_MAILTO;
+  const exactlyOne = selected.size === 1;
 
   // Header checkbox state
   const emailCustomers = customers.filter(c => c.email);
@@ -253,6 +284,21 @@ export default function CustomerDirectory() {
                 >
                   Clear
                 </button>
+                {/* Invoice Selected — only active for exactly 1 selection, only shown if callback provided */}
+                {onSelectForInvoice && (
+                  <button
+                    onClick={handleInvoiceSelected}
+                    disabled={!exactlyOne}
+                    title={exactlyOne ? 'Pre-fill invoice builder with this customer' : 'Select exactly 1 customer to use this'}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                      exactlyOne
+                        ? 'text-white bg-amber-500 hover:bg-amber-600 cursor-pointer'
+                        : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+                    }`}
+                  >
+                    📄 Invoice Selected
+                  </button>
+                )}
                 {!overLimit && (
                   <a
                     href={mailtoHref()}
@@ -465,9 +511,7 @@ export default function CustomerDirectory() {
                 }}
                 className="flex items-center gap-1.5"
               >
-                <label className="text-xs text-gray-500 whitespace-nowrap">
-                  Go to page
-                </label>
+                <label className="text-xs text-gray-500 whitespace-nowrap">Go to page</label>
                 <input
                   type="number"
                   min={1}

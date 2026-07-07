@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { InvoiceCustomer, InvoiceShippingAddress, PAYMENT_TERMS, PaymentTerm } from '../../lib/invoice';
+import { QUOTE_VALIDITY_TERMS, QuoteValidityTerm } from '../../lib/invoice/quote-types';
 import AutocompleteInput from './AutocompleteInput';
 import { CustomerSuggestion } from '../../pages/api/invoices/get-customers';
 
@@ -20,6 +21,14 @@ interface CustomerDetailsFormProps {
   onDiscountChange: (discount: number) => void;
   onShippingChargeChange: (charge: number) => void;
   onNotesChange: (notes: string) => void;
+  // Mode flags passed down from invoice-builder
+  isQuoteMode?: boolean;
+  manualDate?: string;           // undefined = use today's date automatically
+  onManualDateChange?: (date: string | undefined) => void;
+  quoteValidFor?: QuoteValidityTerm;
+  onQuoteValidForChange?: (term: QuoteValidityTerm) => void;
+  manualExpiryDate?: string;     // undefined = auto-calculate from quoteValidFor
+  onManualExpiryDateChange?: (date: string | undefined) => void;
 }
 
 const INPUT_CLASS =
@@ -39,20 +48,28 @@ export default function CustomerDetailsForm({
   onPaymentTermsChange,
   onDiscountChange,
   onShippingChargeChange,
-  onNotesChange
+  onNotesChange,
+  isQuoteMode = false,
+  manualDate,
+  onManualDateChange,
+  quoteValidFor = '30 Days',
+  onQuoteValidForChange,
+  manualExpiryDate,
+  onManualExpiryDateChange
 }: CustomerDetailsFormProps) {
   const [sameAsBilling, setSameAsBilling] = useState(!propShippingAddress);
-
   const [internalShipping, setInternalShipping] = useState<InvoiceShippingAddress | null>(null);
 
   const effectiveShipping = onShippingAddressChange ? propShippingAddress : internalShipping;
   const setShipping = onShippingAddressChange || setInternalShipping;
 
+  const isManualDateEnabled = manualDate !== undefined;
+  const isManualExpiryEnabled = manualExpiryDate !== undefined;
+
   const handleInputChange = (field: keyof InvoiceCustomer, value: string) => {
     onCustomerChange({ ...customer, [field]: value });
   };
 
-  // Called when user selects a suggestion — fills all customer fields at once
   const handleAutofill = (suggestion: CustomerSuggestion) => {
     onCustomerChange({
       name: suggestion.name,
@@ -80,7 +97,6 @@ export default function CustomerDetailsForm({
 
   const handleSameAsBillingToggle = (checked: boolean) => {
     setSameAsBilling(checked);
-
     if (checked) {
       setShipping(null);
     } else {
@@ -92,6 +108,26 @@ export default function CustomerDetailsForm({
         postcode: customer.postcode || '',
         phone: customer.phone || ''
       });
+    }
+  };
+
+  const handleManualDateToggle = (checked: boolean) => {
+    if (!onManualDateChange) return;
+    if (checked) {
+      // Default to today's date when enabling
+      onManualDateChange(new Date().toISOString().split('T')[0]);
+    } else {
+      onManualDateChange(undefined);
+    }
+  };
+
+  const handleManualExpiryToggle = (checked: boolean) => {
+    if (!onManualExpiryDateChange) return;
+    if (checked) {
+      // Default to today's date when enabling — supplier will adjust
+      onManualExpiryDateChange(new Date().toISOString().split('T')[0]);
+    } else {
+      onManualExpiryDateChange(undefined);
     }
   };
 
@@ -116,6 +152,7 @@ export default function CustomerDetailsForm({
             placeholder="Start typing to search..."
             displayField="name"
             inputClassName={INPUT_CLASS}
+            apiEndpoint={isQuoteMode ? '/api/quotes/get-customers' : '/api/invoices/get-customers'}
           />
         </div>
 
@@ -129,13 +166,12 @@ export default function CustomerDetailsForm({
             placeholder="Start typing to search..."
             displayField="company"
             inputClassName={INPUT_CLASS}
+            apiEndpoint={isQuoteMode ? '/api/quotes/get-customers' : '/api/invoices/get-customers'}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
           <input
             type="email"
             value={customer.email}
@@ -146,9 +182,7 @@ export default function CustomerDetailsForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
           <input
             type="tel"
             value={customer.phone}
@@ -159,9 +193,7 @@ export default function CustomerDetailsForm({
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Address *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
           <input
             type="text"
             value={customer.address}
@@ -172,9 +204,7 @@ export default function CustomerDetailsForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Suburb *
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Suburb *</label>
           <input
             type="text"
             value={customer.suburb}
@@ -186,9 +216,7 @@ export default function CustomerDetailsForm({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              State *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
             <input
               type="text"
               value={customer.state}
@@ -198,9 +226,7 @@ export default function CustomerDetailsForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Postcode *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Postcode *</label>
             <input
               type="text"
               value={customer.postcode}
@@ -234,9 +260,7 @@ export default function CustomerDetailsForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
               <input
                 type="text"
                 value={effectiveShipping?.company || ''}
@@ -247,9 +271,7 @@ export default function CustomerDetailsForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input
                 type="tel"
                 value={effectiveShipping?.phone || ''}
@@ -260,9 +282,7 @@ export default function CustomerDetailsForm({
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
               <input
                 type="text"
                 value={effectiveShipping?.address || ''}
@@ -274,9 +294,7 @@ export default function CustomerDetailsForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Suburb *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Suburb *</label>
               <input
                 type="text"
                 value={effectiveShipping?.suburb || ''}
@@ -289,9 +307,7 @@ export default function CustomerDetailsForm({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
                 <input
                   type="text"
                   value={effectiveShipping?.state || ''}
@@ -302,9 +318,7 @@ export default function CustomerDetailsForm({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Postcode *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Postcode *</label>
                 <input
                   type="text"
                   value={effectiveShipping?.postcode || ''}
@@ -318,9 +332,40 @@ export default function CustomerDetailsForm({
           </>
         )}
 
-        {/* Invoice Details */}
+        {/* Invoice / Quote Details */}
         <div className="md:col-span-2 mt-4">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Invoice Details</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">
+            {isQuoteMode ? 'Quote Details' : 'Invoice Details'}
+          </h3>
+        </div>
+
+        {/* Manual Date Entry */}
+        <div className="md:col-span-2">
+          <label className="flex items-center space-x-3 cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              checked={isManualDateEnabled}
+              onChange={(e) => handleManualDateToggle(e.target.checked)}
+              className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Enter {isQuoteMode ? 'quote' : 'invoice'} date manually
+            </span>
+          </label>
+          {isManualDateEnabled && (
+            <div className="ml-8">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {isQuoteMode ? 'Quote' : 'Invoice'} Date *
+              </label>
+              <input
+                type="date"
+                value={manualDate || ''}
+                onChange={(e) => onManualDateChange && onManualDateChange(e.target.value)}
+                className={INPUT_CLASS}
+                required
+              />
+            </div>
+          )}
         </div>
 
         <div className="col-span-1 md:col-span-1">
@@ -336,21 +381,71 @@ export default function CustomerDetailsForm({
           />
         </div>
 
+        {/* Payment Terms (invoice) OR Quote Valid For (quote) */}
         <div className="col-span-1 md:col-span-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Payment Terms *
-          </label>
-          <select
-            value={paymentTerms}
-            onChange={(e) => onPaymentTermsChange(e.target.value as PaymentTerm)}
-            className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
-            style={{ minHeight: '52px', fontSize: '16px' }}
-            required
-          >
-            {PAYMENT_TERMS.map(term => (
-              <option key={term} value={term} style={{ fontSize: '16px' }}>{term}</option>
-            ))}
-          </select>
+          {isQuoteMode ? (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quote Valid For *
+              </label>
+              <select
+                value={quoteValidFor}
+                onChange={(e) => onQuoteValidForChange && onQuoteValidForChange(e.target.value as QuoteValidityTerm)}
+                className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
+                style={{ minHeight: '52px', fontSize: '16px' }}
+                required
+              >
+                {QUOTE_VALIDITY_TERMS.map((term: QuoteValidityTerm) => (
+                  <option key={term} value={term} style={{ fontSize: '16px' }}>{term}</option>
+                ))}
+              </select>
+
+              <div className="mt-3">
+                <label className="flex items-center space-x-3 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={isManualExpiryEnabled}
+                    onChange={(e) => handleManualExpiryToggle(e.target.checked)}
+                    className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500 cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Enter expiry date manually
+                  </span>
+                </label>
+                {isManualExpiryEnabled && (
+                  <div className="ml-8">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expiry Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={manualExpiryDate || ''}
+                      onChange={(e) => onManualExpiryDateChange && onManualExpiryDateChange(e.target.value)}
+                      className={INPUT_CLASS}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payment Terms *
+              </label>
+              <select
+                value={paymentTerms}
+                onChange={(e) => onPaymentTermsChange(e.target.value as PaymentTerm)}
+                className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white"
+                style={{ minHeight: '52px', fontSize: '16px' }}
+                required
+              >
+                {PAYMENT_TERMS.map((term: PaymentTerm) => (
+                  <option key={term} value={term} style={{ fontSize: '16px' }}>{term}</option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
 
         <div className="col-span-1 md:col-span-1">

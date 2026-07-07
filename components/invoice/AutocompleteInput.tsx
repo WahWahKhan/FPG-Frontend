@@ -14,6 +14,8 @@ interface AutocompleteInputProps {
   inputClassName?: string;
   /** Which field to display as the primary label in each dropdown row */
   displayField: 'name' | 'company';
+  /** API endpoint to fetch suggestions from. Defaults to /api/invoices/get-customers */
+  apiEndpoint?: string;
 }
 
 export default function AutocompleteInput({
@@ -25,6 +27,7 @@ export default function AutocompleteInput({
   required,
   inputClassName,
   displayField,
+  apiEndpoint = '/api/invoices/get-customers',
 }: AutocompleteInputProps) {
   const [suggestions, setSuggestions] = useState<CustomerSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +39,6 @@ export default function AutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const justSelected = useRef(false);
 
-  // Fetch suggestions with 300ms debounce
   const fetchSuggestions = useCallback(async (query: string) => {
     if (justSelected.current) {
       justSelected.current = false;
@@ -51,7 +53,7 @@ export default function AutocompleteInput({
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/invoices/get-customers?q=${encodeURIComponent(query)}`
+        `${apiEndpoint}?q=${encodeURIComponent(query)}`
       );
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -64,7 +66,7 @@ export default function AutocompleteInput({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [apiEndpoint]);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
