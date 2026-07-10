@@ -68,7 +68,7 @@ const Categories = ({
       />
       
       {categories.map((category: Category) => (
-        <Anchor href={`/products?category=${category.subCategories[0]?.slug}`} key={category.id}>
+        <Anchor href={`/products/${category.slug}`} key={category.id}>
           <div className="relative">
             {/* 3D Yellow Glass Background - smaller on the right, persists when browsing subcategories */}
             {(hoveredCategory === category.title || selectedCategory.title === category.title) && (

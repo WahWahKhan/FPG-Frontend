@@ -839,9 +839,7 @@ export default function OrderConfirmation() {
               </motion.button>
 
               <motion.button
-                onClick={() => {
-                  window.location.href = '/suite360';
-                }}
+                onClick={handleBrowseProducts}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
