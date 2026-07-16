@@ -7,14 +7,14 @@ import SafeImage from "../../../utils/SafeImage";
 
 type Props = {
   images: string[];
-  imageScale?: number;
 };
 
-const ImageProduct = ({ images = [], imageScale = 30 }: Props) => {
+const ImageProduct = ({ images = [] }: Props) => {
   const safeImages = useMemo(() => images || [], [images]);
   const [selectedImage, setSelectedImage] = useState(safeImages.length > 0 ? safeImages[0] : '');
   const [direction, setDirection] = useState(true);
   const [firstImageLoaded, setFirstImageLoaded] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   useEffect(() => {
     if (safeImages.length > 0) {
@@ -64,7 +64,7 @@ const ImageProduct = ({ images = [], imageScale = 30 }: Props) => {
   const imageIndex = safeImages.indexOf(selectedImage);
 
   return (
-    <div className="relative col-span-full lg:col-span-6 xl:col-span-7 w-full border rounded-3xl h-full overflow-hidden">
+    <div className="relative col-span-full lg:col-span-6 xl:col-span-7 w-full border rounded-3xl h-full overflow-hidden md:flex md:flex-col md:justify-center">
       {/* Mobile: Original behavior */}
       <div className="w-full h-full min-h-[200px] max-h-[350px] flex items-center justify-center p-4 md:hidden">
         <AnimatePresence exitBeforeEnter>
@@ -91,12 +91,15 @@ const ImageProduct = ({ images = [], imageScale = 30 }: Props) => {
         </AnimatePresence>
       </div>
 
-      {/* Desktop: Scaled version - scale transform applied to image wrapper */}
-      <div className="hidden md:flex w-full items-center justify-center p-8" style={{ minHeight: '400px', maxHeight: '600px', height: '500px' }}>
+      {/* Desktop: fill the window while preserving aspect ratio.
+          Padding insets the image so it clears the ~62px-wide nav arrows
+          on each side and the carousel dots along the bottom. */}
+      <div className="hidden md:flex w-full items-center justify-center" style={{ minHeight: '400px', maxHeight: '600px', height: '500px' }}>
         <AnimatePresence exitBeforeEnter>
           <motion.div
             variants={variants}
-            className="flex items-center justify-center w-full h-full"
+            className="relative w-full h-full"
+            style={{ paddingLeft: '72px', paddingRight: '72px', paddingTop: '32px', paddingBottom: '48px' }}
             key={selectedImage}
             custom={direction}
             transition={{
@@ -105,14 +108,22 @@ const ImageProduct = ({ images = [], imageScale = 30 }: Props) => {
             initial="enter"
             animate="center"
             exit="exit">
-            <div style={{ transform: `scale(${imageScale / 100})` }}>
-              <SafeImage
+            <div
+              className="relative w-full h-full cursor-zoom-in"
+              style={{
+                transition: 'transform 300ms ease-out',
+                transform: isZoomed ? 'scale(1.2)' : 'scale(1)',
+              }}
+              onMouseEnter={() => setIsZoomed(true)}
+              onMouseLeave={() => setIsZoomed(false)}
+            >
+              <NextImage
                 src={selectedImage}
                 alt="Product"
-                width={400}
-                height={400}
-                className="!w-auto !h-auto max-w-full max-h-full object-contain"
-                useContainMode={true}
+                layout="fill"
+                objectFit="contain"
+                unoptimized={true}
+                loader={({ src }) => src}
               />
             </div>
           </motion.div>
