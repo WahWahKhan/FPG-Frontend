@@ -67,6 +67,40 @@ export type IBreadcrumb = {
   id: string;
 };
 
+// Slug of the hidden "Build My Hose" parent category. Everything nested beneath
+// this (supplier/developer-only products) must be kept out of Google's index.
+export const HIDDEN_ROOT_SLUG = 'hydraulic-hoses-custom-hose-assembly';
+
+// Walk the full parent chain (uncapped beyond a generous safety limit) to decide
+// whether a category is the hidden root or a descendant of it. Short-circuits the
+// moment the hidden ancestor is found, so normal public pages stop quickly at the
+// root. Kept separate from fetchBreadcrumbs so the breadcrumb depth cap and its
+// per-level API cost are unaffected for normal pages.
+export const isUnderHiddenRoot = async (series: ISeries): Promise<boolean> => {
+  // The page itself is the hidden root
+  if (series.slug === HIDDEN_ROOT_SLUG) return true;
+
+  const SAFETY_LIMIT = 10;
+  let parentId = series.parent_id;
+  let depth = 0;
+
+  while (parentId && depth < SAFETY_LIMIT) {
+    try {
+      const parent = await swell.get('/categories/{id}', { id: parentId });
+      if (!parent) break;
+
+      if (parent.slug === HIDDEN_ROOT_SLUG) return true;
+
+      parentId = parent.parent_id ?? null;
+      depth++;
+    } catch {
+      break;
+    }
+  }
+
+  return false;
+};
+
 export const fetchBreadcrumbs = async (series: ISeries): Promise<IBreadcrumb[]> => {
   const crumbs: IBreadcrumb[] = [];
   const MAX_DEPTH = 5;

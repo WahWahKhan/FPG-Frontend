@@ -15,6 +15,11 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/contact', priority: '0.7', changefreq: 'monthly' },
 ];
 
+// Slug of the hidden "Build My Hose" parent. This branch holds supplier/developer
+// -only products and must never appear in the sitemap. Skipping the node here also
+// skips its entire subtree, since we stop recursing into its children.
+const HIDDEN_ROOT_SLUG = 'hydraulic-hoses-custom-hose-assembly';
+
 // Carries slug and depth — id removed after UUID sitemap entries were retired
 const flattenCategories = (
   categories: any[],
@@ -22,6 +27,9 @@ const flattenCategories = (
 ): { slug: string; depth: number }[] => {
   const result: { slug: string; depth: number }[] = [];
   for (const cat of categories) {
+    // Prune the hidden branch entirely — the node and all its descendants
+    if (cat.slug === HIDDEN_ROOT_SLUG) continue;
+
     result.push({ slug: cat.slug, depth });
     if (cat.subCategories && cat.subCategories.length > 0) {
       result.push(...flattenCategories(cat.subCategories, depth + 1));

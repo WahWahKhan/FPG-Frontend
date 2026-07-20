@@ -25,7 +25,7 @@ import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import { fetchProducts, fetchProductsBySlug } from 'utils/swell/fetchProducts';
-import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, ISeries, IBreadcrumb } from 'utils/swell/fetchSeriesDetails';
+import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, isUnderHiddenRoot, ISeries, IBreadcrumb } from 'utils/swell/fetchSeriesDetails';
 import { sortProductsAlphanumerically } from '../../utils/productSorting';
 
 interface ProductPageProps {
@@ -33,6 +33,7 @@ interface ProductPageProps {
   initialSubcategories: any[];
   series: ISeries | null;
   breadcrumbs: IBreadcrumb[];
+  noIndex: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +133,7 @@ const CategoryDescription = ({ description }: { description: string }) => {
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
-const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }: ProductPageProps) => {
+const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, noIndex }: ProductPageProps) => {
   const router = useRouter();
   const id = router.query.id;
 
@@ -168,6 +169,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
       <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-4 sm:gap-8">
         <Head>
           <title>{series.name} | FluidPower Group</title>
+          {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
           <meta name="description" content={`Browse ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
           <script
@@ -201,6 +203,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs }
     <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-10 sm:gap-16">
       <Head>
         <title>{series.name} | FluidPower Group</title>
+          {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
         <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
 
@@ -314,6 +317,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // Breadcrumbs need series to be resolved first — sequential but fast
     const breadcrumbs = await fetchBreadcrumbs(series);
 
+    // Determine whether this page belongs to the hidden supplier/developer subtree
+    // (Build My Hose and everything beneath it). If so, it still renders normally
+    // for direct-link/secret-code access, but carries a noindex tag for Google.
+    const noIndex = await isUnderHiddenRoot(series);
+
     const initialItems = productResult && productResult.products.length > 0
       ? sortProductsAlphanumerically(productResult.products)
       : [];
@@ -327,7 +335,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         initialItems,
         initialSubcategories,
         series,
-        breadcrumbs
+        breadcrumbs,
+        noIndex
       }
     };
   } catch (err: any) {
@@ -338,7 +347,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         initialItems: [],
         initialSubcategories: [],
         series: null,
-        breadcrumbs: []
+        breadcrumbs: [],
+        noIndex: false
       }
     };
   }

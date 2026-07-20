@@ -26,9 +26,14 @@ export function middleware(request: NextRequest) {
 
   const slug = subcategory || category;
 
-  // No relevant query param — let the request through as-is
+  // Bare /products (no category/subcategory param) is not a real page — there is
+  // no /pages/products/index. Redirect it to the working catalogue page so users
+  // (and Google) never land on a broken/empty route.
   if (!slug) {
-    return NextResponse.next();
+    const catalogue = request.nextUrl.clone();
+    catalogue.pathname = '/catalogue';
+    catalogue.search = '';
+    return NextResponse.redirect(catalogue, 301);
   }
 
   // Build clean destination URL, preserving any other query params
