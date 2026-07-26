@@ -279,6 +279,16 @@ export default function OrderConfirmation() {
       optionsPrice: optionsPrice,
       totalPrice: config.totalPrice,
       productIds: config.productIds,
+      // Selection IDs (no prices) so the backend can independently reprice this
+      // line in the server-authority checkout flow. See lib/checkout/order-contract.ts.
+      selections: {
+        operationTypeId: config.operationType?.id ?? null,
+        circuitId: config.circuits?.id ?? null,
+        addons: config.addons.map((addon: Addon) => ({
+          id: addon.id,
+          selectedSubOptionId: addon.selectedSubOption ?? null,
+        })),
+      },
     };
   };
 

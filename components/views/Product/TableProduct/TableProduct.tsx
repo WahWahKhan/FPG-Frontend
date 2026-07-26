@@ -81,8 +81,13 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                   </th>
                 ))}
                 <th className="font-semibold ">Price</th>
-                <th className="font-semibold ">Available Stock</th>
-                <th className="font-semibold ">Quantity</th>
+                <th className="font-semibold text-center w-24">Stock</th>
+                {/* Order Qty — the "action" column: inverted yellow header + a
+                    divider so it reads as separate from the spec/data columns. */}
+                <th className="bg-yellow-400 text-[#191919] text-center rounded-t-xl border-l-4 border-white/60 px-4">
+                  <div className="leading-tight">Order Qty</div>
+                  <div className="text-xs font-normal opacity-80">Tap +/- to add</div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -135,25 +140,27 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                     }
                   })}
                   <td className="font-bold">{`$${item.price}`}</td>
-                  <td>{item.stock}</td>
-                  <td className=" w-28">
-                    {item.stock === 0 ? (
-                      "Sold Out"
-                    ) : (
-                      <Counter
-                        limit={item.stock}
-                        count={item.quantity}
-                        setCount={(val: number) => {
-                          setItems(
-                            items.map((itemToAdd) =>
-                              itemToAdd.id === item.id
-                                ? { ...item, quantity: val }
-                                : itemToAdd
-                            )
-                          );
-                        }}
-                      />
-                    )}
+                  <td className="text-center w-24 text-gray-600">{item.stock}</td>
+                  <td className="w-32 border-l-4 border-yellow-400/40">
+                    <div className="flex justify-center">
+                      {item.stock === 0 ? (
+                        <span className="font-semibold text-red-600">Sold Out</span>
+                      ) : (
+                        <Counter
+                          limit={item.stock}
+                          count={item.quantity}
+                          setCount={(val: number) => {
+                            setItems(
+                              items.map((itemToAdd) =>
+                                itemToAdd.id === item.id
+                                  ? { ...item, quantity: val }
+                                  : itemToAdd
+                              )
+                            );
+                          }}
+                        />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

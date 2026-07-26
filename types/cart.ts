@@ -22,6 +22,18 @@ export interface ITrac360Config {
   optionsPrice: number;
   totalPrice: number;
   productIds: string[];  // Swell product IDs for inventory management
+
+  /**
+   * Configurator selection IDs (no prices) persisted at add-to-cart time.
+   * Used by the server-authority checkout flow so the backend can INDEPENDENTLY
+   * reprice this line from its own rule table. Optional for backward-compat:
+   * cart items added before this field existed won't have it.
+   */
+  selections?: {
+    operationTypeId: string | null;
+    circuitId: string | null;
+    addons: Array<{ id: string; selectedSubOptionId: string | null }>;
+  };
 }
 
 /**

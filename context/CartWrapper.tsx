@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { ICart, IItemCart } from 'types/cart';
 import { Children } from 'types/general';
+import SaveCartModal from '../components/cart/SaveCartModal';
+import SavedCartNotice from '../components/cart/SavedCartNotice';
 
 export const CartContext = createContext<{
   items: IItemCart[];
@@ -11,6 +14,9 @@ export const CartContext = createContext<{
   updateItem: (item: IItemCart) => void;
   setCart: (cart: ICart) => void;
   clearCart: () => void;
+  saveCartOpen: boolean;
+  openSaveCart: () => void;
+  closeSaveCart: () => void;
 }>({
   toggleCart: () => {},
   items: [],
@@ -20,6 +26,9 @@ export const CartContext = createContext<{
   updateItem: () => {},
   setCart: () => {},
   clearCart: () => {},
+  saveCartOpen: false,
+  openSaveCart: () => {},
+  closeSaveCart: () => {},
 });
 
 type ICartWrapperProps = {
@@ -27,6 +36,7 @@ type ICartWrapperProps = {
 };
 
 const CartWrapper = ({ children }: ICartWrapperProps) => {
+  const router = useRouter();
   // Start with empty cart for SSR consistency
   const [cart, setCart] = useState<ICart>({ open: false, items: [] });
   const [isHydrated, setIsHydrated] = useState(false);
@@ -36,6 +46,10 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   
   // 🆕 NEW: Track if viewing order confirmation (for UI display only)
   const [isViewingOrderConfirmation, setIsViewingOrderConfirmation] = useState(false);
+
+  // Notice shown when a "save cart for later" email link can't be resumed
+  // (already ordered → single-use, or expired). Null when there's nothing to show.
+  const [savedCartNotice, setSavedCartNotice] = useState<string | null>(null);
 
   // Helper function to load cart from localStorage
   const loadCartFromStorage = () => {
@@ -82,6 +96,73 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
     setCart(initialCart);
     setIsHydrated(true);
   }, []); // Run only once after mount
+
+  // 🆕 Resume a "saved cart" when the user arrives via an email link that
+  // carries ?cart=<token> (e.g. /checkout?cart=... or /catalogue?cart=...).
+  // We fetch the anonymous cart from the backend, rehydrate localStorage + the
+  // in-tab cart state, then strip the token from the URL. Keyed on the router
+  // query so it fires for both full loads (email link) and in-app navigations
+  // (CartWrapper lives in _app and persists across route changes). A ref guards
+  // against resuming the same token twice.
+  const resumedTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Read the token from the actual URL (window.location.search is always
+    // accurate on the client; router.query can lag on statically-optimized
+    // pages). Keyed on router.asPath so it fires on full loads AND in-app nav.
+    const token = new URLSearchParams(window.location.search).get('cart');
+    if (!token || resumedTokenRef.current === token) return;
+    resumedTokenRef.current = token; // dedupe: only resume a given token once
+
+    // When a saved-cart link can't be resumed (already ordered / expired) and
+    // the user landed straight on /checkout, don't leave them on an empty
+    // checkout page (looks unprofessional — just a shipping fee). Send them to
+    // the home page; the notice banner persists across this client-side nav.
+    const redirectFromEmptyCheckout = () => {
+      if (window.location.pathname.startsWith('/checkout')) {
+        router.replace('/');
+      }
+    };
+
+    (async () => {
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
+        const res = await fetch(`${API_BASE_URL}/api/cart/resume?token=${encodeURIComponent(token)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data.items) ? data.items : [];
+          if (items.length > 0) {
+            localStorage.setItem('shopping-cart', JSON.stringify({ items }));
+            localStorage.setItem('cart-timestamp', Date.now().toString());
+            // Remember the token so checkout can request the 7-day price hold.
+            // The server still verifies the cart is unchanged before honouring it.
+            localStorage.setItem('fpg-saved-cart-token', token);
+            setCart({ open: false, items });
+          }
+        } else if (res.status === 409) {
+          // Single-use link: this cart was already ordered. Don't rehydrate, and
+          // drop any stale token so it can't ride along into a future checkout.
+          console.warn('[Website Cart] This saved cart has already been ordered.');
+          localStorage.removeItem('fpg-saved-cart-token');
+          setSavedCartNotice('This saved cart has already been ordered, so it can’t be checked out again. Please start a new cart if you’d like to order more.');
+          redirectFromEmptyCheckout();
+        } else if (res.status === 410) {
+          console.warn('[Website Cart] Saved cart link has expired.');
+          localStorage.removeItem('fpg-saved-cart-token');
+          setSavedCartNotice('This saved-cart link has expired or is no longer available. Please add your items to a new cart.');
+          redirectFromEmptyCheckout();
+        }
+      } catch (err) {
+        console.error('[Website Cart] Failed to resume saved cart:', err);
+      } finally {
+        // Strip ?cart=<token> from the URL without a reload or navigation.
+        const params = new URLSearchParams(window.location.search);
+        params.delete('cart');
+        const q = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (q ? `?${q}` : '') + window.location.hash);
+      }
+    })();
+  }, [router.asPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // NEW: Listen for localStorage changes from PWA
   useEffect(() => {
@@ -206,6 +287,12 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
     }
   }, [cart, isHydrated]);
 
+  // 🆕 "Save cart for later" modal — opened from the cart drawer, rendered
+  // app-wide so it overlays wherever the user currently is.
+  const [saveCartOpen, setSaveCartOpen] = useState(false);
+  const openSaveCart = () => setSaveCartOpen(true);
+  const closeSaveCart = () => setSaveCartOpen(false);
+
   const toggleCart = () => {
     setCart((prevCart) => ({ ...prevCart, open: !prevCart.open }));
   };
@@ -250,10 +337,15 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   };
 
   const clearCart = () => {
-    
+
     // 🔧 Mark as user action to prevent sync-back from localStorage
     isUserAction.current = true;
-    
+
+    // The saved-cart price-hold token no longer applies once the cart is gone.
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('fpg-saved-cart-token');
+    }
+
     // Clear React state only
     setCart({ open: false, items: [] });
     
@@ -280,8 +372,15 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
       setCart,
       clearCart,
       open: cart.open,
+      saveCartOpen,
+      openSaveCart,
+      closeSaveCart,
     }}>
     {children}
+    <SaveCartModal open={saveCartOpen} onClose={closeSaveCart} items={cart.items} />
+    {savedCartNotice && (
+      <SavedCartNotice message={savedCartNotice} onDismiss={() => setSavedCartNotice(null)} />
+    )}
   </CartContext.Provider>
   );
 };

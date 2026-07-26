@@ -9,6 +9,27 @@
 export const TESTING_MODE = process.env.NEXT_PUBLIC_TESTING_MODE === 'true';
 
 // ============================================================================
+// SERVER-AUTHORITY PRICING FEATURE FLAG (price tampering fix)
+// ============================================================================
+
+/**
+ * Controls the checkout price-authority flow (see lib/checkout/order-contract.ts).
+ *
+ * - false (default / legacy): the browser builds the PayPal order client-side
+ *   and sends the full priced payload to capture-order. Compatible with the
+ *   CURRENT backend. Keep this until the backend server-pricing changes ship.
+ *
+ * - true (new): the backend is the price authority. `createOrder` calls
+ *   POST /api/paypal/create-order with price-less identifiers/config; the
+ *   server recomputes every price, creates the PayPal order for its own total,
+ *   and capture-order reconciles against the persisted quote. Flip this ON
+ *   only once the backend accepts the new contract.
+ *
+ * Enable via NEXT_PUBLIC_SERVER_PRICING=true.
+ */
+export const SERVER_PRICING_ENABLED = process.env.NEXT_PUBLIC_SERVER_PRICING === 'true';
+
+// ============================================================================
 // API BASE URL CONFIGURATION
 // ============================================================================
 
@@ -125,12 +146,20 @@ export const CART_HYDRATION_DELAY_MS = 100;
 // ============================================================================
 
 /**
- * Secret code to trigger developer mode
- * Enter this in the name field to:
- * - Override payment to A$0.20
- * - Auto-fill demo shipping details
+ * Non-secret PREFIX that reveals the developer-mode mechanism in the name field.
+ *
+ * Type `<prefix><your-secret>` in the name field (e.g. "dev:myServerSecret"),
+ * then press Enter or click away from the field to activate. Activation is
+ * deliberately deferred to that explicit commit so the whole secret can be
+ * typed — checking on every keystroke would fire on the first character.
+ * The prefix is intentionally NOT a secret — it only signals "activate the dev
+ * UI". The text AFTER the prefix is the secret and is NEVER baked into the
+ * bundle: it is captured from what the user types and sent to the backend as
+ * `devMode.code`, where it is validated against the server-only
+ * PAYPAL_TEST_MODE_SECRET. A wrong/guessed secret still activates the local UI
+ * (autofill/banner) but the server charges full price — pricing is server-gated.
  */
-export const DEVELOPER_MODE_CODE = '20162025';
+export const DEVELOPER_MODE_PREFIX = 'dev:';
 
 /**
  * Demo data auto-filled when developer mode is activated

@@ -15,8 +15,17 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { CartContext } from '../context/CartWrapper';
-import { separateCartItems, calculateCartTotals } from '../utils/cart-helpers';
+import { separateCartItems, calculateCartTotals, isCustomOrder } from '../utils/cart-helpers';
 import { IItemCart } from '../types/cart';
+
+// Server-authority checkout contract (price tampering fix)
+import {
+  buildServerOrderItems,
+  buildOrderAttachments,
+  CreateOrderRequest,
+  CreateOrderResponse,
+  CaptureOrderRequest,
+} from '../lib/checkout/order-contract';
 
 // PHASE 1 - Component imports
 import CheckoutProgress from '../components/checkout/CheckoutProgress';
@@ -37,9 +46,9 @@ import {
   ORDER_POLLING_CONFIG,
   API_TIMEOUT_MS,
   CART_HYDRATION_DELAY_MS,
-  DEVELOPER_MODE_CODE,
   DEVELOPER_MODE_DEMO_DATA,
-  DEVELOPER_MODE_PAYMENT_AMOUNT
+  DEVELOPER_MODE_PAYMENT_AMOUNT,
+  SERVER_PRICING_ENABLED
 } from '../lib/checkout/checkout-config';
 
 // PHASE 3 - Validation types
@@ -53,6 +62,12 @@ export default function CheckoutPage() {
   const [isCompletingOrder, setIsCompletingOrder] = useState(false);
   const [step, setStep] = useState<'shipping' | 'payment'>('shipping');
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+  // The developer/test secret the user typed (after the prefix). Sent to the
+  // backend as devMode.code for server-side validation. Never a baked constant.
+  const [devModeCode, setDevModeCode] = useState('');
+  // Server-authority flow: the authoritative quote (total + breakdown) returned
+  // by the backend create-order. Null until the buyer initiates payment.
+  const [serverQuote, setServerQuote] = useState<CreateOrderResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string>('');
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
@@ -108,8 +123,14 @@ export default function CheckoutPage() {
     
     const isCompletingOrderSession = sessionStorage.getItem('orderCompleting') === 'true';
     console.log('⏰ Session completing:', isCompletingOrderSession);
-    
-    if (items.length === 0 && !isCompletingOrder && !isCompletingOrderSession) {
+
+    // Don't bounce to home while a saved-cart link is still resuming: the
+    // ?cart=<token> param is present until CartWrapper has rehydrated the cart.
+    const isResumingSavedCart =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('cart');
+
+    if (items.length === 0 && !isCompletingOrder && !isCompletingOrderSession && !isResumingSavedCart) {
       console.log('❌ [CHECKOUT] Redirecting to home - cart appears empty');
       router.push('/');
     } else {
@@ -126,7 +147,47 @@ export default function CheckoutPage() {
     function360: function360Items.length
   });
   const totals = calculateCartTotals(items);
-  
+
+  // Display totals: prefer the SERVER-computed breakdown once a quote exists
+  // (server-authority flow), otherwise fall back to the client-side estimate.
+  // Client math stays for display only; it never drives what PayPal charges.
+  const displayTotals = (SERVER_PRICING_ENABLED && serverQuote?.breakdown)
+    ? {
+        subtotal: serverQuote.breakdown.subtotal,
+        shipping: serverQuote.breakdown.shipping,
+        gst: serverQuote.breakdown.gst,
+        total: serverQuote.breakdown.total,
+      }
+    : {
+        subtotal: totals.subtotal,
+        shipping: totals.shipping,
+        gst: totals.gst,
+        total: totals.total,
+      };
+
+  // Defensive display consistency (price-drift guard):
+  // Once the server has priced the cart (a quote exists), display the SERVER's
+  // per-line amounts too — not just the totals — so the line items always add up
+  // to the subtotal the customer is actually charged. Before a quote exists,
+  // line items and totals are both client-side, so they already agree. Keyed by
+  // cartId (present on every custom order); website lines without a cartId fall
+  // back to their cart price, which is the same Swell price the server uses.
+  const serverLineAmountByCartId = new Map<number, number>();
+  if (SERVER_PRICING_ENABLED && serverQuote?.breakdown?.lines) {
+    for (const l of serverQuote.breakdown.lines) {
+      if (l && l.cartId != null) serverLineAmountByCartId.set(l.cartId, l.amount);
+    }
+  }
+  const lineDisplayTotal = (item: IItemCart): number => {
+    if (item.cartId != null && serverLineAmountByCartId.has(item.cartId)) {
+      return serverLineAmountByCartId.get(item.cartId) as number;
+    }
+    // Fallback: client cart value (custom orders use totalPrice; website price*qty).
+    return isCustomOrder(item)
+      ? (item.totalPrice || 0)
+      : (item.price || 0) * (item.quantity || 1);
+  };
+
   // PHASE 3: Using config function for PayPal options
   const paypalOptions = getPayPalOptions();
 
@@ -147,8 +208,9 @@ export default function CheckoutPage() {
   /**
    * Called when developer mode is activated in ShippingForm
    */
-  const handleDeveloperModeActivated = () => {
+  const handleDeveloperModeActivated = (code: string) => {
     setIsDeveloperMode(true);
+    setDevModeCode(code);
   };
 
   // ============================================================================
@@ -293,13 +355,38 @@ export default function CheckoutPage() {
           function360OrderNumber: `FUNC-${item.cartId || Date.now()}`
         })),
         totals: {
-          subtotal: totals.subtotal,
-          shipping: totals.shipping,
-          gst: totals.gst,
-          total: totals.total
+          subtotal: displayTotals.subtotal,
+          shipping: displayTotals.shipping,
+          gst: displayTotals.gst,
+          total: displayTotals.total
         }
       };
-      
+
+      // ============================================================================
+      // CAPTURE PAYLOAD — server-authority vs legacy
+      // ----------------------------------------------------------------------------
+      // Legacy backend expects the full priced payload above. The new
+      // server-authority flow sends ONLY price-less identifiers; the backend
+      // rebuilds line items from the quote it persisted at create-order time and
+      // reconciles PayPal's captured amount against that quote. `payload` (above)
+      // is still used locally to render the order-confirmation page.
+      // ============================================================================
+      const capturePayload: any = SERVER_PRICING_ENABLED
+        ? ({
+            orderID: data.orderID,
+            payerID: data.payerID,
+            orderNumber: internalOrderNumber,
+            userDetails: payload.userDetails,
+            items: buildServerOrderItems(items),
+            attachments: buildOrderAttachments(items),
+            devMode: {
+              requested: isDeveloperMode,
+              code: isDeveloperMode ? devModeCode : undefined,
+              amount: isDeveloperMode ? DEVELOPER_MODE_PAYMENT_AMOUNT : undefined,
+            },
+          } as CaptureOrderRequest)
+        : payload;
+
       console.log('📤 Calling capture-order API...');
       
       // ============================================================================
@@ -314,7 +401,7 @@ export default function CheckoutPage() {
         response = await fetch(`${API_BASE_URL}/api/paypal/capture-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(capturePayload),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -440,7 +527,7 @@ export default function CheckoutPage() {
       pwaOrders: payload.pwaOrders.map((order: any) => ({
         id: order.id,
         name: order.name,
-        totalPrice: order.totalPrice,
+        totalPrice: serverLineAmountByCartId.get(order.cartId) ?? order.totalPrice,
         quantity: order.quantity,
         image: order.image,
         pwaOrderNumber: order.pwaOrderNumber,
@@ -451,7 +538,7 @@ export default function CheckoutPage() {
       trac360Orders: payload.trac360Orders.map((order: any) => ({
         id: order.id,
         name: order.name,
-        totalPrice: order.totalPrice,
+        totalPrice: serverLineAmountByCartId.get(order.cartId) ?? order.totalPrice,
         quantity: order.quantity,
         image: order.image,
         trac360OrderNumber: order.trac360OrderNumber,
@@ -462,7 +549,7 @@ export default function CheckoutPage() {
       function360Orders: payload.function360Orders.map((order: any) => ({  // ← ADD THIS BLOCK
         id: order.id,
         name: order.name,
-        totalPrice: order.totalPrice,
+        totalPrice: serverLineAmountByCartId.get(order.cartId) ?? order.totalPrice,
         quantity: order.quantity,
         image: order.image,
         function360OrderNumber: order.function360OrderNumber,
@@ -636,7 +723,7 @@ export default function CheckoutPage() {
                       paddingRight: "8px"
                     }}
                   >
-                    A${((item.price || 0) * item.quantity).toFixed(2)}
+                    A${lineDisplayTotal(item).toFixed(2)}
                   </p>
   
                   <button
@@ -719,7 +806,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex items-center gap-3">
                 <p className="font-semibold text-gray-800" style={{ minWidth: "80px", textAlign: "right", paddingRight: "8px" }}>
-                  A${(item.totalPrice || 0).toFixed(2)}
+                  A${lineDisplayTotal(item).toFixed(2)}
                 </p>
                 <button
                   onClick={() => deleteItem(item)}
@@ -794,7 +881,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="font-semibold text-gray-800" style={{ minWidth: "80px", textAlign: "right", paddingRight: "8px" }}>
-                    A${(item.totalPrice || 0).toFixed(2)}
+                    A${lineDisplayTotal(item).toFixed(2)}
                   </p>
                   <button
                     onClick={() => deleteItem(item)}
@@ -869,7 +956,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <p className="font-semibold text-gray-800" style={{ minWidth: "80px", textAlign: "right", paddingRight: "8px" }}>
-                    A${(item.totalPrice || 0).toFixed(2)}
+                    A${lineDisplayTotal(item).toFixed(2)}
                   </p>
                   <button
                     onClick={() => deleteItem(item)}
@@ -890,19 +977,19 @@ export default function CheckoutPage() {
       <div className="mt-6 space-y-2 text-sm">
         <div className="flex justify-between text-gray-700">
           <span>Subtotal:</span>
-          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${totals.subtotal.toFixed(2)}</span>
+          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${displayTotals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-gray-700">
           <span>Shipping:</span>
-          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${totals.shipping.toFixed(2)}</span>
+          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${displayTotals.shipping.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-gray-700">
           <span>GST (10%):</span>
-          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${totals.gst.toFixed(2)}</span>
+          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${displayTotals.gst.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-xl font-bold pt-3 border-t-2 border-yellow-500">
           <span>Total:</span>
-          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${totals.total.toFixed(2)}</span>
+          <span style={{ minWidth: "80px", textAlign: "right", paddingRight: "48px" }}>A${displayTotals.total.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -988,7 +1075,7 @@ export default function CheckoutPage() {
         <div className="flex justify-between items-center">
           <span className="font-semibold text-lg">Total Amount:</span>
           <span className="font-bold text-2xl text-yellow-600">
-            A${totals.total.toFixed(2)}
+            A${displayTotals.total.toFixed(2)}
           </span>
         </div>
       </div>
@@ -1037,15 +1124,94 @@ export default function CheckoutPage() {
                       height: 55
                     }}
                     className="paypal-buttons-custom"
-                    createOrder={(data, actions) => {
+                    createOrder={async (data, actions) => {
+                      // ============================================================
+                      // SERVER-AUTHORITY FLOW: the backend is the price authority.
+                      // Send price-less identifiers/config; the server recomputes
+                      // the total, creates the PayPal order, and returns its id.
+                      // ============================================================
+                      if (SERVER_PRICING_ENABLED) {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+                        const requestBody: CreateOrderRequest = {
+                          items: buildServerOrderItems(items),
+                          shipping: shippingDetails
+                            ? {
+                                firstName: shippingDetails.name.trim().split(' ')[0] || '',
+                                lastName: shippingDetails.name.trim().split(' ').slice(1).join(' ') || '',
+                                email: shippingDetails.email,
+                                phone: shippingDetails.contactNumber,
+                                address: shippingDetails.address,
+                                city: shippingDetails.suburb,
+                                state: shippingDetails.state,
+                                postcode: shippingDetails.postcode,
+                                country: 'Australia',
+                                companyName: shippingDetails.companyName || '',
+                              }
+                            : undefined,
+                          devMode: {
+                            requested: isDeveloperMode,
+                            code: isDeveloperMode ? devModeCode : undefined,
+                            amount: isDeveloperMode ? DEVELOPER_MODE_PAYMENT_AMOUNT : undefined,
+                          },
+                          orderNumber: `FPG-${Date.now()}`,
+                          // If this checkout was resumed from a saved-cart link,
+                          // pass the token so the server can honour the 7-day
+                          // price hold (it verifies the cart is unchanged).
+                          savedCartToken:
+                            typeof window !== 'undefined'
+                              ? localStorage.getItem('fpg-saved-cart-token') || undefined
+                              : undefined,
+                        };
+
+                        try {
+                          const res = await fetch(`${API_BASE_URL}/api/paypal/create-order`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestBody),
+                            signal: controller.signal,
+                          });
+                          clearTimeout(timeoutId);
+
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.error || `Could not start payment (status ${res.status})`);
+                          }
+
+                          const quote: CreateOrderResponse = await res.json();
+                          if (!quote.orderID) {
+                            throw new Error('Server did not return an order ID');
+                          }
+
+                          console.log('🧾 Server quote:', quote.amount, quote.breakdown);
+                          setServerQuote(quote);
+                          setPaymentError('');
+                          return quote.orderID;
+                        } catch (err: any) {
+                          clearTimeout(timeoutId);
+                          console.error('❌ create-order failed:', err);
+                          setPaymentError(
+                            err?.name === 'AbortError'
+                              ? 'Starting payment timed out. Please try again.'
+                              : (err?.message || 'Could not start payment. Please try again.')
+                          );
+                          throw err;
+                        }
+                      }
+
+                      // ============================================================
+                      // LEGACY FLOW (client-side amount). Unchanged. Compatible
+                      // with the current backend until SERVER_PRICING_ENABLED flips.
+                      // ============================================================
                       const orderAmount = isDeveloperMode ? DEVELOPER_MODE_PAYMENT_AMOUNT : totals.total.toFixed(2);
-                      
+
                       console.log(isDeveloperMode ? '🔧 Developer Mode: Using test amount $0.20' : `Creating order for $${orderAmount}`);
-                      
+
                       return actions.order.create({
                         intent: 'CAPTURE',
                         purchase_units: [{
-                          description: isDeveloperMode 
+                          description: isDeveloperMode
                             ? `FluidPower Order - DEVELOPER TEST - A$${orderAmount}`
                             : `FluidPower Order - A$${orderAmount}`,
                           amount: {

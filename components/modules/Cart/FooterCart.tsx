@@ -1,22 +1,33 @@
 import { useRouter } from "next/router"
+import { useContext } from "react"
+import { CartContext } from "../../../context/CartWrapper"
 
 const FooterCart = ({items, handleClose} : any) => {
   const router = useRouter();
+  const { openSaveCart } = useContext(CartContext);
 
   const checkout = async () => {
     // All items now go through the unified checkout system
     console.log('Routing to unified checkout - Total items:', items.length);
-    
+
     // Log breakdown for debugging
     const pwaItems = items.filter((item: any) => item.type === 'pwa_order');
     const websiteItems = items.filter((item: any) => item.type !== 'pwa_order');
     console.log('Breakdown - PWA items:', pwaItems.length, 'Website items:', websiteItems.length);
-    
+
     // Close the cart drawer before navigating
     handleClose();
-    
+
     // Route to unified checkout (reads from localStorage)
     router.push('/checkout');
+  }
+
+  const saveCart = () => {
+    // Email the cart to yourself and resume later. Opens the
+    // save-cart modal in place (email-only, no account, no navigation) so the
+    // user stays exactly where they were.
+    handleClose();
+    openSaveCart();
   }
 
   return (
@@ -89,6 +100,39 @@ const FooterCart = ({items, handleClose} : any) => {
           }}
         />
         Continue Shopping
+      </button>
+
+      {/* Save Cart Button - Slate glass (busy now? email it to yourself) */}
+      <button
+        onClick={saveCart}
+        style={{
+          all: "unset",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "12px 26px",
+          borderRadius: "40px",
+          fontSize: "1.05rem",
+          fontWeight: 600,
+          color: "#1e293b",
+          whiteSpace: "nowrap" as const,
+          minWidth: "180px",
+          background: "linear-gradient(180deg, #ffffff 0%, #eef2f7 100%)",
+          border: "1px solid #cbd5e1",
+          boxShadow: "0 3px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+          transition: "all 0.3s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255,255,255,0.9)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 3px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.9)";
+        }}
+      >
+        Save Cart for Later
       </button>
 
       {/* Go to Checkout Button - Black 3D Glass */}

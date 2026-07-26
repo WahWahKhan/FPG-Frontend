@@ -3,9 +3,9 @@
 // Shipping details form with validation and activation code triggers
 
 import { useState } from 'react';
-import { 
-  STATES, 
-  DEVELOPER_MODE_CODE, 
+import {
+  STATES,
+  DEVELOPER_MODE_PREFIX,
   DEVELOPER_MODE_DEMO_DATA,
   INVOICE_BUILDER_CODE,
   CART_EMAIL_CODE
@@ -24,8 +24,9 @@ interface ShippingFormProps {
   onContinue: (shippingDetails: ShippingDetails) => void;
   /** Optional initial shipping details (for editing) */
   initialDetails?: ShippingDetails;
-  /** Callback when developer mode is activated */
-  onDeveloperModeActivated?: () => void;
+  /** Callback when developer mode is activated. Receives the typed secret code
+   *  (the text after the prefix) to forward to the server for validation. */
+  onDeveloperModeActivated?: (code: string) => void;
   /** Callback when invoice builder mode is activated */
   onInvoiceBuilderActivated?: () => void;
   /** Callback when cart email mode is activated */
@@ -52,20 +53,6 @@ export default function ShippingForm({
   // ============================================================================
 
   const handleFieldChange = (name: keyof ShippingDetails, value: string) => {
-    // ============================================================================
-    // ACTIVATION CODE 1: Developer Mode (20162025)
-    // ============================================================================
-    if (name === 'name' && value === DEVELOPER_MODE_CODE) {
-      setShippingDetails(DEVELOPER_MODE_DEMO_DATA);
-      
-      if (onDeveloperModeActivated) {
-        onDeveloperModeActivated();
-      }
-      
-      alert('🔧 Developer Mode Activated!\n\nPayment amount overridden to A$0.20\nDemo shipping details auto-filled');
-      return;
-    }
-    
     // ============================================================================
     // ACTIVATION CODE 2: Invoice Builder (20162026)
     // ============================================================================
@@ -115,7 +102,25 @@ export default function ShippingForm({
     }
   };
 
+  // Developer mode activates only on an explicit commit (Enter or blur) so the
+  // full secret can be typed after the "dev:" prefix without being interrupted.
+  const tryActivateDeveloperMode = (value: string): boolean => {
+    if (!value.startsWith(DEVELOPER_MODE_PREFIX)) return false;
+    const devSecret = value.slice(DEVELOPER_MODE_PREFIX.length).trim();
+    if (!devSecret) return false;
+
+    setShippingDetails(DEVELOPER_MODE_DEMO_DATA);
+    if (onDeveloperModeActivated) {
+      onDeveloperModeActivated(devSecret);
+    }
+    alert('🔧 Developer Mode UI activated.\n\nDemo shipping details auto-filled. Test pricing will apply ONLY if your code is valid on the server; otherwise the full price is charged.');
+    return true;
+  };
+
   const handleFieldBlur = (name: keyof ShippingDetails) => {
+    if (name === 'name' && tryActivateDeveloperMode(shippingDetails.name)) {
+      return;
+    }
     if (formSubmitAttempted) {
       const error = validateField(name, shippingDetails[name]);
       setErrors(prev => ({
@@ -163,6 +168,11 @@ export default function ShippingForm({
             type="text"
             value={shippingDetails.name}
             onChange={(e) => handleFieldChange('name', e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                tryActivateDeveloperMode(shippingDetails.name);
+              }
+            }}
             onBlur={() => handleFieldBlur('name')}
             className={`w-full px-3 py-2 border-2 rounded-lg ${
               formSubmitAttempted && errors.name 
