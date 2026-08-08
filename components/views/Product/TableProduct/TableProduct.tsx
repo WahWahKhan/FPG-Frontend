@@ -80,8 +80,8 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                     {formathead(key)}
                   </th>
                 ))}
-                <th className="font-semibold ">Price</th>
                 <th className="font-semibold text-center w-24">Stock</th>
+                <th className="font-semibold text-center">Price</th>
                 {/* Order Qty — the "action" column: inverted yellow header + a
                     divider so it reads as separate from the spec/data columns. */}
                 <th className="bg-yellow-400 text-[#191919] text-center rounded-t-xl border-l-4 border-white/60 px-4">
@@ -96,7 +96,14 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                   className="group transition-all duration-300 ease-out"
                   key={item.id}
                   style={{
-                    background: "transparent"
+                    background: "transparent",
+                    // Keep a constant-width (transparent) border + radius so the
+                    // hover state only changes their COLOR, never the box size.
+                    // This prevents the row from growing ~2px on hover (which,
+                    // once the row is transformed, would reflow the table and
+                    // nudge the footer up/down).
+                    border: "1px solid transparent",
+                    borderRadius: "12px"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = `
@@ -117,8 +124,8 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
                     e.currentTarget.style.setProperty('backdrop-filter', 'none');
-                    e.currentTarget.style.border = "none";
-                    e.currentTarget.style.borderRadius = "0";
+                    e.currentTarget.style.border = "1px solid transparent";
+                    e.currentTarget.style.borderRadius = "12px";
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0) scale(1)";
                   }}
@@ -139,8 +146,14 @@ const TableProduct = ({ items, setItems }: ITableProductProps) => {
                       );
                     }
                   })}
-                  <td className="font-bold">{`$${item.price}`}</td>
                   <td className="text-center w-24 text-gray-600">{item.stock}</td>
+                  {/* Price sits next to Order Qty and gets an on-theme chip so it
+                      pops (readable on white rows and on the yellow hover state). */}
+                  <td className="text-center">
+                    <span className="inline-block rounded-md bg-yellow-100 ring-1 ring-yellow-500/50 px-2.5 py-1 font-bold text-[#191919]">
+                      {`$${item.price}`}
+                    </span>
+                  </td>
                   <td className="w-32 border-l-4 border-yellow-400/40">
                     <div className="flex justify-center">
                       {item.stock === 0 ? (

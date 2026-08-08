@@ -7,11 +7,17 @@ import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 // Frosted "liquid glass" so blurry hints of the page show through the band.
 const GLASS_STYLE: React.CSSProperties = {
-  background: "rgba(255,255,255,0.55)",
+  background: "rgba(255,255,255,0.6)",
   backdropFilter: "blur(20px) saturate(180%)",
   WebkitBackdropFilter: "blur(20px) saturate(180%)",
   border: "1px solid rgba(255,255,255,0.5)",
   boxShadow: "0 -6px 30px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.7)",
+  // Force this frosted element onto its own GPU compositing layer so the
+  // backdrop-filter rasterises on the FIRST paint. Without it, the parent's
+  // opacity fade-in leaves the blur unapplied until a repaint (e.g. a resize),
+  // which made the bar look more see-through initially than after resizing.
+  transform: "translateZ(0)",
+  willChange: "transform",
 };
 
 type IOrderSummaryProductProps = {
@@ -75,11 +81,21 @@ const OrderSummaryProduct = ({
       {itemsAdded.length > 0 && (
         <motion.div
           className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.25 } }}
+          /* Do NOT fade opacity on ENTRANCE: an animating (opacity < 1) ancestor
+             becomes a "backdrop root" that clips the frosted bar's backdrop-filter,
+             leaving it stuck/see-through until a repaint (resize). Rendering solid
+             from the first paint keeps the blur correct. Exit still fades (frosting
+             dropping while the bar disappears is unnoticeable). */
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
         >
-          <div className="mx-auto max-w-5xl px-3 sm:px-4 pb-3 sm:pb-4 pointer-events-auto">
+          {/* Cart bar width:
+              - Small screens: near full-width (px-3); the stacked action buttons
+                take a right margin (below) to clear the round chat button.
+              - sm and up: symmetric side padding centres a narrower bar that
+                clears the desktop pill chat with even spacing on both sides. */}
+          <div className="mx-auto max-w-6xl px-3 sm:px-[150px] pb-3 sm:pb-4 pointer-events-auto">
             {collapsed ? (
               /* Collapsed → a compact glass pill; click to expand the band back.
                  Lets the user reach anything hidden behind the full band. */
@@ -185,9 +201,10 @@ const OrderSummaryProduct = ({
                 </button>
               </div>
 
-              {/* Right: actions — stacked on mobile (so both fit and neither
-                  slips under the floating chat button), row on desktop. The
-                  right margin on mobile keeps them clear of the chat bubble. */}
+              {/* Right: actions — stacked on mobile, row on desktop. On small
+                  screens the bar is full-width, so a right margin keeps these
+                  clear of the round chat button; sm+ relies on the bar's
+                  symmetric side padding instead. */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0 mr-16 sm:mr-0">
                 <button
                   onClick={checkout}
