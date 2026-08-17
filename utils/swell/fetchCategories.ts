@@ -4,6 +4,7 @@
 // DO NOT modify getCategories.ts — it remains intact and still calls this logic internally
 
 import swell from "utils/swell/swellinit";
+import { getCached, setCached } from "utils/swell/taxonomyCache";
 
 const transformTitle = (fullTitle: string) => {
   // Hose categories
@@ -88,6 +89,9 @@ const transformTitle = (fullTitle: string) => {
 };
 
 export const fetchCategories = async (): Promise<any[]> => {
+  const cached = getCached<any[]>('categories:all');
+  if (cached) return cached;
+
   const allCategoriesResponse = await swell.get('/categories', {
     limit: 1000
   });
@@ -149,5 +153,6 @@ export const fetchCategories = async (): Promise<any[]> => {
     return clean(category);
   });
 
+  setCached('categories:all', cleanCategories);
   return cleanCategories;
 };

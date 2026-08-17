@@ -1,11 +1,15 @@
+import Image from "next/image";
 import { FiMail, FiMapPin } from "react-icons/fi";
 
 const InfoFooter = () => {
   return (
     <div className="flex flex-col gap-4  items-center md:items-start ">
-      <img
-        className="relative h-[90px] w-[220px] bg-transparent"
+      <Image
+        className="relative bg-transparent"
         src="/logoFooter.png"
+        alt="Fluid Power Group logo"
+        width={220}
+        height={90}
       />
 
       <div className=" text-lg flex items-center gap-2">

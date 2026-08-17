@@ -13,7 +13,6 @@ interface IAnchorProps {
 
 const Anchor = ({ href, children, className }: IAnchorProps) => {
   return (
-    // eslint-disable-next-line @next/next/link-passhref
     <Link href={href} scroll={false} passHref>
       <motion.a
         className={clsx(className, "hover:no-underline")}

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import db from "db";
 
 const ServicesHome = () => {
@@ -24,8 +25,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10 ">
-                {<img src="./tubeBending.png" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10 ">
+                <Image src="/tubeBending.png" alt="Hydraulic tube bending" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>
@@ -45,8 +46,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
-                {<img src="./tubeFlaring.png" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
+                <Image src="/tubeFlaring.png" alt="Hydraulic tube flaring" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>
@@ -66,8 +67,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
-                {<img src="pressureTesting.png" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
+                <Image src="/pressureTesting.png" alt="Hydraulic pressure testing" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>
@@ -84,8 +85,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
-                {<img src="hoseAssembly.png" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
+                <Image src="/hoseAssembly.png" alt="Hydraulic hose assembly and crimping" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>
@@ -103,8 +104,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
-                {<img src="laserCutting.jpg" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
+                <Image src="/laserCutting.jpg" alt="Laser cutting of steel plate" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>
@@ -121,8 +122,8 @@ const ServicesHome = () => {
               className="w-full p-7 sm:p-10  text-yellow-500 flex sm:flex-row flex-col  gap-4 sm:gap-10 border-yellow-600  border-t-2 h-full hover:bg-[#151515] hover:shadow-lg hover:shadow-yellow-400/50 hover:text-yellow-400 cursor-pointer transition-all duration-200"
               key={index}
             >
-              <div className="w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
-                {<img src="metalBending.png" />}
+              <div className="relative w-full h-48 sm:h-28  sm:w-48 bg-slate-200/20 border border-slate-200/10">
+                <Image src="/metalBending.png" alt="Metal plate bending" layout="fill" objectFit="cover" />
               </div>
               <div className="flex flex-col gap-2 w-full">
                 <div className="text-2xl sm:text-3xl font-semibold">{item}</div>

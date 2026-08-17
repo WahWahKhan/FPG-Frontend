@@ -4,6 +4,7 @@
 // DO NOT modify getSeriesDetails.ts — it remains intact and still handles API requests
 
 import swell from "utils/swell/swellinit";
+import { getCached, setCached } from "utils/swell/taxonomyCache";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1588345921523-c2dcdb7f1dcd?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80";
 
@@ -29,9 +30,17 @@ const mapSwellCategory = (series: any): ISeries => ({
 
 // Fetch by UUID — used by [id].tsx (unchanged behaviour)
 export const fetchSeriesDetails = async (id: string): Promise<ISeries | null> => {
+  const cacheKey = `series:id:${id}`;
+  const cached = getCached<ISeries>(cacheKey);
+  if (cached) return cached;
+
   try {
     const series = await swell.get('/categories/{id}', { id });
-    if (series !== null) return mapSwellCategory(series);
+    if (series !== null) {
+      const mapped = mapSwellCategory(series);
+      setCached(cacheKey, mapped);
+      return mapped;
+    }
     return null;
   } catch (err: any) {
     console.error('fetchSeriesDetails error:', err.message);
@@ -42,6 +51,10 @@ export const fetchSeriesDetails = async (id: string): Promise<ISeries | null> =>
 // Fetch by slug — used by [slug].tsx
 // Defensive: takes first result (audit confirmed no duplicates, but guard anyway)
 export const fetchSeriesDetailsBySlug = async (slug: string): Promise<ISeries | null> => {
+  const cacheKey = `series:slug:${slug}`;
+  const cached = getCached<ISeries>(cacheKey);
+  if (cached) return cached;
+
   try {
     const response = await swell.get('/categories', {
       where: { slug },
@@ -51,7 +64,10 @@ export const fetchSeriesDetailsBySlug = async (slug: string): Promise<ISeries | 
     const result = response?.results?.[0];
     if (!result) return null;
 
-    return mapSwellCategory(result);
+    const mapped = mapSwellCategory(result);
+    setCached(cacheKey, mapped);
+    setCached(`series:id:${mapped.id}`, mapped); // shares cache with fetchSeriesDetails/fetchBreadcrumbs
+    return mapped;
   } catch (err: any) {
     console.error('fetchSeriesDetailsBySlug error:', err.message);
     return null;
@@ -67,40 +83,6 @@ export type IBreadcrumb = {
   id: string;
 };
 
-// Slug of the hidden "Build My Hose" parent category. Everything nested beneath
-// this (supplier/developer-only products) must be kept out of Google's index.
-export const HIDDEN_ROOT_SLUG = 'hydraulic-hoses-custom-hose-assembly';
-
-// Walk the full parent chain (uncapped beyond a generous safety limit) to decide
-// whether a category is the hidden root or a descendant of it. Short-circuits the
-// moment the hidden ancestor is found, so normal public pages stop quickly at the
-// root. Kept separate from fetchBreadcrumbs so the breadcrumb depth cap and its
-// per-level API cost are unaffected for normal pages.
-export const isUnderHiddenRoot = async (series: ISeries): Promise<boolean> => {
-  // The page itself is the hidden root
-  if (series.slug === HIDDEN_ROOT_SLUG) return true;
-
-  const SAFETY_LIMIT = 10;
-  let parentId = series.parent_id;
-  let depth = 0;
-
-  while (parentId && depth < SAFETY_LIMIT) {
-    try {
-      const parent = await swell.get('/categories/{id}', { id: parentId });
-      if (!parent) break;
-
-      if (parent.slug === HIDDEN_ROOT_SLUG) return true;
-
-      parentId = parent.parent_id ?? null;
-      depth++;
-    } catch {
-      break;
-    }
-  }
-
-  return false;
-};
-
 export const fetchBreadcrumbs = async (series: ISeries): Promise<IBreadcrumb[]> => {
   const crumbs: IBreadcrumb[] = [];
   const MAX_DEPTH = 5;
@@ -112,16 +94,12 @@ export const fetchBreadcrumbs = async (series: ISeries): Promise<IBreadcrumb[]> 
   let depth = 0;
 
   while (parentId && depth < MAX_DEPTH) {
-    try {
-      const parent = await swell.get('/categories/{id}', { id: parentId });
-      if (!parent) break;
+    const parent = await fetchSeriesDetails(parentId);
+    if (!parent) break;
 
-      crumbs.unshift({ name: parent.name, slug: parent.slug, id: parent.id });
-      parentId = parent.parent_id ?? null;
-      depth++;
-    } catch {
-      break;
-    }
+    crumbs.unshift({ name: parent.name, slug: parent.slug, id: parent.id });
+    parentId = parent.parent_id;
+    depth++;
   }
 
   return crumbs;

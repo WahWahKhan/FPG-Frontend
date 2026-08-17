@@ -23,20 +23,21 @@ function AppContent({ Component, pageProps, router }: AppProps) {
   const { open: isCartOpen } = useContext(CartContext);
 
   useEffect(() => {
-    const categories = async () => {
-      let cat;
-      do {
-        cat = await axios.get(
-          `/api/getCategories`
-        );
-      } while (cat.data.categories[0].subCategories.length === 0);
-      return cat;
-    };
+    let cancelled = false;
 
-    categories().then((result: any) => {
-      setCategories(result.data.categories);
-    });
-  }, [Component]);
+    axios
+      .get(`/api/getCategories`)
+      .then((result) => {
+        if (!cancelled) setCategories(result.data.categories);
+      })
+      .catch((err) => {
+        console.error('Failed to load nav categories:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Add payment debug logging
   useEffect(() => {

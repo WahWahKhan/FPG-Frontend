@@ -1,6 +1,6 @@
-// /pages/_middleware.ts
+// /middleware.ts
 // Redirects legacy query string URLs to clean slug-based paths
-// Uses pages/_middleware.ts convention (Next.js < 12.2)
+// Root-level middleware.ts convention (stable since Next.js 12.2)
 //
 // Handles:
 //   /products?subcategory=orfs-adapters  →  /products/orfs-adapters  (301)
@@ -9,31 +9,21 @@
 // Does NOT interfere with:
 //   /products/[uuid]   — UUID-based routes continue to work unchanged
 //   /products/[slug]   — already a clean URL, passes straight through
-//   Any other route    — pathname check at top exits immediately
+//   Any other route    — scoped out via the matcher below
 
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
-
-  // Only act on /products (with query strings) — not /products/something
-  if (pathname !== '/products') {
-    return NextResponse.next();
-  }
+  const { searchParams } = request.nextUrl;
 
   const subcategory = searchParams.get('subcategory');
   const category = searchParams.get('category');
 
   const slug = subcategory || category;
 
-  // Bare /products (no category/subcategory param) is not a real page — there is
-  // no /pages/products/index. Redirect it to the working catalogue page so users
-  // (and Google) never land on a broken/empty route.
+  // No relevant query param — let the request through as-is
   if (!slug) {
-    const catalogue = request.nextUrl.clone();
-    catalogue.pathname = '/catalogue';
-    catalogue.search = '';
-    return NextResponse.redirect(catalogue, 301);
+    return NextResponse.next();
   }
 
   // Build clean destination URL, preserving any other query params
@@ -42,6 +32,9 @@ export function middleware(request: NextRequest) {
   destination.searchParams.delete('subcategory');
   destination.searchParams.delete('category');
 
-  // Pass status as a plain number (Next.js < 12.2 signature)
   return NextResponse.redirect(destination, 301);
 }
+
+export const config = {
+  matcher: '/products',
+};

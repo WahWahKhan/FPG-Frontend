@@ -69,7 +69,7 @@ const nextConfig = {
 
       // ========================================
       // PHASE 2: QUERY STRING → SLUG REDIRECTS
-      // NOTE: These are handled dynamically in /middleware.ts
+      // NOTE: These are handled dynamically in middleware.ts
       // because next.config.js redirects cannot read query param
       // values and inject them into the destination path.
       //
@@ -78,9 +78,6 @@ const nextConfig = {
       // ========================================
     ]
   },
-  
-  basePath: '',
-  assetPrefix: '',
 };
 
 module.exports = nextConfig

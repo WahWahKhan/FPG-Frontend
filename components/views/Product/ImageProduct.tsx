@@ -17,6 +17,9 @@ const ImageProduct = ({ images = [] }: Props) => {
   const [firstImageLoaded, setFirstImageLoaded] = useState(false);
   // Click-to-magnify lightbox open state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Try Next's image optimizer first; only fall back to the raw file for a
+  // given src if that specific image errors out (mirrors utils/OptimizedImage.tsx).
+  const [unoptimizedUrls, setUnoptimizedUrls] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (safeImages.length > 0) {
@@ -24,13 +27,18 @@ const ImageProduct = ({ images = [] }: Props) => {
     }
   }, [safeImages]);
 
-  // Preload remaining images after first image loads
+  // Preload remaining images after first image loads.
+  // Goes through Next's image optimizer (same /_next/image route next/image itself
+  // uses) instead of the raw file — a full-res original here can be 1-2.5MB, the
+  // optimized version is tens of KB, and preloading every gallery image at full
+  // resolution in the background was saturating the connection for every other
+  // image request on the page.
   useEffect(() => {
     if (firstImageLoaded && safeImages.length > 1) {
       safeImages.slice(1).forEach((imageSrc) => {
         if (typeof window !== 'undefined') {
           const img = window.Image ? new window.Image() : document.createElement('img');
-          img.src = imageSrc;
+          img.src = `/_next/image?url=${encodeURIComponent(imageSrc)}&w=1200&q=75`;
         }
       });
     }
@@ -157,12 +165,20 @@ const ImageProduct = ({ images = [] }: Props) => {
               }}
             >
               <NextImage
+                key={selectedImage}
                 src={selectedImage}
                 alt="Product"
                 layout="fill"
                 objectFit="contain"
-                unoptimized={true}
-                loader={({ src }) => src}
+                unoptimized={unoptimizedUrls.has(selectedImage)}
+                onError={() => {
+                  setUnoptimizedUrls((prev) => {
+                    if (prev.has(selectedImage)) return prev;
+                    const next = new Set(prev);
+                    next.add(selectedImage);
+                    return next;
+                  });
+                }}
               />
             </div>
           </motion.div>
@@ -256,7 +272,7 @@ const ImageProduct = ({ images = [] }: Props) => {
               aria-label="Close"
               className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 shadow-md transition-colors hover:bg-gray-100 hover:text-black"
             >
-              <FiX className="text-5xl" />
+              <FiX className="text-3xl" />
             </button>
 
             {/* Enlarged image + navigation arrows */}

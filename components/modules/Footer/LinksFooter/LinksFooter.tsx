@@ -22,7 +22,7 @@ const LinksFooter = (props: Props) => {
       <div className="flex flex-col gap-3 items-center md:items-start">
         <h3 className="header-link-footer">Legal</h3>
         <LinkFooter>Terms & Conditions</LinkFooter>
-        <LinkFooter>Privacy Policy</LinkFooter>
+        <LinkFooter href="/privacy-policy">Privacy Policy</LinkFooter>
       </div>
     </div>
   );
