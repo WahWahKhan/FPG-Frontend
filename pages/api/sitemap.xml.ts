@@ -3,16 +3,18 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { fetchCategories } from 'utils/swell/fetchCategories';
 
 const STATIC_URLS = [
-  { loc: 'https://www.fluidpowergroup.com.au', priority: '1.0', changefreq: 'weekly' },
+  { loc: 'https://www.fluidpowergroup.com.au/', priority: '1.0', changefreq: 'weekly' },
   { loc: 'https://www.fluidpowergroup.com.au/catalogue', priority: '0.9', changefreq: 'weekly' },
   { loc: 'https://www.fluidpowergroup.com.au/suite360', priority: '0.9', changefreq: 'weekly' },
   { loc: 'https://www.fluidpowergroup.com.au/suite360/hose360', priority: '0.8', changefreq: 'monthly' },
-  { loc: 'https://www.fluidpowergroup.com.au/suite360/trac360', priority: '0.8', changefreq: 'monthly' },
-  { loc: 'https://www.fluidpowergroup.com.au/suite360/function360', priority: '0.8', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/suite360/trac360/start', priority: '0.8', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/suite360/function360/start', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/services', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/design', priority: '0.7', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/about', priority: '0.7', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/contact', priority: '0.7', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/downloads', priority: '0.7', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/privacy-policy', priority: '0.3', changefreq: 'yearly' },
 ];
 
 // Slug of the hidden "Build My Hose" parent. This branch holds supplier/developer

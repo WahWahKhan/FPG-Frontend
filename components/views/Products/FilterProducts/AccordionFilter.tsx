@@ -53,7 +53,7 @@ const AccordionFilter = ({
           >
             {category.subCategories.map((subCategory) => (
               <Anchor
-                href={`/products?subcategory=${subCategory?.slug}`}
+                href={`/products/${subCategory?.slug}`}
                 className={clsx(
                   "text-xl ",
                   selectedSubCategory === subCategory?.slug
@@ -70,7 +70,7 @@ const AccordionFilter = ({
                 "text-lg font-semibold bg-gradient-to-r text-transparent bg-clip-text from-amber-600 to-black",
                 { "pointer-events-none text-gray-400": selected }
               )}
-              href={`/products?category=${category.slug}`}
+              href={`/products/${category.slug}`}
             >
               View All
               </Anchor>*/}

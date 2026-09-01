@@ -12,6 +12,7 @@
 
 import { useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Image from 'next/image';
 import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { CartContext } from '../context/CartWrapper';
@@ -1349,6 +1350,10 @@ export default function CheckoutPage() {
   
   return (
     <>
+      <Head>
+        <title>Checkout | FluidPower Group</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       {/* Loading state during hydration */}
       {!isHydrated && (
         <div className="min-h-screen flex items-center justify-center">

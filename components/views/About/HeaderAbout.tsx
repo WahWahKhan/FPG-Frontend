@@ -10,7 +10,7 @@ const HeaderAbout = () => {
       >
         {/* Text Content - Left Side */}
         <div className="flex flex-col gap-4 lg:w-1/2">
-          <h2 className="text-4xl font-semibold">Who are we</h2>
+          <h1 className="text-4xl font-semibold">Who are we</h1>
           <main className="text-justify font-light text-lg">
             We offer wide range of hydraulic hose & fittings, adaptors, hydraulic
             tubes and all other miscellaneous parts that are needed in the fluid and

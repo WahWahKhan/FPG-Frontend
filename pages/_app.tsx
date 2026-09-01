@@ -79,9 +79,22 @@ function AppContent({ Component, pageProps, router }: AppProps) {
       <Header categories={categories} />
       <main className="flex-grow">
         <Head>
-          <link rel="canonical" href={canonicalUrl} />
+          <link rel="canonical" href={canonicalUrl} key="canonical" />
           <meta name="description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions. Strength & reliability delivered." />
           <meta name="google-site-verification" content="_gR0pKYQplY_yqDv8fZIJfD_FWFNrKhcgWpvGf9kMFg" />
+          <meta property="og:site_name" content="FluidPower Group" key="og:site_name" />
+          <meta property="og:type" content="website" key="og:type" />
+          <meta property="og:url" content={canonicalUrl} key="og:url" />
+          <meta property="og:title" content="FluidPower Group | Hydraulic Hoses, Fittings & Custom Solutions" key="og:title" />
+          <meta property="og:description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions." key="og:description" />
+          <meta property="og:image" content="https://www.fluidpowergroup.com.au/og-default.jpg" key="og:image" />
+          <meta property="og:image:width" content="1200" key="og:image:width" />
+          <meta property="og:image:height" content="630" key="og:image:height" />
+          <meta property="og:locale" content="en_AU" key="og:locale" />
+          <meta name="twitter:card" content="summary_large_image" key="twitter:card" />
+          <meta name="twitter:title" content="FluidPower Group | Hydraulic Hoses, Fittings & Custom Solutions" key="twitter:card:title" />
+          <meta name="twitter:description" content="Australia's growing hydraulics company delivering hydraulic products & custom solutions." key="twitter:card:desc" />
+          <meta name="twitter:image" content="https://www.fluidpowergroup.com.au/og-default.jpg" key="twitter:card:img" />
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -100,7 +113,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
                 "url": "https://www.fluidpowergroup.com.au",
                 "telephone": "+61409517333",
                 "email": "info@fluidpowergroup.com.au",
-                "image": "https://www.fluidpowergroup.com.au/logo.png",
+                "image": "https://www.fluidpowergroup.com.au/logo-schema.png",
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": "44a Murrell St",

@@ -39,6 +39,12 @@ const ItemsContact = () => {
         {contactOptions.map((item, i) => (
           <ItemContact key={i} {...item} />
         ))}
+
+        <div className="text-center">
+          <h3 className="font-semibold text-gray-800 mb-2">Opening Hours</h3>
+          <p className="text-gray-600">Monday - Friday: 8:00am - 5:00pm</p>
+          <p className="text-gray-600">Saturday - Sunday: 9:00am - 5:00pm</p>
+        </div>
       </div>
     </div>
   );

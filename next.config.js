@@ -69,13 +69,43 @@ const nextConfig = {
 
       // ========================================
       // PHASE 2: QUERY STRING → SLUG REDIRECTS
-      // NOTE: These are handled dynamically in middleware.ts
-      // because next.config.js redirects cannot read query param
-      // values and inject them into the destination path.
+      // NOTE: middleware.ts never ran in production (Next 12.1.0 does
+      // not support root middleware), so these are handled here instead.
       //
       //   /products?subcategory=[slug]  →  /products/[slug]
       //   /products?category=[slug]     →  /products/[slug]
       // ========================================
+      {
+        source: '/products',
+        has: [{ type: 'query', key: 'subcategory', value: '(?<slug>.*)' }],
+        destination: '/products/:slug',
+        permanent: true,
+      },
+      {
+        source: '/products',
+        has: [{ type: 'query', key: 'category', value: '(?<slug>.*)' }],
+        destination: '/products/:slug',
+        permanent: true,
+      },
+
+      // ========================================
+      // PHASE 3: BLANK CLIENT-REDIRECT STUB PAGES
+      // ========================================
+      {
+        source: '/suite360/trac360',
+        destination: '/suite360/trac360/start',
+        permanent: false,
+      },
+      {
+        source: '/suite360/function360',
+        destination: '/suite360/function360/start',
+        permanent: false,
+      },
+    ]
+  },
+  async rewrites() {
+    return [
+      { source: '/sitemap.xml', destination: '/api/sitemap.xml' },
     ]
   },
 };

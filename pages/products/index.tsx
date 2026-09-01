@@ -6,6 +6,14 @@ import Header from "@/modules/Header";
 import { useRouter } from "next/router";
 import axios from "axios";
 import Loading from "@/modules/Loading";
+import Head from "next/head";
+
+const ProductsPageHead = () => (
+  <Head>
+    <title>Products | FluidPower Group</title>
+    <meta name="robots" content="noindex, follow" />
+  </Head>
+);
 import { sortProductsAlphanumerically } from "../../utils/productSorting";
 
 const ProductsPage = () => {
@@ -251,13 +259,19 @@ const ProductsPage = () => {
 
   // Show loading while router is not ready or while fetching
   if (!router.isReady || loading) {
-    return <Loading />;
+    return (
+      <>
+        <ProductsPageHead />
+        <Loading />
+      </>
+    );
   }
 
   // Show error state with retry option
   if (error) {
     return (
       <div className="wrapper px-8 md:px-12 py-12 min-h-screen flex flex-col items-center justify-center">
+        <ProductsPageHead />
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Products</h2>
           <p className="text-gray-600 mb-6">{error}</p>
@@ -284,6 +298,7 @@ const ProductsPage = () => {
   if (memoizedCategories.length === 0 && series.length === 0 && products.length === 0) {
     return (
       <div className="wrapper px-8 md:px-12 py-12 min-h-screen flex flex-col items-center justify-center">
+        <ProductsPageHead />
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">No Data Found</h2>
           <p className="text-gray-600 mb-4">Please check back later or contact support.</p>
@@ -302,6 +317,7 @@ const ProductsPage = () => {
 
   return (
     <div className="wrapper px-8 md:px-12 py-12 min-h-screen flex flex-col items-center gap-12">
+      <ProductsPageHead />
       <HeaderProducts categories={memoizedCategories} slug={targetSlugOrId}/>
 
       <div className="grid grid-cols-12 w-full space-y-8 sm:space-y-0 sm:space-x-12">

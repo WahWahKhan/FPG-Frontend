@@ -141,6 +141,7 @@ const HoseBuilder = () => {
         <link rel="manifest" href="/suite360/manifest.json" />
       </Head>
       <div className="hosebuilder-container">
+        <h1 className="sr-only">Hose360 - Build Your Custom Hydraulic Hose Online</h1>
         <div id="root"></div>
       </div>
     </>

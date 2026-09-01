@@ -103,6 +103,12 @@ const buildBreadcrumbSchema = (crumbs: IBreadcrumb[]) => ({
 const CategoryDescription = ({ description }: { description: string }) => {
   const [expanded, setExpanded] = useState(false);
 
+  // Swell CMS wraps some category descriptions in <h1>, which duplicates the
+  // page's real <h1>. Downgrade to <p> defensively regardless of CMS content.
+  const safeDescription = description
+    .replace(/<h1(\s[^>]*)?>/gi, '<p$1>')
+    .replace(/<\/h1>/gi, '</p>');
+
   return (
     <div className="mt-2 flex flex-col items-center">
       <div
@@ -117,7 +123,7 @@ const CategoryDescription = ({ description }: { description: string }) => {
             overflow: 'hidden',
           } : {})
         }}
-        dangerouslySetInnerHTML={{ __html: description }}
+        dangerouslySetInnerHTML={{ __html: safeDescription }}
       />
       <button
         onClick={() => setExpanded(!expanded)}
@@ -170,8 +176,11 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
         <Head>
           <title>{series.name} | FluidPower Group</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
-          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
+          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
           <meta name="description" content={`Browse ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+          <meta property="og:title" content={`${series.name} | FluidPower Group`} key="og:title" />
+          <meta property="og:url" content={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="og:url" />
+          <meta property="og:image" content={series.images?.[0] || "https://www.fluidpowergroup.com.au/og-default.jpg"} key="og:image" />
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(buildBreadcrumbSchema(breadcrumbs)) }}
@@ -204,8 +213,11 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
       <Head>
         <title>{series.name} | FluidPower Group</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
-          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} />
+          <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
         <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+        <meta property="og:title" content={`${series.name} | FluidPower Group`} key="og:title" />
+        <meta property="og:url" content={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="og:url" />
+        <meta property="og:image" content={series.images?.[0] || "https://www.fluidpowergroup.com.au/og-default.jpg"} key="og:image" />
 
         {/* BreadcrumbList schema */}
         <script
@@ -342,15 +354,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   } catch (err: any) {
     console.error('getServerSideProps error in [id].tsx:', err);
 
-    return {
-      props: {
-        initialItems: [],
-        initialSubcategories: [],
-        series: null,
-        breadcrumbs: [],
-        noIndex: false
-      }
-    };
+    return { notFound: true };
   }
 };
 

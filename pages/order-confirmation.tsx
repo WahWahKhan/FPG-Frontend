@@ -302,6 +302,10 @@ export default function OrderConfirmation() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Head>
+          <title>Order Confirmation | FluidPower Group</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading your order...</p>
@@ -316,6 +320,7 @@ export default function OrderConfirmation() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <Head>
           <title>Order Not Found - FluidPower Group</title>
+          <meta name="robots" content="noindex, nofollow" />
         </Head>
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>

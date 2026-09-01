@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import React from "react";
+import Head from "next/head";
 import { FiDownload, FiFileText } from "react-icons/fi";
 
 interface DownloadFile {
@@ -79,6 +80,11 @@ const DownloadsPage = () => {
   };
 
   return (
+    <>
+    <Head>
+      <title>Technical Downloads | FluidPower Group</title>
+      <meta name="description" content="Download BSP and JIC thread identification sheets, hydraulic hose crimp charts and technical reference guides from FluidPower Group." />
+    </Head>
     <div
       className="min-h-screen w-full py-20 px-4 sm:px-6 lg:px-8"
       style={{
@@ -94,9 +100,9 @@ const DownloadsPage = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col gap-4 p-8">
-          <div className="font-bold text-4xl sm:text-5xl text-yellow-500">
+          <h1 className="font-bold text-4xl sm:text-5xl text-yellow-500">
             Downloads
-          </div>
+          </h1>
           <div className="text-xl text-yellow-600 sm:text-2xl font-light opacity-75">
             Technical Documentation & Resources
           </div>
@@ -254,6 +260,7 @@ const DownloadsPage = () => {
         </motion.div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -6,6 +6,14 @@ import { useRouter } from "next/router";
 import axios from "axios";
 import Loading from "@/modules/Loading";
 import { AnimatePresence, motion } from "framer-motion";
+import Head from "next/head";
+
+const SearchPageHead = () => (
+  <Head>
+    <title>Product Search | FluidPower Group</title>
+    <meta name="robots" content="noindex, follow" />
+  </Head>
+);
 
 type searchParams = {
   title: string | null;
@@ -217,12 +225,18 @@ const Search = () => {
   };
 
   if (loading) {
-    return <Loading />;
+    return (
+      <>
+        <SearchPageHead />
+        <Loading />
+      </>
+    );
   }
 
   if (error) {
     return (
       <div className="px-8 md:px-12 py-12 min-h-screen flex flex-col items-center justify-center">
+        <SearchPageHead />
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Search Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
@@ -239,6 +253,7 @@ const Search = () => {
 
   return (
     <div className="px-4 sm:px-8 md:px-12 py-8 md:py-12 min-h-screen">
+      <SearchPageHead />
       <div className="text-[2.5rem] sm:text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-bold text-slate-200/50 px-2 sm:px-4 md:px-10">
         Search
       </div>
