@@ -1,5 +1,12 @@
 import { FiCheck, FiSquare } from "react-icons/fi";
 
+// Swell CMS descriptions sometimes wrap plain text in <h1>, which duplicates
+// this page's real <h1> above. Downgrade to <p> defensively before rendering.
+const downgradeHeadings = (html: string) =>
+  html
+    .replace(/<h1(\s[^>]*)?>/gi, '<p$1>')
+    .replace(/<\/h1>/gi, '</p>');
+
 const DescriptionProduct = ({ series, items }: { series: any, items: any }) => {
   return (
     <div className="col-span-full lg:col-span-6  xl:col-span-5   lg:px-12 flex flex-col gap-8 justify-center ">
@@ -31,7 +38,7 @@ const DescriptionProduct = ({ series, items }: { series: any, items: any }) => {
       <ul className="flex flex-col gap-2.5">
         {series.description.length !== 0 &&
           <li className="flex items-center gap-1 text-lg xl:text-xl">
-            <div dangerouslySetInnerHTML={{__html: series.description}}>
+            <div dangerouslySetInnerHTML={{__html: downgradeHeadings(series.description)}}>
             </div>
           </li>
         }
@@ -40,7 +47,7 @@ const DescriptionProduct = ({ series, items }: { series: any, items: any }) => {
       {/* Item Description - Always visible (no more toggle) */}
       {items && items.description && items.description.length !== 0 && (
         <div className="flex flex-col gap-2.5">
-          <div dangerouslySetInnerHTML={{__html: items.description}}>
+          <div dangerouslySetInnerHTML={{__html: downgradeHeadings(items.description)}}>
           </div>
         </div>
       )}

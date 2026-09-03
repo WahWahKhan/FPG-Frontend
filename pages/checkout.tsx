@@ -26,11 +26,13 @@ import {
   CreateOrderRequest,
   CreateOrderResponse,
   CaptureOrderRequest,
+  ServerBreakdown,
 } from '../lib/checkout/order-contract';
 
 // PHASE 1 - Component imports
 import CheckoutProgress from '../components/checkout/CheckoutProgress';
 import PDFModal from '../components/shared/PDFModal';
+import DuplicateItemsPrompt from '../components/checkout/DuplicateItemsPrompt';
 
 // PHASE 3 - ShippingForm component
 import ShippingForm from '../components/checkout/ShippingForm';
@@ -69,6 +71,10 @@ export default function CheckoutPage() {
   // Server-authority flow: the authoritative quote (total + breakdown) returned
   // by the backend create-order. Null until the buyer initiates payment.
   const [serverQuote, setServerQuote] = useState<CreateOrderResponse | null>(null);
+  // Display-only server quote, refreshed whenever the cart changes. Kept separate
+  // from `serverQuote` (which is bound to an actual PayPal order id and drives
+  // capture) so the money path is untouched. Null = fall back to client estimate.
+  const [liveQuote, setLiveQuote] = useState<ServerBreakdown | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string>('');
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
@@ -138,7 +144,46 @@ export default function CheckoutPage() {
       console.log('✅ [CHECKOUT] Cart has items, staying on page');
     }
   }, [items, router, isCompletingOrder, isHydrated]);
-  
+
+  // Display-only server quote, refreshed whenever the cart changes — makes the
+  // server the price authority for what's SHOWN, not just what's charged.
+  // Previously `serverQuote` (the one bound to a real PayPal order) only got set
+  // inside the createOrder callback, so the whole review step showed the client
+  // estimate; if the client and server ever disagreed (as they did before the
+  // Steel Tubes shipping aggregation fix), the customer saw one number and was
+  // charged another. This never blocks checkout: any failure just leaves
+  // liveQuote null and displayTotals below falls back to the client estimate.
+  useEffect(() => {
+    if (!SERVER_PRICING_ENABLED || items.length === 0) {
+      setLiveQuote(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/paypal/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: buildServerOrderItems(items) }),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`quote failed (${res.status})`);
+        const data = await res.json();
+        setLiveQuote(data.breakdown ?? null);
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        console.warn('Live quote unavailable, using client estimate:', err?.message);
+        setLiveQuote(null);
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [items]);
+
   const { pwaItems, websiteItems, trac360Items, function360Items } = separateCartItems(items);
   console.log('📊 [CHECKOUT] Cart separation:', {
     total: items.length,
@@ -149,15 +194,18 @@ export default function CheckoutPage() {
   });
   const totals = calculateCartTotals(items);
 
-  // Display totals: prefer the SERVER-computed breakdown once a quote exists
-  // (server-authority flow), otherwise fall back to the client-side estimate.
+  // Display totals: prefer the PayPal-bound quote (exists once payment has
+  // started and is what will actually be captured), then the live cart quote
+  // (server maths refreshed as the cart changes, see the effect above), and
+  // only fall back to the client-side estimate if the server is unreachable.
   // Client math stays for display only; it never drives what PayPal charges.
-  const displayTotals = (SERVER_PRICING_ENABLED && serverQuote?.breakdown)
+  const activeBreakdown = serverQuote?.breakdown ?? liveQuote;
+  const displayTotals = (SERVER_PRICING_ENABLED && activeBreakdown)
     ? {
-        subtotal: serverQuote.breakdown.subtotal,
-        shipping: serverQuote.breakdown.shipping,
-        gst: serverQuote.breakdown.gst,
-        total: serverQuote.breakdown.total,
+        subtotal: activeBreakdown.subtotal,
+        shipping: activeBreakdown.shipping,
+        gst: activeBreakdown.gst,
+        total: activeBreakdown.total,
       }
     : {
         subtotal: totals.subtotal,
@@ -174,8 +222,8 @@ export default function CheckoutPage() {
   // cartId (present on every custom order); website lines without a cartId fall
   // back to their cart price, which is the same Swell price the server uses.
   const serverLineAmountByCartId = new Map<number, number>();
-  if (SERVER_PRICING_ENABLED && serverQuote?.breakdown?.lines) {
-    for (const l of serverQuote.breakdown.lines) {
+  if (SERVER_PRICING_ENABLED && activeBreakdown?.lines) {
+    for (const l of activeBreakdown.lines) {
       if (l && l.cartId != null) serverLineAmountByCartId.set(l.cartId, l.amount);
     }
   }
@@ -1367,6 +1415,7 @@ export default function CheckoutPage() {
       {/* Only show checkout content after hydration */}
       {isHydrated && (
         <>
+          <DuplicateItemsPrompt />
           <div className="min-h-screen bg-gray-50 py-12 px-4">
             <div className="max-w-4xl mx-auto">
               {/* Logo */}

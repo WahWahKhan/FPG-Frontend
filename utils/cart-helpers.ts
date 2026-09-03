@@ -97,6 +97,29 @@ export const separateCartItems = (items: IItemCart[]) => {
   return { pwaItems, websiteItems, trac360Items, function360Items };  // â† ADD THIS
 };
 
+// Steel Tubes shipping rule — DISPLAY ONLY. The backend (server-authority
+// pricing, lib/pricing/website.js in the backend repo) is the source of truth
+// and checks the product's real Swell category_index. IItemCart carries no
+// category field, so this mirrors that rule here via the SKU naming
+// convention Swell already enforces for these categories (category name ==
+// SKU prefix, verified live 2026-09-02: FPG-CSTM/FPG-CSTI/FPG-SSTM/FPG-SSTI).
+// Keep in sync with STEEL_TUBES_CATEGORY_IDS server-side if the catalog is
+// reorganised.
+const STEEL_TUBES_SKU_PREFIXES = ['FPG-CSTM-', 'FPG-CSTI-', 'FPG-SSTM-', 'FPG-SSTI-'];
+const STEEL_TUBES_SHIPPING = 80;
+
+// Per-line: a cart LINE represents one continuous physical length being cut
+// and shipped as a single piece, so qty > 1 on ONE line means that piece is
+// longer than 1m and needs special freight — not the same thing as two
+// separate 1m lines of the same tube (two ordinary parcels, standard
+// shipping, even though the cart total for that product is 2). Deliberately
+// does NOT sum quantity across lines — mirrors the backend (lib/pricing/
+// website.js's isSteelTubesLineOverLength, lib/pricing/index.js).
+const isSteelTubesLine = (item: IItemCart): boolean =>
+  isWebsiteProduct(item) &&
+  (item.quantity || 0) > 1 &&
+  STEEL_TUBES_SKU_PREFIXES.some((prefix) => item.name?.startsWith(prefix));
+
 /**
  * Calculate cart totals
  * NOW SUPPORTS: Website Products, PWA Orders, and Trac 360 Orders
@@ -123,7 +146,8 @@ export const calculateCartTotals = (items: IItemCart[]) => {
   );
   
   const subtotal = websiteTotal + pwaTotal + trac360Total + function360Total;
-  const shipping = 12.85;
+  const steelTubesShippingTriggered = normalizedItems.some(isSteelTubesLine);
+  const shipping = steelTubesShippingTriggered ? STEEL_TUBES_SHIPPING : 12.85;
   const gst = (subtotal + shipping) * 0.10;
   const total = subtotal + shipping + gst;
   

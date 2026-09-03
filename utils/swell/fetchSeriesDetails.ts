@@ -113,6 +113,37 @@ export const isUnderHiddenRoot = async (series: ISeries): Promise<boolean> => {
   return false;
 };
 
+export type ISiblingCategory = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+// Other categories sharing the same parent — used for the "Related categories"
+// row (sideways internal linking, SEO Fix Plan 2 Phase 3.3). Excludes the
+// current category and the hidden "Build My Hose" root/its children.
+export const fetchSiblingCategories = async (series: ISeries, limit = 6): Promise<ISiblingCategory[]> => {
+  if (!series.parent_id) return [];
+
+  const cacheKey = `siblings:${series.parent_id}`;
+  let siblings = getCached<ISiblingCategory[]>(cacheKey);
+
+  if (!siblings) {
+    try {
+      const response = await swell.get('/categories', { where: { parent_id: series.parent_id }, limit: 50 });
+      siblings = (response?.results || [])
+        .filter((c: any) => c.slug !== HIDDEN_ROOT_SLUG)
+        .map((c: any) => ({ id: c.id, slug: c.slug, name: c.name }));
+      setCached(cacheKey, siblings);
+    } catch (err: any) {
+      console.error('fetchSiblingCategories error:', err.message);
+      return [];
+    }
+  }
+
+  return (siblings ?? []).filter((s) => s.id !== series.id).slice(0, limit);
+};
+
 export const fetchBreadcrumbs = async (series: ISeries): Promise<IBreadcrumb[]> => {
   const crumbs: IBreadcrumb[] = [];
   const MAX_DEPTH = 5;

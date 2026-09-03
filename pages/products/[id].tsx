@@ -16,6 +16,7 @@ import {
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { FiInfo } from 'react-icons/fi';
 
 // ─── Adjust this to change how many lines show before "Read more" ──────────
 const CATEGORY_DESCRIPTION_LINE_CLAMP = 3;
@@ -25,7 +26,7 @@ import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
 import { GetServerSideProps } from 'next';
 import { fetchProducts, fetchProductsBySlug } from 'utils/swell/fetchProducts';
-import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, isUnderHiddenRoot, ISeries, IBreadcrumb } from 'utils/swell/fetchSeriesDetails';
+import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, fetchSiblingCategories, isUnderHiddenRoot, ISeries, IBreadcrumb, ISiblingCategory } from 'utils/swell/fetchSeriesDetails';
 import { sortProductsAlphanumerically } from '../../utils/productSorting';
 
 interface ProductPageProps {
@@ -33,6 +34,7 @@ interface ProductPageProps {
   initialSubcategories: any[];
   series: ISeries | null;
   breadcrumbs: IBreadcrumb[];
+  relatedCategories: ISiblingCategory[];
   noIndex: boolean;
 }
 
@@ -97,6 +99,54 @@ const buildBreadcrumbSchema = (crumbs: IBreadcrumb[]) => ({
   ]
 });
 
+// The four real Steel Tubes leaf category slugs (verified live against Swell
+// 2026-09-02 — same tree as STEEL_TUBES_CATEGORY_IDS in the backend's
+// lib/pricing/website.js). Ordering more than 1 metre of any tube on these
+// pages triggers the flat $80 shipping rule; this note tells the customer
+// why before they order, so it's never a surprise at checkout.
+const STEEL_TUBES_LEAF_SLUGS = new Set([
+  'carbon-steel-tubes-cs-imperial-tubes',
+  'carbon-steel-tubes-cs-metric-tubes',
+  'stainless-steel-tubes-ss-imperial-tubes',
+  'stainless-steel-tubes-ss-metric-tubes',
+]);
+
+const SteelTubesShippingNote = () => (
+  <div className="wrapper px-8 md:px-12">
+    <div className="flex items-start gap-3 rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 mb-4">
+      <FiInfo className="text-yellow-600 text-xl flex-shrink-0 mt-0.5" />
+      <p className="text-sm text-gray-700">
+        Orders of more than 1 metre on this page are shipped at a flat A$80 to
+        cover the additional freight required for longer lengths. This is the
+        actual cost of freight — we don&apos;t add a margin to shipping charges.
+      </p>
+    </div>
+  </div>
+);
+
+// ---------------------------------------------------------------------------
+// RelatedCategories — sideways internal links to sibling categories
+// (SEO Fix Plan 2, Phase 3.3). Styled to match Breadcrumbs above.
+// ---------------------------------------------------------------------------
+const RelatedCategories = ({ categories }: { categories: ISiblingCategory[] }) => {
+  if (categories.length === 0) return null;
+
+  return (
+    <nav aria-label="Related categories" className="wrapper px-8 md:px-12 py-6">
+      <h2 className="text-xl font-semibold mb-3">Related categories</h2>
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-500" style={{ fontSize: '1.125rem' }}>
+        {categories.map((category) => (
+          <li key={category.id}>
+            <Link href={`/products/${category.slug}`}>
+              <a className="hover:text-gray-800 transition-colors duration-150">{category.name}</a>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // CategoryDescription — clamped with Read more / Read less (desktop only)
 // ---------------------------------------------------------------------------
@@ -139,7 +189,7 @@ const CategoryDescription = ({ description }: { description: string }) => {
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
-const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, noIndex }: ProductPageProps) => {
+const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, relatedCategories, noIndex }: ProductPageProps) => {
   const router = useRouter();
   const id = router.query.id;
 
@@ -169,6 +219,16 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
     );
   }
 
+  // Derive a real per-page meta description from the CMS description instead
+  // of a template that only swaps the category name — used by both branches
+  // below. Falls back to the template only when the CMS field is empty.
+  const plainDescriptionForMeta = series.description
+    ? series.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    : '';
+  const metaDescription = plainDescriptionForMeta
+    ? plainDescriptionForMeta.slice(0, 155).trim() + (plainDescriptionForMeta.length > 155 ? '…' : '')
+    : `Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`;
+
   // If we have subcategories, show them in a grid
   if (initialSubcategories.length > 0) {
     return (
@@ -177,7 +237,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
           <title>{series.name} | FluidPower Group</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
-          <meta name="description" content={`Browse ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+          <meta name="description" content={metaDescription} />
           <meta property="og:title" content={`${series.name} | FluidPower Group`} key="og:title" />
           <meta property="og:url" content={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="og:url" />
           <meta property="og:image" content={series.images?.[0] || "https://www.fluidpowergroup.com.au/og-default.jpg"} key="og:image" />
@@ -196,16 +256,16 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
               <CategoryDescription description={series.description} />
             )}
           </div>
+          <h2 className="text-xl font-semibold mb-3">Browse {series.name} by type</h2>
           <GridProducts
             seriesList={initialSubcategories}
             showDescription={series.slug !== 'jic-adapters'}
           />
         </div>
+        <RelatedCategories categories={relatedCategories} />
       </div>
     );
   }
-
-  const plainDescription = series.description ? series.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
 
   // Default: show products in table format
   return (
@@ -214,7 +274,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
         <title>{series.name} | FluidPower Group</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
-        <meta name="description" content={`Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`} />
+        <meta name="description" content={metaDescription} />
         <meta property="og:title" content={`${series.name} | FluidPower Group`} key="og:title" />
         <meta property="og:url" content={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="og:url" />
         <meta property="og:image" content={series.images?.[0] || "https://www.fluidpowergroup.com.au/og-default.jpg"} key="og:image" />
@@ -233,7 +293,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
               "@context": "https://schema.org",
               "@type": "ItemList",
               "name": series.name,
-              "description": plainDescription,
+              "description": plainDescriptionForMeta,
               "url": `https://www.fluidpowergroup.com.au/products/${series.slug}`,
               "numberOfItems": items.length,
               "itemListElement": items
@@ -246,7 +306,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
                     "name": item.name,
                     "mpn": item.name,
                     "image": series.images[0] || "",
-                    "description": plainDescription,
+                    "description": plainDescriptionForMeta,
                     "brand": {
                       "@type": "Brand",
                       "name": "FluidPower Group"
@@ -274,10 +334,16 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
 
       <div className="max-w-2xl lg:max-w-full w-full mx-auto mb-4">
         <div className="grid grid-cols-12 h-full space-y-6 lg:space-y-0 space-x-0 lg:space-x-6 mx-auto wrapper px-8 md:px-12 overflow-hidden">
-          <ImageProduct images={series.images} />
+          <ImageProduct images={series.images} productName={series.name} />
           <DescriptionProduct items={items[0]} series={series} />
         </div>
       </div>
+      {STEEL_TUBES_LEAF_SLUGS.has(series.slug) && <SteelTubesShippingNote />}
+      {items.length !== 0 && (
+        <div className="wrapper px-8 md:px-12">
+          <h2 className="text-xl font-semibold mb-3">{series.name} sizes &amp; specifications</h2>
+        </div>
+      )}
       {items.length !== 0 && <TableProduct items={items} setItems={setItems} />}
       <div className="max-w-2xl lg:max-w-full w-full mx-auto">
         <OrderSummaryProduct
@@ -288,6 +354,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
           }
         />
       </div>
+      <RelatedCategories categories={relatedCategories} />
     </div>
   );
 };
@@ -326,8 +393,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       return { notFound: true };
     }
 
-    // Breadcrumbs need series to be resolved first — sequential but fast
-    const breadcrumbs = await fetchBreadcrumbs(series);
+    // Breadcrumbs and sibling categories both need series resolved first,
+    // but are independent of each other — fetch concurrently
+    const [breadcrumbs, relatedCategories] = await Promise.all([
+      fetchBreadcrumbs(series),
+      fetchSiblingCategories(series)
+    ]);
 
     // Determine whether this page belongs to the hidden supplier/developer subtree
     // (Build My Hose and everything beneath it). If so, it still renders normally
@@ -348,6 +419,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         initialSubcategories,
         series,
         breadcrumbs,
+        relatedCategories,
         noIndex
       }
     };

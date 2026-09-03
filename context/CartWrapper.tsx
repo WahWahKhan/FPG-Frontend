@@ -12,6 +12,7 @@ export const CartContext = createContext<{
   addItem: (item: IItemCart) => void;
   deleteItem: (item: IItemCart) => void;
   updateItem: (item: IItemCart) => void;
+  mergeItems: (productId: string) => void;
   setCart: (cart: ICart) => void;
   clearCart: () => void;
   saveCartOpen: boolean;
@@ -24,6 +25,7 @@ export const CartContext = createContext<{
   addItem: () => {},
   deleteItem: () => {},
   updateItem: () => {},
+  mergeItems: () => {},
   setCart: () => {},
   clearCart: () => {},
   saveCartOpen: false,
@@ -327,6 +329,29 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
     }));
   };
 
+  // ✅ Combine every line sharing `productId` into one line with their summed
+  // quantity — used by the checkout "combine duplicate lines?" prompt (see
+  // utils/cartDuplicates.ts for why duplicate lines happen at all). Only
+  // touches plain website-catalog lines, never PWA/Trac360/Function360 custom
+  // builds. Marks isUserAction like deleteItem — merging always REDUCES the
+  // item count, and without this flag the debounced-save effect below reads
+  // that as "state fell behind a PWA localStorage sync" and reverts it back
+  // to the unmerged lines before the merge ever reaches localStorage.
+  const mergeItems = (productId: string) => {
+    isUserAction.current = true;
+    setCart((prevCart) => {
+      const isWebsiteLine = (i: IItemCart) => !i.type || i.type === 'website_product';
+      const matching = prevCart.items.filter((i) => isWebsiteLine(i) && i.id === productId);
+      if (matching.length < 2) return prevCart;
+
+      const totalQuantity = matching.reduce((sum, i) => sum + (i.quantity || 0), 0);
+      const mergedLine: IItemCart = { ...matching[0], quantity: totalQuantity };
+      const rest = prevCart.items.filter((i) => !(isWebsiteLine(i) && i.id === productId));
+
+      return { ...prevCart, items: [...rest, mergedLine] };
+    });
+  };
+
   const updateItem = (item: IItemCart) => {
     setCart((prevCart) => ({
       ...prevCart,
@@ -369,6 +394,7 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
       addItem,
       deleteItem,
       updateItem,
+      mergeItems,
       setCart,
       clearCart,
       open: cart.open,

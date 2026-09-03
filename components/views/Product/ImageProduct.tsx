@@ -8,9 +8,11 @@ import SafeImage from "../../../utils/SafeImage";
 
 type Props = {
   images: string[];
+  productName?: string;
 };
 
-const ImageProduct = ({ images = [] }: Props) => {
+const ImageProduct = ({ images = [], productName }: Props) => {
+  const altText = productName || 'Product';
   const safeImages = useMemo(() => images || [], [images]);
   const [selectedImage, setSelectedImage] = useState(safeImages.length > 0 ? safeImages[0] : '');
   const [direction, setDirection] = useState(true);
@@ -123,7 +125,7 @@ const ImageProduct = ({ images = [] }: Props) => {
             exit="exit">
             <SafeImage
               src={selectedImage}
-              alt="Product"
+              alt={altText}
               width={300}
               height={300}
               className="!w-[200px] !h-[200px] md:!w-[250px] md:!h-[250px] object-contain"
@@ -167,7 +169,7 @@ const ImageProduct = ({ images = [] }: Props) => {
               <NextImage
                 key={selectedImage}
                 src={selectedImage}
-                alt="Product"
+                alt={altText}
                 layout="fill"
                 objectFit="contain"
                 unoptimized={unoptimizedUrls.has(selectedImage)}
@@ -280,7 +282,7 @@ const ImageProduct = ({ images = [] }: Props) => {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selectedImage}
-                alt="Product enlarged"
+                alt={`${altText} — enlarged view`}
                 draggable={false}
                 className="max-h-[74vh] max-w-full select-none object-contain"
               />

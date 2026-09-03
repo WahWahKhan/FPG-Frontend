@@ -183,11 +183,11 @@ const Services = () => {
                       <div className="relative z-10 h-full flex flex-col justify-between p-6">
                         {/* Header */}
                         <div>
-                          <h3 className={`text-2xl md:text-3xl font-bold text-gray-800 mb-2 transition-all duration-500 ${
+                          <h2 className={`text-2xl md:text-3xl font-bold text-gray-800 mb-2 transition-all duration-500 ${
                             hoveredService === service.id ? 'transform translate-y-0' : 'transform translate-y-1'
                           }`}>
                             {service.title}
-                          </h3>
+                          </h2>
                           <p className={`text-lg text-black-600 font-medium transition-all duration-500 delay-100 ${
                             hoveredService === service.id ? 'opacity-100 transform translate-y-0' : 'opacity-80 transform translate-y-1'
                           }`}>

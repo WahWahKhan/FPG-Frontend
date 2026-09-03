@@ -153,12 +153,12 @@ const BuyPage = () => {
           </div>
   
           {/* Subtitle */}
-          <h1 
+          <h2
             className="text-4xl sm:text-5xl lg:text-6xl font-bold"
             style={{ color: "#4A4A4A" }}
           >
             Build Your Custom Solution
-          </h1>
+          </h2>
           
           <p 
             className="text-lg sm:text-xl lg:text-2xl font-light"
