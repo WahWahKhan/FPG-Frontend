@@ -114,6 +114,10 @@ export const fetchCategories = async (): Promise<any[]> => {
       description: cat.description,
       parent_id: cat.parent_id,
       date_created: cat.date_created,
+      // Kept through the clean step below (unlike parent_id/date_created) because
+      // the sitemap needs a real per-category change date for <lastmod>. Additive
+      // field — existing consumers ignore it.
+      date_updated: cat.date_updated ?? cat.date_created ?? null,
       image: cat.images && cat.images[0] ? cat.images[0].file.url : null,
       subCategories: []
     };

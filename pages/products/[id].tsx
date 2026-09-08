@@ -384,6 +384,33 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     // and /products/orfs-adapters without a second page file.
     const isUuidParam = isUuid(param);
 
+    // Legacy UUID/ObjectID URLs (e.g. /products/634c0ba595e16400126463b2) were listed
+    // in the sitemap before slug URLs replaced them. Google still holds ~129 of them —
+    // half of everything Search Console reports as "not indexed". They already carry a
+    // canonical pointing at the slug, but a canonical is a hint: Google was consolidating
+    // them at roughly one a month. A 301 is a directive, so it collapses them outright
+    // and returns the crawl budget to real pages.
+    //
+    // Safe because every internal link builds from `.slug` — no internal link uses an id.
+    // Falls through to normal rendering when the slug is missing, rather than redirecting
+    // to a broken URL. The series fetch below re-reads this from taxonomyCache.
+    if (isUuidParam) {
+      const seriesById = await fetchSeriesDetails(param);
+
+      if (!seriesById) {
+        return { notFound: true };
+      }
+
+      if (seriesById.slug && seriesById.slug !== param) {
+        return {
+          redirect: {
+            destination: `/products/${seriesById.slug}`,
+            permanent: true
+          }
+        };
+      }
+    }
+
     const [productResult, series] = await Promise.all([
       isUuidParam ? fetchProducts(param) : fetchProductsBySlug(param),
       isUuidParam ? fetchSeriesDetails(param) : fetchSeriesDetailsBySlug(param)
