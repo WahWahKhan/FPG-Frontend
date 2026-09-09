@@ -1,6 +1,35 @@
 /** @type {import('next').NextConfig} */
+const { execSync } = require('child_process');
+
+// Footer version stamp (see components/modules/Footer/Footer.tsx) — read
+// once at BUILD time, baked into the bundle as a static string, not
+// evaluated per-request. Wrapped in try/catch because the sandbox this
+// often gets edited in has no .git at all: a missing git binary or repo
+// must fail soft (stamp just doesn't render) rather than break the build.
+// Works fine on a shallow clone (Vercel's default) — HEAD's own commit is
+// always present regardless of clone depth.
+function getGitBuildInfo() {
+  try {
+    const hash = execSync('git rev-parse --short HEAD', { stdio: ['pipe', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+    const date = execSync('git log -1 --format=%cI', { stdio: ['pipe', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+    return { hash, date };
+  } catch {
+    return { hash: '', date: '' };
+  }
+}
+
+const gitBuildInfo = getGitBuildInfo();
+
 const nextConfig = {
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_BUILD_HASH: gitBuildInfo.hash,
+    NEXT_PUBLIC_BUILD_DATE: gitBuildInfo.date,
+  },
   images: {
     domains: [
       "fluidpowergroup.s3.ap-southeast-2.amazonaws.com",
