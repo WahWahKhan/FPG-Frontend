@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState } from 'react';
 import { CartContext } from '../../context/CartWrapper';
-import { DuplicateGroup, findDuplicateGroups } from '../../utils/cartDuplicates';
+import { DuplicateGroup, findDuplicateGroups, isSteelTubesShippingActive } from '../../utils/cartDuplicates';
 
 // Same black-glass-resting / yellow-glass-hover pill used across the site's
 // hero CTAs (InfoHeroHome.tsx). Duplicated locally rather than shared, since
@@ -92,41 +92,73 @@ const SecondaryPillButton = ({ children, onClick }: { children: React.ReactNode;
 // through CartContext.mergeItems, not a plain setCart — see that function's
 // comment in CartWrapper.tsx for why a raw setCart gets silently reverted.
 //
-// Two-step flow for a Steel Tubes group: "combine into one length, or keep as
-// separate 1m lengths?" then, only if the customer wants to combine, a second
-// popup explains the $80 freight charge BEFORE the merge actually happens,
-// with real Proceed/Cancel buttons (not an auto-dismissing toast).
-// This is a genuine pricing fork, not just a display choice — both the
-// frontend (utils/cart-helpers.ts) and backend (lib/pricing/index.js) trigger
-// the $80 rate PER LINE, not aggregated across lines of the same product. So
-// "keep separate" (two 1m lines) stays at standard shipping, while combining
-// into one line of qty 2 (one continuous piece over 1m) genuinely adds the
-// $80 — the second popup exists specifically so the customer sees that cost
-// BEFORE agreeing to it, not after.
+// Two DIFFERENT flows, because merging means two different things:
+//
+// STEEL TUBES — always a genuine "combine or keep separate?" decision
+// (§4.6): a customer might want two 1m pieces kept as two pieces for reasons
+// that have nothing to do with cost. So EVERY Steel Tubes duplicate group
+// gets asked, one at a time via dismissedIds, never batched, never silent.
+// What varies is the SECOND popup — the one that discloses the $80 freight
+// cost — which only fires when combining THIS group would actually be what
+// introduces that cost. Once isSteelTubesShippingActive(items) is already
+// true (an earlier group the customer combined, or a line already at
+// qty > 1 for some other reason), the $80 is already being charged
+// regardless of this group's answer, so re-disclosing it would be telling
+// the customer something they've already been told. "Yes, combine" then
+// merges immediately, skipping straight past the disclosure step — the ask
+// stays, only the redundant cost popup drops.
+//
+// EVERYTHING ELSE — no decision left to make at all (not even a
+// keep-separate-for-its-own-sake one): merging never changes the total,
+// full stop, since shipping is a flat $12.85 regardless of line count for
+// non-Steel-Tube products (utils/cart-helpers.ts has only the one shipping
+// fork, which checks isSteelTubesLine and nothing else). These are pure
+// notices, collected into ONE dialog rather than shown one at a time — a
+// cart with several unrelated duplicated products shouldn't make the
+// customer click through several near-identical "OK" dialogs. A single OK
+// merges all of them and dismisses in the same click.
 const DuplicateItemsPrompt = () => {
   const { items, mergeItems } = useContext(CartContext);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [pendingSteelTubeGroup, setPendingSteelTubeGroup] = useState<DuplicateGroup | null>(null);
 
   const groups = useMemo(() => findDuplicateGroups(items), [items]);
-  const activeGroup: DuplicateGroup | undefined = groups.find((g) => !dismissedIds.has(g.id));
 
-  if (!activeGroup && !pendingSteelTubeGroup) return null;
+  // Steel Tube groups: always worked through one at a time, always asked —
+  // see the comment above for why this never batches or skips the ask.
+  const activeSteelGroup: DuplicateGroup | undefined = groups.find(
+    (g) => g.isSteelTube && !dismissedIds.has(g.id)
+  );
 
-  const handleCombine = () => {
-    if (!activeGroup) return;
-    if (activeGroup.isSteelTube) {
-      // Don't merge yet — show the shipping-context popup first.
-      setPendingSteelTubeGroup(activeGroup);
+  // Non-Steel-Tube groups: no decision, so collected into one notice.
+  const pendingOtherGroups: DuplicateGroup[] = groups.filter(
+    (g) => !g.isSteelTube && !dismissedIds.has(g.id)
+  );
+  const showOtherNotice =
+    !activeSteelGroup && !pendingSteelTubeGroup && pendingOtherGroups.length > 0;
+
+  if (!activeSteelGroup && !pendingSteelTubeGroup && !showOtherNotice) return null;
+
+  const handleCombineSteelTube = () => {
+    if (!activeSteelGroup) return;
+    // Recomputed against live cart state at the moment of the click (not
+    // memoized), so it reflects any merge that already happened earlier in
+    // this same session — see isSteelTubesShippingActive's comment.
+    if (isSteelTubesShippingActive(items)) {
+      // The $80 rate is already in effect for another line — combining this
+      // group doesn't introduce a new cost, so there's nothing left to
+      // disclose. Merge straight away, same as the no-decision case.
+      mergeItems(activeSteelGroup.id);
+      setDismissedIds((prev) => new Set(prev).add(activeSteelGroup.id));
       return;
     }
-    mergeItems(activeGroup.id);
-    setDismissedIds((prev) => new Set(prev).add(activeGroup.id));
+    // Don't merge yet — show the shipping-context popup first.
+    setPendingSteelTubeGroup(activeSteelGroup);
   };
 
   const handleKeepSeparate = () => {
-    if (!activeGroup) return;
-    setDismissedIds((prev) => new Set(prev).add(activeGroup.id));
+    if (!activeSteelGroup) return;
+    setDismissedIds((prev) => new Set(prev).add(activeSteelGroup.id));
   };
 
   const handleConfirmMerge = () => {
@@ -142,35 +174,33 @@ const DuplicateItemsPrompt = () => {
     setPendingSteelTubeGroup(null);
   };
 
+  const handleCombineOthers = () => {
+    pendingOtherGroups.forEach((g) => mergeItems(g.id));
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      pendingOtherGroups.forEach((g) => next.add(g.id));
+      return next;
+    });
+  };
+
   return (
     <>
-      {activeGroup && !pendingSteelTubeGroup && (
+      {/* Steel Tubes: a real pricing fork, so the customer gets an actual
+          choice — two buttons, either answer valid. */}
+      {activeSteelGroup && !pendingSteelTubeGroup && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              Combine {activeGroup.isSteelTube ? 'Tubes' : 'items'}?
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Combine Tubes?</h3>
             <p className="text-sm text-gray-600 mb-6">
-              {activeGroup.isSteelTube ? (
-                <>
-                  We&apos;ve detected more than 1 metre of{' '}
-                  <span className="font-semibold">{activeGroup.name}</span> in your cart, split
-                  across {activeGroup.lineCount} lines. Would you like us to combine them into one
-                  length, or keep them as separate 1 metre lengths?
-                </>
-              ) : (
-                <>
-                  We noticed <span className="font-semibold">{activeGroup.name}</span> is in your
-                  cart as {activeGroup.lineCount} separate lines. Would you like to combine them
-                  into one line of qty {activeGroup.totalQuantity}? Your total stays the same
-                  either way.
-                </>
-              )}
+              We&apos;ve detected more than 1 metre of{' '}
+              <span className="font-semibold">{activeSteelGroup.name}</span> in your cart, split
+              across {activeSteelGroup.lineCount} lines. Would you like us to combine them into
+              one length, or keep them as separate 1 metre lengths?
             </p>
             <div className="flex gap-3 justify-end">
               <SecondaryPillButton onClick={handleKeepSeparate}>No, keep separate</SecondaryPillButton>
-              <PrimaryPillButton onClick={handleCombine}>Yes, combine</PrimaryPillButton>
+              <PrimaryPillButton onClick={handleCombineSteelTube}>Yes, combine</PrimaryPillButton>
             </div>
           </div>
         </div>
@@ -191,6 +221,44 @@ const DuplicateItemsPrompt = () => {
             <div className="flex gap-3 justify-end">
               <SecondaryPillButton onClick={handleCancelMerge}>Cancel</SecondaryPillButton>
               <PrimaryPillButton onClick={handleConfirmMerge}>Proceed</PrimaryPillButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Non-Steel-Tubes, batched: one notice covers every duplicated product
+          at once, however many there are. Nothing to decide, so one OK. */}
+      {showOtherNotice && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Items combined</h3>
+            {pendingOtherGroups.length === 1 ? (
+              <p className="text-sm text-gray-600 mb-6">
+                We noticed <span className="font-semibold">{pendingOtherGroups[0].name}</span> was
+                added to your cart {pendingOtherGroups[0].lineCount} separate times. We&apos;ve
+                grouped these into one line of qty {pendingOtherGroups[0].totalQuantity} — your
+                total is unaffected.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  We noticed the following items were each added to your cart as separate lines.
+                  We&apos;ve combined each into a single line, keeping the same total quantities —
+                  your total is unaffected:
+                </p>
+                <ul className="text-sm text-gray-600 mb-6 space-y-1 list-disc pl-5">
+                  {pendingOtherGroups.map((g) => (
+                    <li key={g.id}>
+                      <span className="font-semibold">{g.name}</span> — qty {g.totalQuantity}{' '}
+                      (was {g.lineCount} lines)
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <div className="flex justify-end">
+              <PrimaryPillButton onClick={handleCombineOthers}>OK</PrimaryPillButton>
             </div>
           </div>
         </div>

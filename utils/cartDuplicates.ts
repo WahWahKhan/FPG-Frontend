@@ -56,3 +56,29 @@ export const findDuplicateGroups = (items: IItemCart[]): DuplicateGroup[] => {
   });
   return groups;
 };
+
+/**
+ * Mirrors cart-helpers.ts's isSteelTubesLine / steelTubesShippingTriggered
+ * check exactly (kept as a separate copy for the same reason
+ * STEEL_TUBES_SKU_PREFIXES above is — that one is internal to
+ * cart-helpers.ts). True once ANY website line in the cart is a Steel Tubes
+ * line with quantity > 1 — the same condition that flips
+ * calculateCartTotals's shipping from $12.85 to the flat $80 rate.
+ *
+ * Used to decide whether a Steel Tubes duplicate group still needs the
+ * combine-or-keep-separate choice. A freshly-detected duplicate group's own
+ * lines are always qty 1 each (that's what makes it a duplicate group), so
+ * they never trip this on their own — only an ALREADY-merged line (from an
+ * earlier group the customer combined) or a legitimately-added qty>1 line
+ * elsewhere in the cart does. Once true, combining or not combining THIS
+ * group changes nothing about the total: the $80 is already being charged
+ * regardless. At that point it's the same "no real decision" case as any
+ * non-Steel-Tube duplicate — see DuplicateItemsPrompt.tsx.
+ */
+export const isSteelTubesShippingActive = (items: IItemCart[]): boolean =>
+  items.some(
+    (item) =>
+      isWebsiteLine(item) &&
+      (item.quantity || 0) > 1 &&
+      isSteelTubeName(item.name)
+  );
