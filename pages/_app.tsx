@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import CartWrapper, { CartContext } from "context/CartWrapper";
 import { Trac360Provider } from 'context/Trac360Context'; // ✅ IMPORTANT: Named import, NOT default
 import { Function360Provider } from '../context/Function360Context';
+import { Tube360Provider } from '../context/Tube360Context';
 import { AnimatePresence, motion } from "framer-motion";
 import type { AppProps } from "next/app";
 import InAppChat from '../components/InAppChat';
@@ -206,7 +207,9 @@ function MyApp(props: AppProps) {
     <CartWrapper>
       <Trac360Provider>
       <Function360Provider>
+      <Tube360Provider>
         <AppContent {...props} />
+        </Tube360Provider>
         </Function360Provider>
       </Trac360Provider>
     </CartWrapper>

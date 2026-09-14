@@ -9,6 +9,7 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/suite360/hose360', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/suite360/trac360/start', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/suite360/function360/start', priority: '0.8', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/suite360/tube360/start', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/services', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/design', priority: '0.7', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/about', priority: '0.7', changefreq: 'monthly' },

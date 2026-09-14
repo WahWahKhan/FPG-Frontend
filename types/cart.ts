@@ -1,3 +1,5 @@
+import type { Tube360CartConfig } from './tube360';
+
 export interface ICart {
   open: boolean;
   items: IItemCart[];
@@ -6,7 +8,7 @@ export interface ICart {
 /**
  * Cart item type identifier
  */
-export type CartItemType = 'pwa_order' | 'trac360_order' | 'function360_order' | 'website_product';
+export type CartItemType = 'pwa_order' | 'trac360_order' | 'function360_order' | 'website_product' | 'tube360_order';
 
 /**
  * Trac 360 Configuration Interface
@@ -120,6 +122,11 @@ export interface IItemCart {
   // TRAC 360 CONFIG (Custom Tractor Configurations)
   // ============================================================================
   tractorConfig?: ITrac360Config;
+
+  // ============================================================================
+  // TUBE 360 CONFIG (Custom Bent Tubes) — spec + labels + server price breakdown
+  // ============================================================================
+  tube360Config?: Tube360CartConfig;
 }
 
 /**

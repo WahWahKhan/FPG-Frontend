@@ -22,6 +22,7 @@
 
 import { IItemCart } from '../../types/cart';
 import type { SelectedComponents, EquipmentSelection } from '../../types/function360';
+import type { Tube360ServerSpec } from '../../types/tube360';
 
 // ============================================================================
 // REQUEST LINE ITEMS (browser -> backend, NO prices)
@@ -103,12 +104,24 @@ export interface PwaOrderItem {
   orderConfig: PwaLineConfig;
 }
 
+/**
+ * TUBE360 custom bent tube. Sends the price-less spec (tube id, ends, lengths,
+ * angles, radius, quantity). The backend reprices from its own catalogue,
+ * rate table and the live Swell price per metre (lib/pricing/tube360.js).
+ */
+export interface Tube360OrderItem {
+  kind: 'tube360';
+  cartId: number;
+  spec: Tube360ServerSpec;
+}
+
 /** Discriminated union of every order line the backend must reprice. */
 export type ServerOrderItem =
   | WebsiteOrderItem
   | Function360OrderItem
   | Trac360OrderItem
-  | PwaOrderItem;
+  | PwaOrderItem
+  | Tube360OrderItem;
 
 // ============================================================================
 // DEVELOPER / TEST MODE (server-gated)
@@ -325,6 +338,12 @@ export function buildServerOrderItems(items: IItemCart[]): ServerOrderItem[] {
           kind: 'pwa',
           cartId: item.cartId ?? 0,
           orderConfig: pickPwaSelections(item.orderConfig),
+        };
+      case 'tube360_order':
+        return {
+          kind: 'tube360',
+          cartId: item.cartId ?? 0,
+          spec: item.tube360Config?.spec as Tube360ServerSpec,
         };
       case 'website_product':
       default:

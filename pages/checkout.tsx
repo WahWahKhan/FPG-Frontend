@@ -117,8 +117,8 @@ export default function CheckoutPage() {
     }
     
     // Calculate separated items inside the effect to avoid stale closure
-    const { pwaItems: currentPwaItems, websiteItems: currentWebsiteItems, trac360Items: currentTrac360Items, function360Items: currentFunction360Items } = separateCartItems(items);
-    
+    const { pwaItems: currentPwaItems, websiteItems: currentWebsiteItems, trac360Items: currentTrac360Items, function360Items: currentFunction360Items, tube360Items: currentTube360Items } = separateCartItems(items);
+
     console.log('🔍 [CHECKOUT] Redirect check triggered');
     console.log('📦 Items length:', items.length);
     console.log('📦 Items:', items);
@@ -126,6 +126,7 @@ export default function CheckoutPage() {
     console.log('🚜 TRAC360 items:', currentTrac360Items.length);
     console.log('🛒 Website items:', currentWebsiteItems.length);
     console.log('🔧 FUNCTION360 items:', currentFunction360Items.length);
+    console.log('🧵 TUBE360 items:', currentTube360Items.length);
     console.log('⏰ isCompletingOrder:', isCompletingOrder);
     
     const isCompletingOrderSession = sessionStorage.getItem('orderCompleting') === 'true';
@@ -184,13 +185,14 @@ export default function CheckoutPage() {
     };
   }, [items]);
 
-  const { pwaItems, websiteItems, trac360Items, function360Items } = separateCartItems(items);
+  const { pwaItems, websiteItems, trac360Items, function360Items, tube360Items } = separateCartItems(items);
   console.log('📊 [CHECKOUT] Cart separation:', {
     total: items.length,
     pwa: pwaItems.length,
     website: websiteItems.length,
     trac360: trac360Items.length,
-    function360: function360Items.length
+    function360: function360Items.length,
+    tube360: tube360Items.length
   });
   const totals = calculateCartTotals(items);
 
@@ -403,6 +405,18 @@ export default function CheckoutPage() {
           cartId: item.cartId || Date.now(),
           function360OrderNumber: `FUNC-${item.cartId || Date.now()}`
         })),
+        tube360Orders: tube360Items.map(item => ({
+          id: item.id,
+          type: item.type,
+          name: item.name,
+          totalPrice: item.totalPrice || 0,
+          quantity: 1,
+          image: item.image || '',
+          pdfDataUrl: item.pdfDataUrl,
+          tube360Config: item.tube360Config,
+          cartId: item.cartId || Date.now(),
+          tube360OrderNumber: `TUBE-${item.cartId || Date.now()}`
+        })),
         totals: {
           subtotal: displayTotals.subtotal,
           shipping: displayTotals.shipping,
@@ -604,6 +618,17 @@ export default function CheckoutPage() {
         function360OrderNumber: order.function360OrderNumber,
         cartId: order.cartId,
         configuration: order.configuration  // ← Keep configuration for display
+        // Stripped: pdfDataUrl (will be read from shopping-cart)
+      })),
+      tube360Orders: payload.tube360Orders.map((order: any) => ({
+        id: order.id,
+        name: order.name,
+        totalPrice: serverLineAmountByCartId.get(order.cartId) ?? order.totalPrice,
+        quantity: order.quantity,
+        image: order.image,
+        tube360OrderNumber: order.tube360OrderNumber,
+        cartId: order.cartId,
+        tube360Config: order.tube360Config
         // Stripped: pdfDataUrl (will be read from shopping-cart)
       })),
       totals: payload.totals,
@@ -1021,7 +1046,86 @@ export default function CheckoutPage() {
             ))}
           </div>
         )}
-      
+
+        {/* Tube360 Orders */}
+        {tube360Items.length > 0 && (
+          <div className="mb-4">
+            <h3 className="font-semibold text-gray-700 mb-2">Custom Bent Tubes</h3>
+            {tube360Items.map((item, index) => {
+              const cfg = item.tube360Config;
+              const bends = cfg?.spec?.sectionsMm ? Math.max(0, cfg.spec.sectionsMm.length - 1) : 0;
+              return (
+                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 bg-slate-50 px-2 rounded">
+                  <div className="flex items-center gap-3 flex-1">
+                    <Image
+                      src="/Tube360.png"
+                      alt={item.name}
+                      width={50}
+                      height={50}
+                      className="rounded object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-800">TUBE360 Custom Tube</p>
+                      {cfg && (
+                        <p className="text-sm text-gray-600">
+                          {cfg.labels.material} &middot; {cfg.labels.od} &times; {cfg.labels.wallMm} mm &middot; {cfg.spec.totalLengthMm} mm &middot; {bends} bend(s)
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">Tubes: {cfg?.spec?.quantity ?? 1}</p>
+                      {item.pdfDataUrl && (
+                        <button
+                          onClick={() => handleViewPDF(item.pdfDataUrl)}
+                          className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: "20px",
+                            background: "rgba(255, 255, 255, 0.9)",
+                            backdropFilter: "blur(15px)",
+                            border: "1px solid rgba(200, 200, 200, 0.3)",
+                            color: "#2563eb",
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                            fontWeight: "600"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-2px) scale(1.02)";
+                            e.currentTarget.style.background = "radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)";
+                            e.currentTarget.style.border = "1px solid rgba(255, 215, 0, 0.9)";
+                            e.currentTarget.style.color = "#000";
+                            e.currentTarget.style.boxShadow = "0 10px 30px rgba(250, 204, 21, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.8), inset 0 3px 10px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 215, 0, 0.4)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0px) scale(1)";
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.9)";
+                            e.currentTarget.style.border = "1px solid rgba(200, 200, 200, 0.3)";
+                            e.currentTarget.style.color = "#2563eb";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.08)";
+                          }}
+                        >
+                          Click to View PDF
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <p className="font-semibold text-gray-800" style={{ minWidth: "80px", textAlign: "right", paddingRight: "8px" }}>
+                      A${lineDisplayTotal(item).toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => deleteItem(item)}
+                      className="p-1.5 rounded-lg border border-red-600/30 bg-red-50/80 text-red-600 hover:bg-red-400/20 hover:border-red-600/50 transition-colors"
+                      aria-label="Remove item"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       {/* Totals */}
       <div className="mt-6 space-y-2 text-sm">
         <div className="flex justify-between text-gray-700">

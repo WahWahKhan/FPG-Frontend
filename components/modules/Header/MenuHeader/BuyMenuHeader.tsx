@@ -41,6 +41,14 @@ const buyOptions: BuyOption[] = [
     image: "/Function360.png",
     isActive: true,
   },
+  {
+    id: "tube360",
+    title: "Tube360",
+    description: "Tube Bending Configurator",
+    href: "/suite360/tube360/start",
+    image: "/Tube360.png",
+    isActive: true,
+  },
 ];
 
 const BuyMenuHeader = ({ onClose }: BuyMenuHeaderProps) => {

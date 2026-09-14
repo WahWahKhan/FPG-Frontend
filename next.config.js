@@ -130,6 +130,16 @@ const nextConfig = {
         destination: '/suite360/function360/start',
         permanent: false,
       },
+      {
+        source: '/suite360/tube360',
+        destination: '/suite360/tube360/start',
+        permanent: false,
+      },
+      {
+        source: '/tube360',
+        destination: '/suite360/tube360/start',
+        permanent: false,
+      },
     ]
   },
   async rewrites() {

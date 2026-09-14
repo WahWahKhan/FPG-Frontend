@@ -16,9 +16,9 @@ const NavSnackbar = ({ handleClose }: INavSnackbarProps) => {
     []
   );
 
-  const handleItemPress = (pageId: string, pageTitle: string) => {
-    // If Buy tab is clicked, show submenu instead of navigating
-    if (pageTitle === "Buy") {
+  const handleItemPress = (pageId: string, pageHref: string) => {
+    // If Suite360 (formerly "Buy") tab is clicked, show submenu instead of navigating
+    if (pageHref === "/suite360") {
       setPressedItem(pageId);
       setTimeout(() => {
         setShowBuySubMenu(true);
@@ -66,18 +66,18 @@ const NavSnackbar = ({ handleClose }: INavSnackbarProps) => {
                 },
               }}
               onClick={() => {
-                if (page.title !== "Buy") {
+                if (page.href !== "/suite360") {
                   handleClose();
                 }
               }}
-              onTouchStart={() => handleItemPress(page.id, page.title)}
-              onMouseDown={() => handleItemPress(page.id, page.title)}
+              onTouchStart={() => handleItemPress(page.id, page.href)}
+              onMouseDown={() => handleItemPress(page.id, page.href)}
               className="cursor-pointer px-2 py-1 rounded-xl transition-all duration-200"
               style={{
                 backgroundColor: pressedItem === page.id ? "rgba(0, 0, 0, 0.1)" : "transparent"
               }}
             >
-              {page.title === "Buy" ? (
+              {page.href === "/suite360" ? (
                 <div className="flex items-center gap-4">
                   {page.title}
                 </div>

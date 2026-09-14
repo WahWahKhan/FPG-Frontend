@@ -27,7 +27,8 @@ const ItemCart = ({ item }: IItemCartProps) => {
   const isPWA = isPWAOrder(item);
   const isTrac360 = item.type === 'trac360_order';
   const isFunction360 = item.type === 'function360_order';
-  const isCustomOrder = isPWA || isTrac360 || isFunction360;
+  const isTube360 = item.type === 'tube360_order';
+  const isCustomOrder = isPWA || isTrac360 || isFunction360 || isTube360;
   
   // Get item price safely (handles both price and totalPrice)
   const itemPrice = getItemPrice(item);
@@ -96,7 +97,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
           <div className="relative w-full h-full">
             <Image
               layout="fill"
-              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png': (item.image || '/cartImage.jpeg')}
+              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png': isTube360 ? '/Tube360.png' : (item.image || '/cartImage.jpeg')}
               alt={item.name || "product"}
               objectFit="contain"
             />
@@ -105,14 +106,15 @@ const ItemCart = ({ item }: IItemCartProps) => {
         <div className="flex flex-col text-xl font-light gap-2">
         <h3 className="font-medium">
           {isPWA ? 'HOSE360 Custom Order' :
-          isFunction360 ? 'FUNCTION360 Custom Order' : item.name}
+          isFunction360 ? 'FUNCTION360 Custom Order' :
+          isTube360 ? 'TUBE360 Custom Tube' : item.name}
         </h3>
-          
+
           {/* Custom orders show Qty: 1 (fixed) with PDF button */}
           {isCustomOrder && (
             <div className="flex items-center gap-3">
               <div className="text-sm text-gray-600">
-                Qty: {item.quantity}
+                {isTube360 ? `Tubes: ${item.tube360Config?.spec?.quantity ?? 1}` : `Qty: ${item.quantity}`}
               </div>
               {item.pdfDataUrl && (
                 <button
@@ -362,7 +364,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
                 <p className="mb-4 text-gray-700">Unable to display PDF in browser.</p>
                 <a
                   href={item.pdfDataUrl}
-                  download={`${isTrac360 ? 'tractor-configuration' : 'hose-assembly'}.pdf`}
+                  download={`${isTrac360 ? 'tractor-configuration' : isTube360 ? 'tube360-configuration' : 'hose-assembly'}.pdf`}
                   className="px-6 py-3 rounded-lg font-semibold transition-all"
                   style={{
                     background: "radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)",

@@ -43,6 +43,15 @@ const products: Product[] = [
     isActive: true,
     learnMore: "Our next-generation product configurator is currently in development. Stay tuned for updates!",
   },
+  {
+    id: "tube360",
+    title: "Tube360",
+    description: "Tube Bending Configurator",
+    href: "/suite360/tube360/start",
+    image: "/Tube360.png",
+    isActive: true,
+    learnMore: "Design custom CNC-bent steel tubes online. Choose your tube, ends and bends for an instant price, or upload your drawing (STEP, IGES, DXF, PDF and more) and we'll email you a quote within 1 business day.",
+  },
 ];
 
 const Title360 = ({ title, color }: { title: string; color: string }) => {
@@ -82,7 +91,7 @@ const BuyPage = () => {
     <>
     <Head>
       <title>Suite360 | FluidPower Group</title>
-      <meta name="description" content="Build your custom hydraulic solution with Suite360. Configure custom hose assemblies, tractor hydraulic kits and function kits online in minutes." />
+      <meta name="description" content="Build your custom hydraulic solution with Suite360. Configure custom hose assemblies, tractor hydraulic kits, function kits and bent steel tubes online in minutes." />
     </Head>
     <div 
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
@@ -169,7 +178,7 @@ const BuyPage = () => {
         </motion.div>
 
         {/* Product Tiles - Horizontal on Desktop, Vertical on Mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-6">
           {products.map((product, index) => (
             <motion.div
               key={product.id}
@@ -300,13 +309,11 @@ const BuyPage = () => {
                 )}
 
                 {/* Content */}
-                <div className="p-8 sm:p-10 flex flex-col items-center text-center">
+                <div className="p-8 sm:p-10 xl:p-6 flex flex-col items-center text-center">
                   {/* Product Image */}
-                  <div 
-                    className="mb-6 transition-transform duration-500"
+                  <div
+                    className="mb-6 transition-transform duration-500 w-[200px] h-[200px] xl:w-[170px] xl:h-[170px]"
                     style={{
-                      width: "200px",
-                      height: "200px",
                       position: "relative",
                       transform: "scale(1)",
                     }}
@@ -332,7 +339,7 @@ const BuyPage = () => {
 
                   {/* Title */}
                   <h2
-                    className="text-3xl sm:text-4xl font-bold mb-3"
+                    className="text-3xl sm:text-4xl xl:text-3xl font-bold mb-3"
                   >
                     <Title360 title={product.title} color={product.isActive ? "#4A4A4A" : "#999"} />
                   </h2>

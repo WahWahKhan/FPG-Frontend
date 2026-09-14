@@ -44,7 +44,8 @@ const Header = ({ categories }: { categories: Category[] }) => {
     router.pathname === '/buy' ||  // ← ADD THIS
     router.pathname.startsWith('/suite360/hose360') ||
     router.pathname.startsWith('/suite360/trac360') ||
-    router.pathname.startsWith('/suite360/function360');
+    router.pathname.startsWith('/suite360/function360') ||
+    router.pathname.startsWith('/suite360/tube360');
 
   // Handle mobile search press with animation
   const handleMobileSearchPress = () => {

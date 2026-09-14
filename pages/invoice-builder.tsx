@@ -112,7 +112,7 @@ export default function InvoiceBuilder() {
       try {
         const cartObject = JSON.parse(cartData);
         const cartItems: IItemCart[] = cartObject.items || [];
-        const { pwaItems, websiteItems, trac360Items, function360Items } = separateCartItems(cartItems);
+        const { pwaItems, websiteItems, trac360Items, function360Items, tube360Items } = separateCartItems(cartItems);
 
         const invoiceItems: InvoiceLineItem[] = [];
 
@@ -150,6 +150,16 @@ export default function InvoiceBuilder() {
           invoiceItems.push({
             id: item.id,
             name: 'FUNCTION360 Custom Kit',
+            quantity: item.quantity,
+            unitPrice: item.totalPrice || 0,
+            subtotal: item.totalPrice || 0
+          });
+        });
+
+        tube360Items.forEach(item => {
+          invoiceItems.push({
+            id: item.id,
+            name: 'TUBE360 Custom Tube',
             quantity: item.quantity,
             unitPrice: item.totalPrice || 0,
             subtotal: item.totalPrice || 0

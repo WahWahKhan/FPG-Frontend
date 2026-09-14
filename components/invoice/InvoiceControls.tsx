@@ -112,6 +112,17 @@ export default function InvoiceControls({
               });
             });
             
+            // Extract PDFs from Tube360 orders
+            const tube360Orders = cartItems.filter((item: any) => item.type === 'tube360_order' && item.pdfDataUrl);
+            tube360Orders.forEach((order: any) => {
+              customOrderPdfs.push({
+                type: 'tube360_order',
+                name: `TUBE360-${order.cartId || 'order'}.pdf`,
+                pdfDataUrl: order.pdfDataUrl,
+                cartId: order.cartId
+              });
+            });
+
             if (customOrderPdfs.length > 0) {
               console.log(`🔎 Found ${customOrderPdfs.length} custom order PDF(s) to attach`);
             }

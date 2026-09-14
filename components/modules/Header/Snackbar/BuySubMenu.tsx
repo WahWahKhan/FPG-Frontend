@@ -34,6 +34,7 @@ const buyOptions: BuyOption[] = [
     description: "Hydraulic Functions Configurator",
     href: "/hosebuilder/function360",
   },
+  { id: "tube360", title: "Tube360", description: "Tube Bending Configurator", href: "/suite360/tube360/start" },
 ];
 
 const BuySubMenu = ({ handleClose, onBack }: BuySubMenuProps) => {
