@@ -143,7 +143,7 @@ function TubeSpecsInner({ options }: { options: Tube360Options }) {
             />
             {entry && config.method === 'manual' && (
               <FieldHint>
-                Bend radius for this size: {entry.minClrMm} mm minimum, {entry.maxClrMm} mm maximum
+                Bend radius for this size: {entry.minClrMm} mm (fixed, 2&times; outer diameter)
               </FieldHint>
             )}
           </div>

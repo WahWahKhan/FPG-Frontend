@@ -18,6 +18,14 @@ import { useTube360 } from '../../../context/Tube360Context';
 import { COLORS } from '../../../components/Trac360/styles';
 import type { Tube360Method } from '../../../types/tube360';
 
+/**
+ * TOGGLE: flip to `true` once pricing (rates.json / catalog.json / machine.json)
+ * is confirmed and ready to go live. While `false`, the "Enter tube data
+ * manually" card is shown greyed-out with a diagonal "COMING SOON" ribbon and
+ * cannot be selected — customers can still use "Upload your own file".
+ */
+export const TUBE360_MANUAL_METHOD_ENABLED = true;
+
 const METHODS: Array<{ id: Tube360Method; title: string; description: string; image: string }> = [
   {
     id: 'manual',
@@ -76,17 +84,50 @@ export default function Method() {
               <PagePill>HOW WOULD YOU LIKE TO START?</PagePill>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {METHODS.map((m) => (
-                  <SelectionCard
-                    key={m.id}
-                    id={m.id}
-                    title={m.title}
-                    description={m.description}
-                    image={m.image}
-                    selected={config.method === m.id}
-                    onClick={() => setMethod(m.id)}
-                  />
-                ))}
+                {METHODS.map((m) => {
+                  const disabled = m.id === 'manual' && !TUBE360_MANUAL_METHOD_ENABLED;
+                  return (
+                    <div key={m.id} className="relative">
+                      <div
+                        style={
+                          disabled
+                            ? { opacity: 0.55, filter: 'grayscale(70%)', pointerEvents: 'none' }
+                            : undefined
+                        }
+                      >
+                        <SelectionCard
+                          id={m.id}
+                          title={m.title}
+                          description={m.description}
+                          image={m.image}
+                          selected={config.method === m.id}
+                          onClick={() => setMethod(m.id)}
+                        />
+                      </div>
+                      {disabled && (
+                        <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                          <div
+                            className="absolute text-center font-extrabold uppercase"
+                            style={{
+                              top: '42%',
+                              left: '-15%',
+                              width: '130%',
+                              transform: 'rotate(-10deg)',
+                              background: COLORS.grey.dark,
+                              color: '#ffffff',
+                              padding: '10px 0',
+                              letterSpacing: '2px',
+                              fontSize: '15px',
+                              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
+                            }}
+                          >
+                            Coming Soon
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex flex-col items-center mt-8 space-y-3">

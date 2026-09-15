@@ -34,8 +34,13 @@ function BendsInner({ options }: { options: Tube360Options }) {
   const router = useRouter();
   const { config, updateSpec, updateBends, setMethod } = useTube360();
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  // Suppresses the method guard below when WE are the ones changing the
+  // method (e.g. switching to the upload flow) so it doesn't race our own
+  // router.push and bounce the user to /method instead.
+  const navigatingAwayRef = React.useRef(false);
 
   useEffect(() => {
+    if (navigatingAwayRef.current) return;
     if (config.method !== 'manual') {
       router.replace('/suite360/tube360/method');
       return;
@@ -145,19 +150,22 @@ function BendsInner({ options }: { options: Tube360Options }) {
           <NoticeBox title="Machine limits">
             <ul className="list-disc pl-5 space-y-1">
               <li>Bend angle: {options.machine.minBendAngleDeg}&deg; to {options.machine.maxBendAngleDeg}&deg; per bend (applies to all tubes).</li>
-              <li>Bend radius for {labels.od} tube: {entry.minClrMm} mm to {entry.maxClrMm} mm.</li>
+              <li>Bend radius for {labels.od} tube: {entry.minClrMm} mm (fixed &mdash; 2&times; the tube&rsquo;s outer diameter).</li>
               <li>Minimum straight section: {entry.minSectionMm} mm.</li>
+              <li>All bends are formed in one plane.</li>
               <li>
-                All bends are formed in one plane. For tubes with bends in different directions (3D), please{' '}
+                For tubes with bends in different directions (3D), please{' '}
                 <button
                   type="button"
-                  className="underline font-semibold"
+                  className="text-xs font-semibold underline"
+                  style={{ color: '#a16207' }}
                   onClick={() => {
+                    navigatingAwayRef.current = true;
                     setMethod('upload');
                     router.push('/suite360/tube360/upload');
                   }}
                 >
-                  upload your drawing instead
+                  upload your files/drawings instead
                 </button>
                 .
               </li>
@@ -200,10 +208,11 @@ function BendsInner({ options }: { options: Tube360Options }) {
               label="Bend Radius (CLR)"
               required
               value={config.bends.radiusMm}
-              onChange={(value) => updateBends({ radiusMm: value })}
+              onChange={() => {}}
               onBlur={() => setTouchedField('radiusMm')}
               unit="mm"
-              hint={`${entry.minClrMm}-${entry.maxClrMm} mm for this tube. All bends use this radius.`}
+              readOnly
+              hint={`Fixed at ${entry.minClrMm} mm (2× outer diameter) for this tube. All bends use this radius.`}
               error={radiusError}
             />
           )}

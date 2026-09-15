@@ -99,8 +99,8 @@ export function validateRadius(value: string, entry: Tube360CatalogEntry): strin
   if (value.trim() === '') return MSG.required;
   const n = toInt(value);
   if (n === null) return MSG.numbersOnly;
-  if (n < entry.minClrMm || n > entry.maxClrMm) {
-    return `Bend radius must be between ${entry.minClrMm} and ${entry.maxClrMm}mm`;
+  if (n !== entry.minClrMm) {
+    return `Bend radius must be ${entry.minClrMm}mm (2 x the tube's outer diameter)`;
   }
   return '';
 }

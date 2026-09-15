@@ -1,6 +1,7 @@
 // pages/invoice-builder.tsx
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { IItemCart } from '../types/cart';
 import { separateCartItems } from '../utils/cart-helpers';
@@ -28,6 +29,7 @@ import CustomerDirectory from '../components/invoice/CustomerDirectory';
 const SHEET_ID = process.env.NEXT_PUBLIC_INVOICE_SHEET_ID || '';
 
 export default function InvoiceBuilder() {
+  const router = useRouter();
   const [items, setItems] = useState<InvoiceLineItem[]>([]);
   const [customer, setCustomer] = useState<InvoiceCustomer>({
     name: '',
@@ -64,6 +66,10 @@ export default function InvoiceBuilder() {
   const [quoteValidFor, setQuoteValidFor] = useState<QuoteValidityTerm>('30 Days');
   const [manualExpiryDate, setManualExpiryDate] = useState<string | undefined>(undefined);
   const [lastGeneratedQuote, setLastGeneratedQuote] = useState<QuoteData | null>(null);
+
+  // ── Feature 3: "Reply with Quote" prefill from a supplier email link (?rfq=...) ──
+  const [sourceRef, setSourceRef] = useState<string | undefined>(undefined);
+  const [rfqApplied, setRfqApplied] = useState(false); // guard against re-applying on every render
 
   // Resolve the active date (manual override or today)
   const getActiveDate = (): string => {
@@ -104,6 +110,59 @@ export default function InvoiceBuilder() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  // Apply a "Reply with Quote" prefill link (?rfq=<base64url JSON>), if present.
+  // Gated on router.isReady (Next 12 pages router does not populate router.query
+  // reliably before this) and on rfqApplied so it only ever runs once. Every
+  // existing entry point into this page (no query string, or the checkout
+  // activation code) is completely unaffected.
+  useEffect(() => {
+    if (!router.isReady || rfqApplied) return;
+    const raw = router.query.rfq;
+    if (typeof raw !== 'string') { setRfqApplied(true); return; } // nothing to do, mark done so this never re-runs
+
+    try {
+      const base64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
+          .join('')
+      );
+      const prefill = JSON.parse(json);
+      if (prefill && prefill.v === 1) {
+        setIsQuoteMode(true);
+        setBuilderOpen(true);
+        setCustomer({
+          name: prefill.name || '',
+          company: prefill.company || '',
+          email: prefill.email || '',
+          phone: prefill.phone || '',
+          address: prefill.address || '',
+          suburb: prefill.suburb || '',
+          state: prefill.state || '',
+          postcode: prefill.postcode || '',
+        });
+        setItems([{
+          id: `rfq-${prefill.ref || Date.now()}`,
+          name: prefill.itemName || 'Custom Item',
+          description: prefill.itemDescription || '',
+          quantity: prefill.quantity || 1,
+          unitPrice: 0,
+          subtotal: 0,
+        }]);
+        setSourceRef(prefill.ref || undefined);
+        showToast(`Pre-filled from quote request ${prefill.ref || ''}`);
+      }
+    } catch (err) {
+      console.warn('Invalid rfq prefill link, ignoring:', err);
+      // Deliberately silent to the user beyond this — an invalid/tampered link
+      // must degrade to "just open the normal, empty Invoice Builder", never
+      // an error page or a blocked page.
+    }
+    setRfqApplied(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.rfq, rfqApplied]);
 
   // Load cart items on mount
   useEffect(() => {
@@ -213,6 +272,7 @@ export default function InvoiceBuilder() {
         quoteDate: activeDate,
         expiryDate,
         manualExpiryDate,
+        sourceRef,
         customer,
         shippingAddress,
         poNumber: poNumber.trim() || 'N/A',
@@ -287,6 +347,7 @@ export default function InvoiceBuilder() {
     setLastGeneratedQuote(null);
     setManualDate(undefined);
     setManualExpiryDate(undefined);
+    setSourceRef(undefined);
   };
 
   const handleSyncToTracker = async () => {

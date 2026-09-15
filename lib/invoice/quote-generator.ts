@@ -50,15 +50,18 @@ export const generateQuotePDF = (quoteData: QuoteData): jsPDF => {
   const detailsY = 28;
   const labelX = rightX - 80;
 
+  const hasSourceRef = Boolean(quoteData.sourceRef);
   doc.setFont('helvetica', 'bold');
   doc.text('Quote Number', labelX, detailsY);
   doc.text('Quote Date', labelX, detailsY + 5);
   doc.text('Valid Until', labelX, detailsY + 10);
+  if (hasSourceRef) doc.text('Your Ref', labelX, detailsY + 15);
 
   doc.setFont('helvetica', 'normal');
   doc.text(safeText(quoteData.quoteNumber), rightX, detailsY, { align: 'right' });
   doc.text(formatDate(quoteData.quoteDate), rightX, detailsY + 5, { align: 'right' });
   doc.text(formatDate(quoteData.expiryDate), rightX, detailsY + 10, { align: 'right' });
+  if (hasSourceRef) doc.text(safeText(quoteData.sourceRef), rightX, detailsY + 15, { align: 'right' });
 
   // ============================================================================
   // CUSTOMER INFORMATION - TWO COLUMNS
@@ -150,13 +153,14 @@ export const generateQuotePDF = (quoteData: QuoteData): jsPDF => {
 
   const tableBody: any[] = quoteData.items.map(item => {
     const hasDescription = item.description && item.description.trim();
+    const descLineCount = hasDescription ? doc.splitTextToSize(item.description || '', colWidth - 10).length : 0;
     return [
       {
         content: safeText(item.name),
         styles: {
           fontSize: 9,
           fontStyle: 'bold',
-          minCellHeight: hasDescription ? 12 : undefined
+          minCellHeight: hasDescription ? Math.max(12, 8 + descLineCount * 3.5) : undefined
         }
       },
       safeText(item.quantity),

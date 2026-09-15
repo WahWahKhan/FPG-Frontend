@@ -7,6 +7,9 @@ export interface QuoteData {
   quoteDate: string;
   expiryDate: string;
   manualExpiryDate?: string; // when set, overrides the auto-calculated expiry date
+  sourceRef?: string; // e.g. "TQ-260914-389F" - set when the quote was pre-filled from a
+                       // supplier "Reply with Quote" email link; optional so every existing
+                       // website-quote code path (no sourceRef) is byte-for-byte unaffected
   customer: InvoiceCustomer;
   shippingAddress?: InvoiceShippingAddress | null;
   poNumber: string;

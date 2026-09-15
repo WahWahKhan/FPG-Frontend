@@ -82,13 +82,13 @@ export function GlassSelect({ id, label, required, value, placeholder, options, 
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
           className="w-full text-center text-base font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
-          style={{ color: COLORS.grey.dark, minHeight: '28px' }}
+          style={{ color: COLORS.grey.dark, minHeight: '28px', textAlign: 'center', textAlignLast: 'center' }}
         >
-          <option value="" disabled>
+          <option value="" disabled style={{ textAlign: 'center' }}>
             {placeholder}
           </option>
           {options.map((o) => (
-            <option key={o.value} value={o.value} disabled={o.disabled}>
+            <option key={o.value} value={o.value} disabled={o.disabled} style={{ textAlign: 'center' }}>
               {o.label}
             </option>
           ))}
