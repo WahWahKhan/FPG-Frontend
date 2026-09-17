@@ -44,7 +44,10 @@ export default function Trac360Layout({
   const showPriceBar = currentStep >= 4;
 
   return (
-    <div className={`min-h-screen ${showPriceBar ? 'pb-32' : 'pb-12'} ${className}`}>
+    <div
+      className={`min-h-screen ${showPriceBar ? '' : 'pb-12'} ${className}`}
+      style={showPriceBar ? { paddingBottom: 'var(--trac360-pricebar-clearance, 220px)' } : undefined}
+    >
       {/* Progress Indicator - Fixed at top with extra spacing */}
       <div className="pt-8">
         <ProgressIndicator current={currentStep} total={totalSteps} />

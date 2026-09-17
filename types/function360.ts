@@ -114,7 +114,11 @@ export interface EquipmentOption {
   export interface Function360ContextValue {
     // State
     config: Function360Config;
-    
+
+    // Server-authoritative price (see lib/function360/api.ts / POST /api/function360/price)
+    priceLoading: boolean;
+    priceError: string | null;
+
     // Actions
     updateEquipment: (equipment: Partial<EquipmentSelection>) => void;
     toggleComponent: (componentId: keyof SelectedComponents, price?: number) => void;  // ✅ Added price parameter

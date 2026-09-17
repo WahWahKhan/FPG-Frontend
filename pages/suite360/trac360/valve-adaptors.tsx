@@ -15,10 +15,11 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import addonData from '../../../data/trac360/valve-adaptors.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function ValveAdaptors() {
+function ValveAdaptorsInner({ options }: { options: any }) {
+  const addonData = options.addons.find((a: any) => a.id === 'valve-adaptors');
   const router = useRouter();
   const { config, addAddon, removeAddon } = useTrac360();
 
@@ -289,7 +290,7 @@ export default function ValveAdaptors() {
             {/* Components List */}
             <div className="p-6 bg-gray-50">
               <ul className="space-y-2">
-                {currentVariant.components.map((component, index) => (
+                {currentVariant.components.map((component: any, index: any) => (
                   <li key={index} className="flex items-start gap-2 text-sm" style={{ color: COLORS.grey.medium }}>
                     <span style={{ color: COLORS.yellow.primary }}>•</span>
                     <span>{component}</span>
@@ -349,4 +350,8 @@ export default function ValveAdaptors() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function ValveAdaptors() {
+  return <Trac360OptionsGate>{(options) => <ValveAdaptorsInner options={options} />}</Trac360OptionsGate>;
 }

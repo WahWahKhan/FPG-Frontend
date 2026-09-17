@@ -16,8 +16,9 @@ import {
   Circuit,
   Addon,
 } from '../types/trac360';
-import { calculateTotalPrice, collectProductIds } from '../utils/trac360/pricing';
+import { collectProductIds } from '../utils/trac360/pricing';
 import { canProceedFromStep } from '../utils/trac360/validation';
+import { fetchTrac360Price, Trac360PriceBreakdown } from '../lib/trac360/api';
 
 // ============================================================================
 // CONSTANTS
@@ -65,6 +66,9 @@ export function Trac360Provider({ children }: Trac360ProviderProps) {
   const [config, setConfig] = useState<Trac360Config>(initialConfig);
   const [currentStep, setCurrentStep] = useState<Trac360Step>('start');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [priceBreakdown, setPriceBreakdown] = useState<Trac360PriceBreakdown | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   // ============================================================================
   // LOCALSTORAGE SYNC
@@ -139,24 +143,61 @@ export function Trac360Provider({ children }: Trac360ProviderProps) {
   // ============================================================================
 
   /**
-   * Recalculate total price whenever config changes
+   * Re-price whenever the priced-relevant selections change, by calling the
+   * backend's POST /api/trac360/price — the SAME function checkout uses
+   * (priceTrac360Line). The frontend no longer sums basePrice/additionalPrice
+   * fields itself; it only sends selection ids. Debounced so it's safe to
+   * call on every keystroke/step change without hammering the API.
    */
   useEffect(() => {
-    const newTotalPrice = calculateTotalPrice(config);
-    const newProductIds = collectProductIds(config);
-
-    // Only update if price or product IDs changed
-    if (
-      config.totalPrice !== newTotalPrice ||
-      JSON.stringify(config.productIds) !== JSON.stringify(newProductIds)
-    ) {
-      setConfig(prev => ({
-        ...prev,
-        totalPrice: newTotalPrice,
-        productIds: newProductIds,
-      }));
+    if (!isHydrated) return;
+    if (!config.operationType && !config.circuits) {
+      setPriceBreakdown(null);
+      if (config.totalPrice !== 0) setConfig(prev => ({ ...prev, totalPrice: 0, productIds: [] }));
+      return;
     }
-  }, [config]); // ✅ FIX: Watch entire config object
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setPriceLoading(true);
+      setPriceError(null);
+      fetchTrac360Price(
+        {
+          operationTypeId: config.operationType?.id ?? null,
+          circuitId: config.circuits?.id ?? null,
+          addons: config.addons.map(a => ({
+            id: a.id,
+            selectedSubOptionId: a.selectedSubOption ?? null,
+          })),
+        },
+        controller.signal
+      )
+        .then(res => {
+          setPriceBreakdown(res.breakdown);
+          const newProductIds = res.swellProductIds && res.swellProductIds.length
+            ? res.swellProductIds
+            : collectProductIds(config);
+          setConfig(prev => {
+            if (prev.totalPrice === res.amount && JSON.stringify(prev.productIds) === JSON.stringify(newProductIds)) {
+              return prev;
+            }
+            return { ...prev, totalPrice: res.amount, productIds: newProductIds };
+          });
+        })
+        .catch(err => {
+          if (err?.name === 'AbortError') return;
+          console.error('[TRAC360] price fetch failed:', err);
+          setPriceError(err?.message || 'Could not calculate the price');
+        })
+        .finally(() => setPriceLoading(false));
+    }, 200); // debounce rapid changes (e.g. sub-option toggles)
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, config.operationType, config.circuits, config.addons]);
 
   // ============================================================================
   // UPDATE FUNCTIONS
@@ -342,6 +383,9 @@ export function Trac360Provider({ children }: Trac360ProviderProps) {
     // State
     config,
     currentStep,
+    priceBreakdown,
+    priceLoading,
+    priceError,
 
     // Actions
     updateTractorInfo,

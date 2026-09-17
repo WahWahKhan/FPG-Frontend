@@ -14,10 +14,11 @@ import SelectionCard from '../../../components/Trac360/SelectionCard';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
-import tractorData from '../../../data/trac360/tractors.json';
 import { COLORS, fadeIn } from '../../../components/Trac360/styles';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 
-export default function TractorInfo() {
+function TractorInfoInner({ options }: { options: any }) {
+  const tractorData = options.tractors;
     const router = useRouter();
     const { config, updateTractorInfo } = useTrac360();
   
@@ -34,7 +35,7 @@ export default function TractorInfo() {
     // Filtered brand suggestions
     const filteredBrands = useMemo(() => {
       if (!brandInput) return tractorData.brands;
-      return tractorData.brands.filter(brand =>
+      return tractorData.brands.filter((brand: any) =>
         brand.toLowerCase().includes(brandInput.toLowerCase())
       );
     }, [brandInput]);
@@ -42,7 +43,7 @@ export default function TractorInfo() {
     // Available models based on selected brand
     const availableModels = useMemo(() => {
       const exactBrandMatch = tractorData.brands.find(
-        brand => brand.toLowerCase() === brandInput.toLowerCase()
+        (brand: any) => brand.toLowerCase() === brandInput.toLowerCase()
       );
       if (exactBrandMatch && tractorData.models[exactBrandMatch as keyof typeof tractorData.models]) {
         return tractorData.models[exactBrandMatch as keyof typeof tractorData.models];
@@ -53,19 +54,19 @@ export default function TractorInfo() {
     // Filtered model suggestions
     const filteredModels = useMemo(() => {
       if (!modelInput) return availableModels;
-      return availableModels.filter(model =>
+      return availableModels.filter((model: any) =>
         model.toLowerCase().includes(modelInput.toLowerCase())
       );
     }, [modelInput, availableModels]);
   
     // Check if brand exists in predefined list (exact match)
     const isExistingBrand = tractorData.brands.some(
-      brand => brand.toLowerCase() === brandInput.toLowerCase()
+      (brand: any) => brand.toLowerCase() === brandInput.toLowerCase()
     );
   
     // Check if model exists in predefined list (exact match)
     const isExistingModel = availableModels.some(
-      model => model.toLowerCase() === modelInput.toLowerCase()
+      (model: any) => model.toLowerCase() === modelInput.toLowerCase()
     );
   
     // Brand is valid if user has typed something (custom entry allowed)
@@ -224,7 +225,7 @@ export default function TractorInfo() {
                   }}
                 >
                   {/* Existing brands */}
-                  {filteredBrands.map((brand) => (
+                  {filteredBrands.map((brand: any) => (
                     <div
                       key={brand}
                       onClick={() => handleBrandSelect(brand)}
@@ -321,7 +322,7 @@ export default function TractorInfo() {
                   }}
                 >
                   {/* Existing models */}
-                  {filteredModels.map((model) => (
+                  {filteredModels.map((model: any) => (
                     <div
                       key={model}
                       onClick={() => handleModelSelect(model)}
@@ -394,7 +395,7 @@ export default function TractorInfo() {
                   style={{ color: COLORS.grey.dark, textAlignLast: 'center' }}
                 >
                   <option value="" disabled>2WD or 4WD</option>
-                  {tractorData.driveTypes.map((type) => (
+                  {tractorData.driveTypes.map((type: any) => (
                     <option key={type} value={type}>
                       {type}
                     </option>
@@ -425,7 +426,7 @@ export default function TractorInfo() {
                   style={{ color: COLORS.grey.dark, textAlignLast: 'center' }}
                 >
                   <option value="" disabled>CABIN or ROPS</option>
-                  {tractorData.protectionTypes.map((type) => (
+                  {tractorData.protectionTypes.map((type: any) => (
                     <option key={type.id} value={type.id}>
                       {type.name}
                     </option>
@@ -461,4 +462,8 @@ export default function TractorInfo() {
         </div>
       </Trac360Layout>
     );
-  }
+}
+
+export default function TractorInfo() {
+  return <Trac360OptionsGate>{(options) => <TractorInfoInner options={options} />}</Trac360OptionsGate>;
+}

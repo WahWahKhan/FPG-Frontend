@@ -12,10 +12,11 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import addonData from '../../../data/trac360/tractor-hose-kit.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function TractorHoseKit() {
+function TractorHoseKitInner({ options }: { options: any }) {
+  const addonData = options.addons.find((a: any) => a.id === 'tractor-hose-kit');
   const router = useRouter();
   const { config, addAddon, removeAddon } = useTrac360();
 
@@ -265,7 +266,7 @@ export default function TractorHoseKit() {
             {/* Components List */}
             <div className="p-6 bg-gray-50">
               <ul className="space-y-2">
-                {addonData.components.map((component, idx) => (
+                {addonData.components.map((component: any, idx: any) => (
                   <li key={idx} className="flex items-start gap-2 text-sm" style={{ color: COLORS.grey.medium }}>
                     <span style={{ color: COLORS.yellow.primary }}>•</span>
                     <span>{component}</span>
@@ -332,4 +333,8 @@ export default function TractorHoseKit() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function TractorHoseKit() {
+  return <Trac360OptionsGate>{(options) => <TractorHoseKitInner options={options} />}</Trac360OptionsGate>;
 }

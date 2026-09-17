@@ -18,10 +18,11 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import addonData from '../../../data/trac360/mounting-brackets.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function MountingBrackets() {
+function MountingBracketsInner({ options }: { options: any }) {
+  const addonData = options.addons.find((a: any) => a.id === 'mounting-brackets');
   const router = useRouter();
   const { config, addAddon, removeAddon, updateAddonSubOption } = useTrac360();
 
@@ -57,7 +58,7 @@ export default function MountingBrackets() {
     setIsNotRequired(false);
 
     // Find the selected sub-option
-    const subOption = addonData.subOptions.find(opt => opt.id === subOptionId);
+    const subOption = addonData.subOptions.find((opt: any) => opt.id === subOptionId);
     if (!subOption) return;
 
     // Check if addon already exists
@@ -76,7 +77,7 @@ export default function MountingBrackets() {
         price: addonData.basePrice + subOption.additionalPrice,
         swellProductId: addonData.swellProductId,
         selectedSubOption: subOptionId,
-        subOptions: addonData.subOptions.map(opt => ({
+        subOptions: addonData.subOptions.map((opt: any) => ({
           id: opt.id,
           name: opt.name,
           additionalPrice: opt.additionalPrice,
@@ -202,7 +203,7 @@ export default function MountingBrackets() {
             {/* Single Bracket Tile - Centered */}
             <div className="p-6 flex justify-center">
               {/* Show only the first sub-option */}
-              {addonData.subOptions.slice(0, 1).map((subOption, idx) => (
+              {addonData.subOptions.slice(0, 1).map((subOption: any, idx: any) => (
                 <motion.button
                 key={subOption.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -361,4 +362,8 @@ export default function MountingBrackets() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function MountingBrackets() {
+  return <Trac360OptionsGate>{(options) => <MountingBracketsInner options={options} />}</Trac360OptionsGate>;
 }

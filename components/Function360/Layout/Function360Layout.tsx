@@ -44,7 +44,10 @@ export default function Function360Layout({
   const showPriceBar = currentStep >= 2;
 
   return (
-    <div className={`min-h-screen ${showPriceBar ? 'pb-32' : 'pb-12'} ${className}`}>
+    <div
+      className={`min-h-screen ${showPriceBar ? '' : 'pb-12'} ${className}`}
+      style={showPriceBar ? { paddingBottom: 'var(--function360-pricebar-clearance, 220px)' } : undefined}
+    >
       {/* Progress Indicator - Fixed at top with extra spacing */}
       <div className="pt-8">
         <ProgressIndicator current={currentStep} total={totalSteps} />

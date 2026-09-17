@@ -13,7 +13,8 @@ import {
   EquipmentSelection,
   SelectedComponents,
 } from '../types/function360';
-import { calculateTotalPrice, collectProductIds } from '../utils/function360/pricing';
+import { collectProductIds } from '../utils/function360/pricing';
+import { fetchFunction360Price } from '../lib/function360/api';
 
 // ============================================================================
 // CONSTANTS
@@ -70,6 +71,8 @@ interface Function360ProviderProps {
 export function Function360Provider({ children }: Function360ProviderProps) {
   const [config, setConfig] = useState<Function360Config>(initialConfig);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   // ============================================================================
   // LOCALSTORAGE SYNC
@@ -130,21 +133,64 @@ export function Function360Provider({ children }: Function360ProviderProps) {
   // AUTO-CALCULATE PRICE
   // ============================================================================
 
+  /**
+   * Re-price whenever selections change, by calling the backend's
+   * POST /api/function360/price — the SAME function checkout uses
+   * (priceFunction360Line). Debounced so it's safe on every toggle.
+   */
   useEffect(() => {
-    const newTotalPrice = calculateTotalPrice(config);
-    const newProductIds = collectProductIds(config);
+    if (!isHydrated) return;
 
-    if (
-      config.totalPrice !== newTotalPrice ||
-      JSON.stringify(config.swellProductIds) !== JSON.stringify(newProductIds)
-    ) {
-      setConfig(prev => ({
-        ...prev,
-        totalPrice: newTotalPrice,
-        swellProductIds: newProductIds,
-      }));
+    const anySelected = Object.values(config.selectedComponents).some(Boolean);
+    if (!anySelected || !config.equipment.horsepower || !config.equipment.functionType) {
+      if (config.totalPrice !== 0) setConfig(prev => ({ ...prev, totalPrice: 0, swellProductIds: [] }));
+      return;
     }
-  }, [config]);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setPriceLoading(true);
+      setPriceError(null);
+      fetchFunction360Price(config.selectedComponents, config.equipment, controller.signal)
+        .then(res => {
+          const newProductIds = res.swellProductIds && res.swellProductIds.length
+            ? res.swellProductIds
+            : collectProductIds(config);
+          // Rebuild componentPrices from the fresh, equipment-aware breakdown
+          // instead of trusting the toggle-time cache — otherwise a line item's
+          // displayed price goes stale if the user changes equipment after
+          // selecting it (price is variant-keyed by horsepower/functionType),
+          // and the total stops matching the sum of the line items on screen.
+          const freshPrices: Partial<Function360Config['componentPrices']> = {};
+          res.breakdown.parts.forEach(part => {
+            freshPrices[part.component as keyof SelectedComponents] = part.price;
+          });
+          setConfig(prev => {
+            const nextComponentPrices = { ...prev.componentPrices, ...freshPrices };
+            if (
+              prev.totalPrice === res.amount &&
+              JSON.stringify(prev.swellProductIds) === JSON.stringify(newProductIds) &&
+              JSON.stringify(prev.componentPrices) === JSON.stringify(nextComponentPrices)
+            ) {
+              return prev;
+            }
+            return { ...prev, totalPrice: res.amount, swellProductIds: newProductIds, componentPrices: nextComponentPrices };
+          });
+        })
+        .catch(err => {
+          if (err?.name === 'AbortError') return;
+          console.error('[FUNCTION360] price fetch failed:', err);
+          setPriceError(err?.message || 'Could not calculate the price');
+        })
+        .finally(() => setPriceLoading(false));
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, config.selectedComponents, config.equipment]);
 
   // ============================================================================
   // UPDATE FUNCTIONS
@@ -221,6 +267,8 @@ export function Function360Provider({ children }: Function360ProviderProps) {
 
   const contextValue: Function360ContextValue = {
     config,
+    priceLoading,
+    priceError,
     updateEquipment,
     toggleComponent,
     updateAdditionalNotes,

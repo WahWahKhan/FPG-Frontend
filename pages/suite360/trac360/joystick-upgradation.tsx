@@ -17,10 +17,11 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import addonData from '../../../data/trac360/joystick-upgradation.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function JoystickUpgradation() {
+function JoystickUpgradationInner({ options }: { options: any }) {
+  const addonData = options.addons.find((a: any) => a.id === 'joystick-upgradation');
   const router = useRouter();
   const { config, addAddon, removeAddon, updateAddonSubOption } = useTrac360();
 
@@ -56,7 +57,7 @@ export default function JoystickUpgradation() {
     setIsNotRequired(false);
 
     // Find the selected sub-option
-    const subOption = addonData.subOptions.find(opt => opt.id === subOptionId);
+    const subOption = addonData.subOptions.find((opt: any) => opt.id === subOptionId);
     if (!subOption) return;
 
     // Check if addon already exists
@@ -75,7 +76,7 @@ export default function JoystickUpgradation() {
         price: addonData.basePrice + subOption.additionalPrice,
         swellProductId: addonData.swellProductId,
         selectedSubOption: subOptionId,
-        subOptions: addonData.subOptions.map(opt => ({
+        subOptions: addonData.subOptions.map((opt: any) => ({
           id: opt.id,
           name: opt.name,
           additionalPrice: opt.additionalPrice,
@@ -194,7 +195,7 @@ export default function JoystickUpgradation() {
 
             {/* Sub-Options - Side by Side */}
             <div className="p-6 grid grid-cols-2 gap-4">
-              {addonData.subOptions.map((subOption, idx) => (
+              {addonData.subOptions.map((subOption: any, idx: any) => (
                 <motion.button
                   key={subOption.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -288,7 +289,7 @@ export default function JoystickUpgradation() {
             {/* Components Info */}
             <div className="px-6 pb-4 bg-gray-50">
               <ul className="space-y-2 text-sm" style={{ color: COLORS.grey.medium }}>
-                {addonData.subOptions[0].components.map((component, idx) => (
+                {addonData.subOptions[0].components.map((component: any, idx: any) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span style={{ color: COLORS.yellow.primary }}>•</span>
                     <span>{component}</span>
@@ -353,4 +354,8 @@ export default function JoystickUpgradation() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function JoystickUpgradation() {
+  return <Trac360OptionsGate>{(options) => <JoystickUpgradationInner options={options} />}</Trac360OptionsGate>;
 }

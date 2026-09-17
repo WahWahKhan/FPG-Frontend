@@ -17,14 +17,15 @@ import { useFunction360 } from '../../../context/Function360Context';
 import { CartContext } from '../../../context/CartWrapper';
 import { COLORS } from '../../../components/Trac360/styles';
 import type { Function360Config, SelectedComponents } from '../../../types/function360';
-import diverterValveData from '../../../data/function360/diverter-valve.json';
-import quickCouplingsData from '../../../data/function360/quick-couplings.json';
-import adaptorsData from '../../../data/function360/adaptors.json';
-import hydraulicHosesData from '../../../data/function360/hydraulic-hoses.json';
-import electricalData from '../../../data/function360/electrical.json';
-import mountingBracketsData from '../../../data/function360/mounting-brackets.json';
+import Function360OptionsGate from '../../../components/Function360/Layout/Function360OptionsGate';
 
-export default function Function360OrderConfirmation() {
+function Function360OrderConfirmationInner({ options }: { options: any }) {
+  const diverterValveData = options.components.diverterValve;
+  const quickCouplingsData = options.components.quickCouplings;
+  const adaptorsData = options.components.adaptors;
+  const hydraulicHosesData = options.components.hydraulicHoses;
+  const electricalData = options.components.electrical;
+  const mountingBracketsData = options.components.mountingBrackets;
   const router = useRouter();
   const { config, resetConfig, toggleComponent } = useFunction360();
   const { addItem } = useContext(CartContext);
@@ -661,5 +662,13 @@ const getMountingBracketsVariant = (functionType: string | null): string => {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Function360OrderConfirmation() {
+  return (
+    <Function360OptionsGate>
+      {(options) => <Function360OrderConfirmationInner options={options} />}
+    </Function360OptionsGate>
   );
 }

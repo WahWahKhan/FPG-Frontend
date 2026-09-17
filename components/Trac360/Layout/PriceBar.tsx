@@ -10,7 +10,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useTrac360 } from '../../../context/Trac360Context';
-import { calculatePriceBreakdown, formatPrice } from '../../../utils/trac360/pricing';
+import { formatPrice } from '../../../utils/trac360/pricing';
+import { usePriceBarClearance } from '../../../utils/usePriceBarClearance';
+
+const PRICE_BAR_BOTTOM_OFFSET = 120;
 
 // ✅ IMPROVED: Darker background matching screenshot 3
 const PRICE_BAR_DARK = {
@@ -39,10 +42,14 @@ const PRICE_BAR_DARK = {
  * // Automatically pulls data from Trac360Context
  */
 export default function PriceBar() {
-  const { config } = useTrac360();
+  const { config, priceBreakdown } = useTrac360();
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  // Measures the collapsed bar's real height so the page can reserve exactly
+  // enough bottom padding for it — fixes Continue-button overlap on shorter
+  // or narrower viewports where a static padding guess fell short.
+  const barRef = usePriceBarClearance('--trac360-pricebar-clearance', PRICE_BAR_BOTTOM_OFFSET);
 
   // Mobile detection
   useEffect(() => {
@@ -54,8 +61,15 @@ export default function PriceBar() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Calculate price breakdown
-  const breakdown = calculatePriceBreakdown(config);
+  // Price breakdown comes from the backend (POST /api/trac360/price, the same
+  // pricing function checkout uses) via Trac360Context — the frontend no
+  // longer sums basePrice/additionalPrice fields itself. Fall back to 0s
+  // while the first response is in flight.
+  const breakdown = {
+    baseCircuitPrice: (priceBreakdown?.baseOperationPrice ?? 0) + (priceBreakdown?.circuitPrice ?? 0),
+    addonsTotal: priceBreakdown?.addonsTotal ?? 0,
+    total: config.totalPrice,
+  };
 
   // Close expanded view when switching to desktop/mobile
   useEffect(() => {
@@ -79,10 +93,11 @@ export default function PriceBar() {
         price: config.circuits.price,
       });
     } else if (config.operationType) {
-      // Path A: flat 1250 base from operation type
+      // Path A: flat base price from operation type, read from the backend's
+      // breakdown so this doesn't drift from BASE_OPERATION_PRICE server-side.
       items.push({
         name: config.operationType.name,
-        price: 1250,
+        price: priceBreakdown?.baseOperationPrice ?? 0,
       });
     }
 
@@ -118,6 +133,7 @@ export default function PriceBar() {
           {/* Collapsed Bar */}
           {!isExpanded && (
             <motion.div
+              ref={barRef}
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -287,6 +303,7 @@ export default function PriceBar() {
           {/* Mini Bar (Collapsed) */}
           {!isExpanded && (
             <motion.div
+              ref={barRef}
               initial={{ y: 100 }}
               animate={{ y: 0 }}
               exit={{ y: 100 }}

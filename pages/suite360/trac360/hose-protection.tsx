@@ -17,10 +17,11 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import addonData from '../../../data/trac360/hose-protection.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function HoseProtection() {
+function HoseProtectionInner({ options }: { options: any }) {
+  const addonData = options.addons.find((a: any) => a.id === 'hose-protection');
   const router = useRouter();
   const { config, addAddon, removeAddon, updateAddonSubOption } = useTrac360();
 
@@ -56,7 +57,7 @@ export default function HoseProtection() {
     setIsNotRequired(false);
 
     // Find the selected sub-option
-    const subOption = addonData.subOptions.find(opt => opt.id === subOptionId);
+    const subOption = addonData.subOptions.find((opt: any) => opt.id === subOptionId);
     if (!subOption) return;
 
     // Check if addon already exists
@@ -75,7 +76,7 @@ export default function HoseProtection() {
         price: addonData.basePrice + subOption.additionalPrice,
         swellProductId: addonData.swellProductId,
         selectedSubOption: subOptionId,
-        subOptions: addonData.subOptions.map(opt => ({
+        subOptions: addonData.subOptions.map((opt: any) => ({
           id: opt.id,
           name: opt.name,
           additionalPrice: opt.additionalPrice,
@@ -201,7 +202,7 @@ export default function HoseProtection() {
 
             {/* Sub-Options - Side by Side */}
             <div className="p-6 grid grid-cols-2 gap-4">
-              {addonData.subOptions.map((subOption, idx) => (
+              {addonData.subOptions.map((subOption: any, idx: any) => (
                 <motion.button
                   key={subOption.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -348,4 +349,8 @@ export default function HoseProtection() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function HoseProtection() {
+  return <Trac360OptionsGate>{(options) => <HoseProtectionInner options={options} />}</Trac360OptionsGate>;
 }

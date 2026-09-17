@@ -156,7 +156,12 @@ export interface Trac360ContextValue {
   // State
   config: Trac360Config;
   currentStep: Trac360Step;
-  
+
+  // Server-authoritative price (see lib/trac360/api.ts / POST /api/trac360/price)
+  priceBreakdown: import('../lib/trac360/api').Trac360PriceBreakdown | null;
+  priceLoading: boolean;
+  priceError: string | null;
+
   // Actions
   updateTractorInfo: (info: Partial<TractorInfo>) => void;
   updateValveSetup: (setup: ValveSetup | null) => void;

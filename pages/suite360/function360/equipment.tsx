@@ -12,9 +12,10 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useFunction360 } from '../../../context/Function360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import equipmentData from '../../../data/function360/equipment-options.json';
+import Function360OptionsGate from '../../../components/Function360/Layout/Function360OptionsGate';
 
-export default function Equipment() {
+function EquipmentInner({ options }: { options: any }) {
+  const equipmentData = options.equipmentOptions;
   const router = useRouter();
   const { config, updateEquipment } = useFunction360();
 
@@ -148,7 +149,7 @@ export default function Equipment() {
                 style={{ color: COLORS.grey.dark }}
               >
                 <option value="" disabled>Select Horsepower</option>
-                {equipmentData.horsepowerOptions.map((option) => (
+                {equipmentData.horsepowerOptions.map((option: any) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
@@ -179,7 +180,7 @@ export default function Equipment() {
                 style={{ color: COLORS.grey.dark }}
               >
                 <option value="" disabled>Select Function Type</option>
-                {equipmentData.functionTypes.map((option) => (
+                {equipmentData.functionTypes.map((option: any) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
@@ -212,4 +213,8 @@ export default function Equipment() {
       </div>
     </Function360Layout>
   );
+}
+
+export default function Equipment() {
+  return <Function360OptionsGate>{(options) => <EquipmentInner options={options} />}</Function360OptionsGate>;
 }

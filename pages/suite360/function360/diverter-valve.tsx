@@ -12,7 +12,7 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useFunction360 } from '../../../context/Function360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import componentDataFile from '../../../data/function360/diverter-valve.json';
+import Function360OptionsGate from '../../../components/Function360/Layout/Function360OptionsGate';
 
 // Helper to get the right variant
 const getVariantKey = (horsepower: string | null, functionType: string | null): string => {
@@ -33,7 +33,8 @@ const getVariantKey = (horsepower: string | null, functionType: string | null): 
   return `electric_3rd_${hpSuffix}`;
 };
 
-export default function DiverterValve() {
+function DiverterValveInner({ options }: { options: any }) {
+  const componentDataFile = options.components.diverterValve;
   const router = useRouter();
   const { config, toggleComponent } = useFunction360();
 
@@ -316,4 +317,8 @@ export default function DiverterValve() {
       </div>
     </Function360Layout>
   );
+}
+
+export default function DiverterValve() {
+  return <Function360OptionsGate>{(options) => <DiverterValveInner options={options} />}</Function360OptionsGate>;
 }

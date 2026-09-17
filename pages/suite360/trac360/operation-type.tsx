@@ -12,11 +12,12 @@ import Trac360Layout from '../../../components/Trac360/Layout/Trac360Layout';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
-import operationTypes from '../../../data/trac360/operation-types.json';
 import { COLORS } from '../../../components/Trac360/styles';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function OperationType() {
+function OperationTypeInner({ options }: { options: any }) {
+  const operationTypes = options.operationTypes;
   const router = useRouter();
   const { config, updateOperationType } = useTrac360();
 
@@ -37,7 +38,7 @@ export default function OperationType() {
     const compatibleOps = (valveSetup as any).compatibleOperations || [];
     
     // Filter operations to only show compatible ones
-    const filtered = operationTypes.filter(operation =>
+    const filtered = operationTypes.filter((operation: any) =>
       compatibleOps.includes(operation.id)
     );
     
@@ -92,7 +93,7 @@ export default function OperationType() {
   const handleContinue = () => {
     if (!isValid || !selectedOperation || !valveSetup) return;
 
-    const operation = operationTypes.find(op => op.id === selectedOperation);
+    const operation = operationTypes.find((op: any) => op.id === selectedOperation);
     if (!operation) return;
 
     // Update context with complete operation object (cast to bypass type check)
@@ -182,7 +183,7 @@ export default function OperationType() {
           transition={{ delay: 0.4 }}
           className="space-y-4"
         >
-          {availableOperations.map((operation) => (
+          {availableOperations.map((operation: any) => (
             <motion.div
               key={operation.id}
               initial={{ opacity: 0, y: 20 }}
@@ -246,7 +247,7 @@ export default function OperationType() {
                     >
                       Included Components:
                     </p>
-                    {operation.components.map((component, index) => (
+                    {operation.components.map((component: any, index: any) => (
                       <div
                         key={index}
                         className="text-xs flex items-start gap-2"
@@ -312,4 +313,8 @@ export default function OperationType() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function OperationType() {
+  return <Trac360OptionsGate>{(options) => <OperationTypeInner options={options} />}</Trac360OptionsGate>;
 }

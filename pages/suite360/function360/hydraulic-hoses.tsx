@@ -13,7 +13,7 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useFunction360 } from '../../../context/Function360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import componentDataFile from '../../../data/function360/hydraulic-hoses.json';
+import Function360OptionsGate from '../../../components/Function360/Layout/Function360OptionsGate';
 
 // Helper to get the right variant
 const getHydraulicHosesVariant = (horsepower: string | null): string => {
@@ -21,7 +21,8 @@ const getHydraulicHosesVariant = (horsepower: string | null): string => {
   return horsepower === 'above_50hp' ? 'above_50hp' : 'below_50hp';
 };
 
-export default function HydraulicHoses() {
+function HydraulicHosesInner({ options }: { options: any }) {
+  const componentDataFile = options.components.hydraulicHoses;
   const router = useRouter();
   const { config, toggleComponent } = useFunction360();
 
@@ -246,4 +247,8 @@ export default function HydraulicHoses() {
       </div>
     </Function360Layout>
   );
+}
+
+export default function HydraulicHoses() {
+  return <Function360OptionsGate>{(options) => <HydraulicHosesInner options={options} />}</Function360OptionsGate>;
 }

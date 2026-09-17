@@ -10,6 +10,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFunction360 } from '../../../context/Function360Context';
+import { usePriceBarClearance } from '../../../utils/usePriceBarClearance';
+
+const PRICE_BAR_BOTTOM_OFFSET = 120;
 
 const PRICE_BAR_DARK = {
   background: 'rgba(74, 74, 74, 0.95)',
@@ -24,6 +27,10 @@ export default function Function360PriceBar() {
   const { config } = useFunction360();
   const [isMobile, setIsMobile] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  // Measures the collapsed bar's real height so the page can reserve exactly
+  // enough bottom padding for it — fixes Continue-button overlap on shorter
+  // or narrower viewports where a static padding guess fell short.
+  const barRef = usePriceBarClearance('--function360-pricebar-clearance', PRICE_BAR_BOTTOM_OFFSET);
 
   // Mobile detection
   useEffect(() => {
@@ -77,6 +84,7 @@ export default function Function360PriceBar() {
           {/* Collapsed Bar */}
           {!isExpanded && (
             <motion.div
+              ref={barRef}
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -233,6 +241,7 @@ export default function Function360PriceBar() {
           {/* Mini Bar (Collapsed) */}
           {!isExpanded && (
             <motion.div
+              ref={barRef}
               initial={{ y: 100 }}
               animate={{ y: 0 }}
               exit={{ y: 100 }}

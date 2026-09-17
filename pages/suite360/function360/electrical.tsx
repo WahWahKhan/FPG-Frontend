@@ -13,7 +13,7 @@ import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useFunction360 } from '../../../context/Function360Context';
 import { COLORS } from '../../../components/Trac360/styles';
-import componentDataFile from '../../../data/function360/electrical.json';
+import Function360OptionsGate from '../../../components/Function360/Layout/Function360OptionsGate';
 
 // Helper to get the right variant
 const getElectricalVariant = (functionType: string | null): string => {
@@ -21,7 +21,8 @@ const getElectricalVariant = (functionType: string | null): string => {
   return functionType === 'electric_3rd_4th' ? 'electric_3rd_4th' : 'electric_3rd';
 };
 
-export default function Electrical() {
+function ElectricalInner({ options }: { options: any }) {
+  const componentDataFile = options.components.electrical;
   const router = useRouter();
   const { config, toggleComponent } = useFunction360();
 
@@ -244,4 +245,8 @@ export default function Electrical() {
       </div>
     </Function360Layout>
   );
+}
+
+export default function Electrical() {
+  return <Function360OptionsGate>{(options) => <ElectricalInner options={options} />}</Function360OptionsGate>;
 }

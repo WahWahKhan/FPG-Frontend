@@ -16,10 +16,11 @@ import Trac360Layout from '../../../components/Trac360/Layout/Trac360Layout';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
-import valveSetups from '../../../data/trac360/valve-setups.json';
 import { COLORS } from '../../../components/Trac360/styles';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 
-export default function ValveSetup() {
+function ValveSetupInner({ options }: { options: any }) {
+  const valveSetups = options.valveSetups;
   const router = useRouter();
   const { config, updateValveSetup } = useTrac360();
 
@@ -40,7 +41,7 @@ export default function ValveSetup() {
   // Filter valve setups based on protection type
   const availableSetups = useMemo(() => {
     if (!protectionType) return [];
-    return valveSetups.filter(setup =>
+    return valveSetups.filter((setup: any) =>
       setup.compatibleWith.includes(protectionType)
     );
   }, [protectionType]);
@@ -53,7 +54,7 @@ export default function ValveSetup() {
     setSelectedSetup(setupId);
 
     // ✅ Update context immediately
-    const setup = valveSetups.find(s => s.id === setupId);
+    const setup = valveSetups.find((s: any) => s.id === setupId);
     if (setup) {
       updateValveSetup(setup as any);
     }
@@ -145,7 +146,7 @@ export default function ValveSetup() {
           transition={{ delay: 0.4 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
         >
-          {availableSetups.map((setup, index) => (
+          {availableSetups.map((setup: any, index: any) => (
             <motion.div
               key={setup.id}
               initial={{ opacity: 0, y: 20 }}
@@ -278,4 +279,8 @@ export default function ValveSetup() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function ValveSetup() {
+  return <Trac360OptionsGate>{(options) => <ValveSetupInner options={options} />}</Trac360OptionsGate>;
 }

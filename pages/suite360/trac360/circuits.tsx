@@ -16,11 +16,12 @@ import Trac360Layout from '../../../components/Trac360/Layout/Trac360Layout';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { useTrac360 } from '../../../context/Trac360Context';
-import circuits from '../../../data/trac360/circuits.json';
+import Trac360OptionsGate from '../../../components/Trac360/Layout/Trac360OptionsGate';
 import { COLORS } from '../../../components/Trac360/styles';
 import SetupReminder from '../../../components/Trac360/Shared/SetupReminder';
 
-export default function Circuits() {
+function CircuitsInner({ options }: { options: any }) {
+  const circuits = options.circuits;
   const router = useRouter();
   const { config, updateCircuits } = useTrac360();
 
@@ -273,4 +274,8 @@ export default function Circuits() {
       </div>
     </Trac360Layout>
   );
+}
+
+export default function Circuits() {
+  return <Trac360OptionsGate>{(options) => <CircuitsInner options={options} />}</Trac360OptionsGate>;
 }

@@ -62,7 +62,7 @@ export interface Trac360AddonSelection {
 /**
  * TRAC360 configurator selections as IDENTIFIERS ONLY. The backend reprices
  * base + circuit + add-ons + sub-options from its own rule table using these
- * ids (mirrors utils/trac360/pricing.ts::calculatePriceBreakdown).
+ * ids (lib/pricing/trac360.js::priceTrac360Line, via POST /api/trac360/price).
  */
 export interface Trac360LineConfig {
   operationTypeId: string | null;
