@@ -14,6 +14,15 @@ export type ISeries = {
   parent_id: string | null;
   name: string;
   description: string;
+  // Swell's own dedicated SEO field, separate from the rich-text `description`
+  // body above (confirmed present on the raw /categories response — see the
+  // "keys" probe in this file's git history/PR notes). Was never read by any
+  // consumer before 2026-09-21: pages/products/[id].tsx derived its meta
+  // description entirely from `description` instead, which is why a category
+  // editor filling in THIS field in the Swell admin (screenshot: a real
+  // "Meta description" input, separate from the body editor) had no effect
+  // on the site at all. Optional because most categories still have it blank.
+  meta_description: string | null;
   images: string[];
 };
 
@@ -23,6 +32,7 @@ const mapSwellCategory = (series: any): ISeries => ({
   parent_id: series.parent_id ?? null,
   name: series.name,
   description: series.description ?? "",
+  meta_description: series.meta_description ?? null,
   images: Array.isArray(series.images) && series.images.length > 0
     ? series.images.map((image: any) => image.file.url)
     : [FALLBACK_IMAGE]

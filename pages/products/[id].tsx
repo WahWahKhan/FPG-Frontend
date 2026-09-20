@@ -219,14 +219,35 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
     );
   }
 
-  // Derive a real per-page meta description from the CMS description instead
-  // of a template that only swaps the category name — used by both branches
-  // below. Falls back to the template only when the CMS field is empty.
-  const plainDescriptionForMeta = series.description
-    ? series.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-    : '';
-  const metaDescription = plainDescriptionForMeta
-    ? plainDescriptionForMeta.slice(0, 155).trim() + (plainDescriptionForMeta.length > 155 ? '…' : '')
+  // Derive a real per-page meta description from the CMS instead of a
+  // template that only swaps the category name — used by both branches below
+  // and by the JSON-LD blocks further down. Falls back to the template only
+  // when nothing usable comes from the CMS at all.
+  //
+  // Two sources, in priority order:
+  //  1. `series.meta_description` — Swell's own dedicated SEO field (a plain
+  //     text input in the admin, separate from the rich-text body editor).
+  //     Was never read here before 2026-09-21 — a category editor filling
+  //     this in had silently done nothing. Preferred when set, since it's
+  //     content someone deliberately wrote FOR this exact purpose.
+  //  2. `series.description` (the body) — stripped of tags, same as before.
+  //
+  // Both are run through decodeHtmlEntities. Confirmed via a full sitemap
+  // sweep on 2026-09-21 that stripping tags alone (the old behaviour) leaves
+  // literal entity text in the output on 124 of 220 product/category pages
+  // (56%) — any normal punctuation typed into Swell's rich-text editor
+  // (an apostrophe, a ° angle symbol, a quoted thread label like "E") is
+  // stored as an HTML entity, and this is genuinely the vast majority of the
+  // catalogue, not a couple of one-off typos. Some of the observed data is
+  // even double-encoded ("&amp;nbsp;" instead of "&nbsp;" or a real
+  // non-breaking space), which is why the decoder runs multiple passes.
+  const derivedDescription = series.meta_description?.trim()
+    ? decodeHtmlEntities(series.meta_description.trim())
+    : series.description
+      ? decodeHtmlEntities(series.description.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim()
+      : '';
+  const metaDescription = derivedDescription
+    ? derivedDescription.slice(0, 155).trim() + (derivedDescription.length > 155 ? '…' : '')
     : `Buy ${series.name} hydraulic products from FluidPower Group. Available online with Australia-wide delivery.`;
 
   // If we have subcategories, show them in a grid
@@ -293,7 +314,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
               "@context": "https://schema.org",
               "@type": "ItemList",
               "name": series.name,
-              "description": plainDescriptionForMeta,
+              "description": derivedDescription,
               "url": `https://www.fluidpowergroup.com.au/products/${series.slug}`,
               "numberOfItems": items.length,
               "itemListElement": items
@@ -306,7 +327,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
                     "name": item.name,
                     "mpn": item.name,
                     "image": series.images[0] || "",
-                    "description": plainDescriptionForMeta,
+                    "description": derivedDescription,
                     "brand": {
                       "@type": "Brand",
                       "name": "FluidPower Group"
@@ -362,6 +383,38 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Decodes named + numeric HTML entities in plain text pulled from a CMS rich-
+// text field, after tags have already been stripped from it (order matters:
+// stripping tags AFTER decoding would risk a decoded "&lt;"/"&gt;" being
+// mistaken for a real tag and eaten by the tag-strip regex).
+//
+// Confirmed (full sitemap sweep, 2026-09-21) that 124 of 220 product/category
+// pages leak literal entity text into their meta description without this —
+// not a couple of one-off typos, but the expected result any time a Swell
+// editor types an apostrophe, a ° angle symbol, or a quoted thread label like
+// "E", all of which the rich-text editor stores as an entity. Some observed
+// data is even double-encoded ("&amp;nbsp;" instead of "&nbsp;"), which is
+// why this runs multiple passes — a string with no entities left is
+// unaffected by the extra passes, so this is safe to over-apply.
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', nbsp: ' ', quot: '"', apos: "'", lt: '<', gt: '>',
+  deg: '°', mdash: '—', ndash: '–', hellip: '…', trade: '™', copy: '©', reg: '®',
+};
+
+const decodeEntitiesOnce = (input: string): string =>
+  input.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code: string) => {
+    if (code[0] === '#') {
+      const isHex = code[1]?.toLowerCase() === 'x';
+      const num = parseInt(isHex ? code.slice(2) : code.slice(1), isHex ? 16 : 10);
+      return Number.isFinite(num) ? String.fromCodePoint(num) : match;
+    }
+    const named = NAMED_ENTITIES[code.toLowerCase()];
+    return named !== undefined ? named : match;
+  });
+
+const decodeHtmlEntities = (input: string): string =>
+  decodeEntitiesOnce(decodeEntitiesOnce(decodeEntitiesOnce(input)));
 
 // Matches standard UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 // Also matches MongoDB ObjectID: 24-character hex string (e.g. 634c0ba595e16400126463b2)
