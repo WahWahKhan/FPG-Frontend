@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { API_BASE_URL } from '../../lib/checkout/checkout-config';
 
 interface QuoteControlsProps {
   onGenerate: () => void;
@@ -62,8 +63,6 @@ export default function QuoteControls({
 
       reader.onloadend = async () => {
         const base64data = reader.result as string;
-
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
 
         const emailPayload = {
           type: 'quote',

@@ -9,6 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { buildServerOrderItems } from '../../lib/checkout/order-contract';
+import { API_BASE_URL } from '../../lib/checkout/checkout-config';
 
 interface CartItem {
   id: string;
@@ -134,7 +135,6 @@ export default function SaveCartModal({ open, onClose, items }: SaveCartModalPro
 
     setStatus('sending');
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
       const res = await fetch(`${API_BASE_URL}/api/cart/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

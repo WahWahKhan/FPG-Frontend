@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { API_BASE_URL } from '../../lib/checkout/checkout-config';
 
 interface InvoiceControlsProps {
   onGenerate: () => void;
@@ -133,8 +134,6 @@ export default function InvoiceControls({
         }
         
         // Prepare email payload
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-        
         const emailPayload = {
           type: 'invoice',
           invoiceData: lastGeneratedInvoice,

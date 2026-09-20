@@ -4,6 +4,7 @@ import { ICart, IItemCart } from 'types/cart';
 import { Children } from 'types/general';
 import SaveCartModal from '../components/cart/SaveCartModal';
 import SavedCartNotice from '../components/cart/SavedCartNotice';
+import { API_BASE_URL } from '../lib/checkout/checkout-config';
 
 export const CartContext = createContext<{
   items: IItemCart[];
@@ -128,7 +129,6 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
 
     (async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
         const res = await fetch(`${API_BASE_URL}/api/cart/resume?token=${encodeURIComponent(token)}`);
         if (res.ok) {
           const data = await res.json();

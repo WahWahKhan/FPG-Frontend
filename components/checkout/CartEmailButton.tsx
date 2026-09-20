@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { API_BASE_URL } from '../../lib/checkout/checkout-config';
 
 interface CartEmailButtonProps {
   items: any[];  // Simplified - no need for IItemCart in frontend
@@ -29,9 +30,6 @@ export default function CartEmailButton({ items, userDetails }: CartEmailButtonP
     setError('');
 
     try {
-      // âœ… Same pattern as capture-order uses
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-
       const response = await fetch(`${API_BASE_URL}/api/send-cart-email`, {
         method: 'POST',
         headers: {
