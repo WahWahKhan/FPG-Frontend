@@ -41,7 +41,7 @@ const products: Product[] = [
     href: "/suite360/function360/start",  // ← CHANGED from /hosebuilder/function360 (even though not active yet)
     image: "/Function360.png",
     isActive: true,
-    learnMore: "Our next-generation product configurator is currently in development. Stay tuned for updates!",
+    learnMore: "Configure your hydraulic function kit with our step-by-step guide. Choose from a solenoid diverter valve, quick couplings, adaptors, hydraulic hoses, electrical wiring and mounting brackets to build a complete solution.",
   },
   {
     id: "tube360",
@@ -190,11 +190,11 @@ const BuyPage = () => {
                 ease: "easeOut" 
               }}
               onClick={() => handleNavigation(product)}
-              className={`relative group ${product.isActive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              className={`relative group h-full ${product.isActive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
             >
               {/* Glassmorphism Tile */}
               <div
-                className="relative rounded-3xl overflow-hidden transition-all duration-500"
+                className="relative rounded-3xl overflow-hidden transition-all duration-500 h-full"
                 style={{
                   background: product.isActive
                     ? `
@@ -309,7 +309,7 @@ const BuyPage = () => {
                 )}
 
                 {/* Content */}
-                <div className="p-8 sm:p-10 xl:p-6 flex flex-col items-center text-center">
+                <div className="p-8 sm:p-10 xl:p-6 flex flex-col items-center text-center h-full">
                   {/* Product Image */}
                   <div
                     className="mb-6 transition-transform duration-500 w-[200px] h-[200px] xl:w-[170px] xl:h-[170px]"
@@ -357,7 +357,7 @@ const BuyPage = () => {
                   {/* CTA Button */}
                   {product.isActive && (
                     <div
-                      className="px-8 py-3 rounded-full text-base font-semibold transition-all duration-300"
+                      className="mt-auto px-8 py-3 rounded-full text-base font-semibold transition-all duration-300"
                       style={{
                         background: `
                           radial-gradient(ellipse at center, 
@@ -378,7 +378,7 @@ const BuyPage = () => {
                         `,
                       }}
                     >
-                      Get Started →
+                      Get Started
                     </div>
                   )}
                 </div>
@@ -533,7 +533,7 @@ const BuyPage = () => {
                     `;
                   }}
                 >
-                  Get Started →
+                  Get Started
                 </button>
               </div>
             </div>
