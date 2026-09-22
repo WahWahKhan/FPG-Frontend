@@ -11,7 +11,7 @@ import OptionsGate from '../../../components/Tube360/OptionsGate';
 import FreightNotice from '../../../components/Tube360/FreightNotice';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
-import { GlassSelect, GlassNumberInput, PagePill, RequiredNote, FieldHint } from '../../../components/Tube360/Fields';
+import { GlassSelect, GlassNumberInput, PagePill, RequiredNote } from '../../../components/Tube360/Fields';
 import { useTube360 } from '../../../context/Tube360Context';
 import {
   getEntry,
@@ -141,11 +141,6 @@ function TubeSpecsInner({ options }: { options: Tube360Options }) {
               onChange={handleCatalogChange}
               disabled={!spec.odLabel}
             />
-            {entry && config.method === 'manual' && (
-              <FieldHint>
-                Bend radius for this size: {entry.minClrMm} mm (fixed, 2&times; outer diameter)
-              </FieldHint>
-            )}
           </div>
 
           <GlassSelect

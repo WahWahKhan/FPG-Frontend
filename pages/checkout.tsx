@@ -847,6 +847,7 @@ export default function CheckoutPage() {
                   {item.pdfDataUrl && (
                     <button
                       onClick={() => handleViewPDF(item.pdfDataUrl)}
+                      onTouchStart={() => {}}
                       className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                       style={{
                         padding: "6px 14px",
@@ -922,6 +923,7 @@ export default function CheckoutPage() {
                     {item.pdfDataUrl && (
                       <button
                         onClick={() => handleViewPDF(item.pdfDataUrl)}
+                        onTouchStart={() => {}}
                         className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                         style={{
                           padding: "6px 14px",
@@ -997,6 +999,7 @@ export default function CheckoutPage() {
                     {item.pdfDataUrl && (
                       <button
                         onClick={() => handleViewPDF(item.pdfDataUrl)}
+                        onTouchStart={() => {}}
                         className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                         style={{
                           padding: "6px 14px",
@@ -1065,7 +1068,7 @@ export default function CheckoutPage() {
                       className="rounded object-cover"
                     />
                     <div>
-                      <p className="font-medium text-gray-800">TUBE360 Custom Tube</p>
+                      <p className="font-medium text-gray-800">TUBE360 Custom Order</p>
                       {cfg && (
                         <p className="text-sm text-gray-600">
                           {cfg.labels.material} &middot; {cfg.labels.od} &times; {cfg.labels.wallMm} mm &middot; {cfg.spec.totalLengthMm} mm &middot; {bends} bend(s)
@@ -1075,6 +1078,7 @@ export default function CheckoutPage() {
                       {item.pdfDataUrl && (
                         <button
                           onClick={() => handleViewPDF(item.pdfDataUrl)}
+                          onTouchStart={() => {}}
                           className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                           style={{
                             padding: "6px 14px",

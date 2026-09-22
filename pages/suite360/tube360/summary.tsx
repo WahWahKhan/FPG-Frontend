@@ -12,6 +12,7 @@ import Head from 'next/head';
 import { usePDF } from 'react-to-pdf';
 import Tube360Layout from '../../../components/Tube360/Tube360Layout';
 import OptionsGate from '../../../components/Tube360/OptionsGate';
+import GlassSecondaryButton from '../../../components/Tube360/GlassSecondaryButton';
 import FreightNotice from '../../../components/Tube360/FreightNotice';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import { PagePill } from '../../../components/Tube360/Fields';
@@ -399,20 +400,12 @@ function SummaryInner({ options }: { options: Tube360Options }) {
                 </motion.button>
 
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => router.push('/suite360/tube360/tube-specs')}
-                    className="px-6 py-2 rounded-full font-semibold text-white text-sm"
-                    style={{ background: COLORS.grey.dark }}
-                  >
+                  <GlassSecondaryButton onClick={() => router.push('/suite360/tube360/tube-specs')}>
                     Edit Tube
-                  </button>
-                  <button
-                    onClick={() => router.push('/suite360/tube360/bends')}
-                    className="px-6 py-2 rounded-full font-semibold text-white text-sm"
-                    style={{ background: COLORS.grey.dark }}
-                  >
+                  </GlassSecondaryButton>
+                  <GlassSecondaryButton onClick={() => router.push('/suite360/tube360/bends')}>
                     Edit Bends
-                  </button>
+                  </GlassSecondaryButton>
                 </div>
               </div>
             ) : (

@@ -107,7 +107,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
         <h3 className="font-medium">
           {isPWA ? 'HOSE360 Custom Order' :
           isFunction360 ? 'FUNCTION360 Custom Order' :
-          isTube360 ? 'TUBE360 Custom Tube' : item.name}
+          isTube360 ? 'TUBE360 Custom Order' : item.name}
         </h3>
 
           {/* Custom orders show Qty: 1 (fixed) with PDF button */}

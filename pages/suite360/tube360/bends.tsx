@@ -150,7 +150,7 @@ function BendsInner({ options }: { options: Tube360Options }) {
           <NoticeBox title="Machine limits">
             <ul className="list-disc pl-5 space-y-1">
               <li>Bend angle: {options.machine.minBendAngleDeg}&deg; to {options.machine.maxBendAngleDeg}&deg; per bend (applies to all tubes).</li>
-              <li>Bend radius for {labels.od} tube: {entry.minClrMm} mm (fixed &mdash; 2&times; the tube&rsquo;s outer diameter).</li>
+              <li>Bend radius: 2 &times; outer diameter of the selected tube (fixed).</li>
               <li>Minimum straight section: {entry.minSectionMm} mm.</li>
               <li>All bends are formed in one plane.</li>
               <li>
@@ -212,7 +212,7 @@ function BendsInner({ options }: { options: Tube360Options }) {
               onBlur={() => setTouchedField('radiusMm')}
               unit="mm"
               readOnly
-              hint={`Fixed at ${entry.minClrMm} mm (2× outer diameter) for this tube. All bends use this radius.`}
+              hint="Fixed at 2 × the tube's outer diameter. All bends use this radius."
               error={radiusError}
             />
           )}
