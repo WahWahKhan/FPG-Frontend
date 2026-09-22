@@ -20,7 +20,6 @@ import {
   isBendsValid,
   validateTotalLength,
   validateBendCount,
-  validateRadius,
   validateSection,
   validateAngle,
   resizeBendArrays,
@@ -76,7 +75,6 @@ function BendsInner({ options }: { options: Tube360Options }) {
   const count = toInt(config.bends.count);
   const totalLengthError = shownError('totalLengthMm', config.spec.totalLengthMm, () => validateTotalLength(config.spec.totalLengthMm, options));
   const countError = shownError('count', config.bends.count, () => validateBendCount(config.bends.count, options));
-  const radiusError = shownError('radiusMm', config.bends.radiusMm, () => validateRadius(config.bends.radiusMm, entry));
 
   const handleCountChange = (value: string) => {
     updateBends({ count: value });
@@ -150,7 +148,7 @@ function BendsInner({ options }: { options: Tube360Options }) {
           <NoticeBox title="Machine limits">
             <ul className="list-disc pl-5 space-y-1">
               <li>Bend angle: {options.machine.minBendAngleDeg}&deg; to {options.machine.maxBendAngleDeg}&deg; per bend (applies to all tubes).</li>
-              <li>Bend radius: 2 &times; outer diameter of the selected tube (fixed).</li>
+              <li>Bend radius: 2&times; outer diameter of the selected tube (fixed).</li>
               <li>Minimum straight section: {entry.minSectionMm} mm.</li>
               <li>All bends are formed in one plane.</li>
               <li>
@@ -202,20 +200,12 @@ function BendsInner({ options }: { options: Tube360Options }) {
             error={countError}
           />
 
-          {count !== null && count >= 1 && (
-            <GlassNumberInput
-              id="radiusMm"
-              label="Bend Radius (CLR)"
-              required
-              value={config.bends.radiusMm}
-              onChange={() => {}}
-              onBlur={() => setTouchedField('radiusMm')}
-              unit="mm"
-              readOnly
-              hint="Fixed at 2 × the tube's outer diameter. All bends use this radius."
-              error={radiusError}
-            />
-          )}
+          {/* Bend radius is still computed and stored (config.bends.radiusMm,
+              auto-populated above from entry.minClrMm) for pricing/validation/
+              manufacturing - the customer has already been told it's fixed at
+              2x outer diameter (Machine Limits above), so displaying the
+              specific number again here was redundant. Kept as a value, just
+              not rendered. */}
 
           {count !== null && (
             <div>
