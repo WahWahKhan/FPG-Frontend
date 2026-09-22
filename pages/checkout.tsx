@@ -99,7 +99,15 @@ export default function CheckoutPage() {
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDFUrl, setCurrentPDFUrl] = useState<string>('');
 
-  // PHASE 1 - REMOVED: isMobile state and useEffect (now in PDFModal component)
+  // Needed locally (not just inside PDFModal) so handleViewPDF can open the
+  // PDF SYNCHRONOUSLY on mobile - see handleViewPDF below for why.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Wait for hydration before checking cart
   useEffect(() => {
@@ -735,8 +743,45 @@ export default function CheckoutPage() {
       alert('PDF not available');
       return;
     }
-    
-    // PHASE 1: Simplified - just set state, PDFModal component handles mobile logic
+
+    if (isMobile) {
+      // Must call window.open() SYNCHRONOUSLY, right here inside the click
+      // handler - not via setState + a useEffect elsewhere (that's what
+      // PDFModal's mobile branch did, and Safari's popup blocker silently
+      // kills window.open() once it's no longer directly inside the
+      // synchronous user-gesture call stack; nothing errors, it just does
+      // nothing, which read on a real iPhone as "needs a second tap" when
+      // it actually never opened at all - see [[fpg-...]] memory). Same
+      // pattern already used correctly in ItemCart.tsx and
+      // order-confirmation.tsx; PDFModal's effect-based version is only
+      // used for the desktop in-page modal below.
+      try {
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Custom Hose Assembly PDF</title>
+                <style>
+                  body { margin: 0; padding: 0; }
+                  iframe { width: 100vw; height: 100vh; border: none; }
+                </style>
+              </head>
+              <body>
+                <iframe src="${pdfDataUrl}"></iframe>
+              </body>
+            </html>
+          `);
+          newWindow.document.close();
+        }
+      } catch (error) {
+        console.error('Error opening PDF:', error);
+        alert('Unable to open PDF. Please try again.');
+      }
+      return;
+    }
+
     setCurrentPDFUrl(pdfDataUrl);
     setShowPDFModal(true);
   };
