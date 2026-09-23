@@ -32,6 +32,24 @@
   }
 }
 
+/* Mobile 100vh overlay-clipping fix - outside @layer so it always wins over
+   Tailwind's layered h-screen utility, regardless of source order.
+   100vh classically resolves to the LARGEST possible viewport (address bar
+   + nav bar collapsed), which is taller than what's actually visible when
+   that browser chrome is expanded - a well-known mobile Chrome/Safari bug.
+   The Cart drawer is position:fixed and sized with h-screen; only its item
+   list scrolls internally, so when h-screen overshoots the real viewport,
+   the footer buttons (Continue Shopping / Go to Checkout) render below the
+   visible fold with literally no way to reach them - confirmed via a real
+   Android screenshot showing "Go to Checkout" cut off entirely. `100dvh`
+   (dynamic viewport height) tracks the ACTUAL visible viewport instead;
+   unsupported browsers simply ignore that second declaration and keep the
+   100vh fallback above it. */
+.overlay-full-height {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* Global GIF fix - outside @layer to ensure it applies everywhere */
 img[src$=".gif"],
 img[src*=".gif"] {

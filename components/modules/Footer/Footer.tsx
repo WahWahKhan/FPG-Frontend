@@ -75,6 +75,7 @@ const Footer = () => {
               href="https://www.facebook.com/share/1754zF77w4/?mibextid=wwXlfr" 
               target="_blank" 
               rel="noopener noreferrer"
+              aria-label="Visit our Facebook page"
               className="hover:no-underline"
             >
               <IconButton Icon={BsFacebook} />

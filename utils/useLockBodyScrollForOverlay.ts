@@ -1,105 +1,102 @@
 // utils/useLockBodyScrollForOverlay.ts
 // ============================================================================
-// Locks background scroll while an overlay (cart drawer, etc.) is open -
-// WITHOUT breaking scrolling inside the overlay's own content on iOS.
+// Locks background scroll while an overlay (cart drawer, nav menu, etc.) is
+// open - WITHOUT breaking scrolling inside the overlay's own content on iOS.
 //
-// Why this exists instead of react-use's useLockBodyScroll: that hook's iOS
-// branch (overflow:hidden doesn't stop background scroll on iOS, so it needs
-// a different trick) attaches ONE global `document` touchmove listener that
-// calls preventDefault() on every touchmove anywhere on the page, with NO
-// check of what element the touch started on. That blocks scrolling
-// everywhere while locked, including inside the very overlay it's meant to
-// protect - which is exactly why the cart drawer's item list couldn't
-// scroll past ~3-4 items on real iPhones (confirmed via Safari on a live
-// preview deployment, not just code reading).
+// REWRITE (previous approach didn't hold up on a real iPhone after 4 rounds
+// of testing): the first version of this hook tried to fight iOS Safari's
+// touch-gesture engine with a `touchmove` listener that called
+// preventDefault() on everything except an "exempt" set of elements. That
+// looked correct in code review and even passed synthetic TouchEvent tests
+// dispatched from this session's Chromium-based browser tool - but synthetic
+// dispatchEvent() calls do NOT go through WebKit's real gesture recognizer,
+// so that test was never actually proof it worked on a real device, and it
+// didn't: the owner confirmed on a real iPhone it was still broken, while
+// the same build worked fine on Android the whole time (Android never uses
+// the iOS preventDefault branch at all - overflow:hidden alone is enough
+// there, which is why Android "working" never validated the iOS path).
 //
-// SINGLETON, not per-instance: Header.tsx mounts TWO <Cart> instances at
-// once (one styled for desktop nav, one for mobile, both bound to the same
-// `open` state - see components/modules/Header/Header.tsx lines ~150/~417).
-// Both instances lock simultaneously, so a naive per-instance listener that
-// only knows its OWN scrollable ref still breaks scrolling: instance A
-// correctly exempts its own (visible) list, but instance B's listener has
-// no idea that element is fine and blocks it anyway - and either listener
-// calling preventDefault() cancels the event regardless of what the other
-// one decided. Confirmed this exact failure mode live before fixing it:
-// dispatching a touchmove at the visible list still came back
-// defaultPrevented=true with a naive per-instance version.
+// NEW APPROACH: don't try to selectively block touchmove at all. Instead,
+// pin <body> itself out of the document flow with `position: fixed` while
+// locked (restoring the exact scroll offset via a negative `top`, and
+// restoring real scroll position on unlock). This is the standard iOS
+// scroll-lock technique precisely because it sidesteps the touch-event
+// battle entirely - there's no gesture to intercept, since body literally
+// isn't scrollable while locked. The overlay's own scrollable content
+// (Cart's item list, etc.) is unaffected: it's already `position: fixed`
+// itself (see Cart.tsx's outer wrapper), so it scrolls natively via its own
+// overflow-y-auto, independent of whatever body is doing.
 //
-// Fix: one shared document-level listener (reference-counted, like the
-// original library's lock counter) checks against a shared SET of exempt
-// elements, so any currently-locked overlay's scrollable content is
-// exempted regardless of which component instance registered it.
+// SINGLETON / ref-counted, not per-instance: Header.tsx mounts TWO <Cart>
+// instances at once (desktop + mobile nav, both bound to the same `open`
+// state), and the mobile nav menu (Snackbar) can be open at the same time as
+// the cart. A plain non-counted lock/unlock would have one overlay's close
+// prematurely unlock the body while another overlay is still open. A shared
+// counter (and shared saved-scroll-state, restored only when the count hits
+// zero) handles any number of simultaneously-locked overlays correctly.
 // ============================================================================
 
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 
-function isIosDevice(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    !!window.navigator &&
-    !!window.navigator.platform &&
-    /iP(ad|hone|od)/.test(window.navigator.platform)
-  );
-}
-
-const exemptElements = new Set<HTMLElement>();
 let activeLocks = 0;
-let touchListenerAttached = false;
-let overflowLockCount = 0;
-let originalBodyOverflow = '';
+let savedScrollY = 0;
+let savedBodyStyle: {
+  position: string;
+  top: string;
+  left: string;
+  right: string;
+  width: string;
+  overflow: string;
+} | null = null;
 
-function handleGlobalTouchmove(rawEvent: TouchEvent) {
-  // Don't interfere with multi-touch gestures (pinch-to-zoom).
-  if (rawEvent.touches.length > 1) return;
-  const target = rawEvent.target as Node | null;
-  if (!target) {
-    rawEvent.preventDefault();
-    return;
+function lockBody() {
+  if (activeLocks === 0) {
+    savedScrollY = window.scrollY;
+    savedBodyStyle = {
+      position: document.body.style.position,
+      top: document.body.style.top,
+      left: document.body.style.left,
+      right: document.body.style.right,
+      width: document.body.style.width,
+      overflow: document.body.style.overflow,
+    };
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${savedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
   }
-  for (const el of exemptElements) {
-    if (el.contains(target)) return; // some locked overlay's own content - let it scroll
-  }
-  rawEvent.preventDefault();
+  activeLocks += 1;
 }
 
-export function useLockBodyScrollForOverlay(locked: boolean, scrollableRef: RefObject<HTMLElement>) {
+function unlockBody() {
+  activeLocks = Math.max(0, activeLocks - 1);
+  if (activeLocks === 0 && savedBodyStyle) {
+    const restore = savedBodyStyle;
+    savedBodyStyle = null;
+    document.body.style.position = restore.position;
+    document.body.style.top = restore.top;
+    document.body.style.left = restore.left;
+    document.body.style.right = restore.right;
+    document.body.style.width = restore.width;
+    document.body.style.overflow = restore.overflow;
+    window.scrollTo(0, savedScrollY);
+  }
+}
+
+// `scrollableRef` is kept in the signature for call-site compatibility
+// (Cart.tsx / Snackbar.tsx both already pass one) but is no longer used -
+// the position:fixed technique doesn't need to know which element to exempt.
+export function useLockBodyScrollForOverlay(locked: boolean, _scrollableRef?: RefObject<HTMLElement>) {
   useEffect(() => {
     if (!locked || typeof document === 'undefined') return;
 
-    const el = scrollableRef.current;
-    if (el) exemptElements.add(el);
-    activeLocks += 1;
-
-    if (isIosDevice()) {
-      if (!touchListenerAttached) {
-        document.addEventListener('touchmove', handleGlobalTouchmove, { passive: false });
-        touchListenerAttached = true;
-      }
-    } else {
-      if (overflowLockCount === 0) {
-        originalBodyOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-      }
-      overflowLockCount += 1;
-    }
-
+    lockBody();
     return () => {
-      if (el) exemptElements.delete(el);
-      activeLocks = Math.max(0, activeLocks - 1);
-
-      if (isIosDevice()) {
-        if (activeLocks === 0 && touchListenerAttached) {
-          document.removeEventListener('touchmove', handleGlobalTouchmove);
-          touchListenerAttached = false;
-        }
-      } else {
-        overflowLockCount = Math.max(0, overflowLockCount - 1);
-        if (overflowLockCount === 0) {
-          document.body.style.overflow = originalBodyOverflow;
-        }
-      }
+      unlockBody();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locked, scrollableRef.current]);
+  }, [locked]);
 }

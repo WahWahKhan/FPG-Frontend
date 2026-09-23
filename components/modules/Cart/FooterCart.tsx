@@ -1,5 +1,5 @@
 import { useRouter } from "next/router"
-import { useContext } from "react"
+import { useContext, CSSProperties } from "react"
 import { CartContext } from "../../../context/CartWrapper"
 
 const FooterCart = ({items, handleClose} : any) => {
@@ -31,9 +31,35 @@ const FooterCart = ({items, handleClose} : any) => {
   }
 
   return (
-    <div className="border p-4 flex flex-col gap-4 items-center">
+    <div className="relative p-4 flex flex-col gap-4 items-center">
+      {/* Glass fade-in background: near-transparent at the top edge (bordering
+          the item list) so a peek of whatever's still in the cart shows
+          through as a visual cue that scrolling reveals more items, ramping
+          up to the same frosted opacity the rest of the panel uses by the
+          time it reaches the bottom. A single blur + an opacity gradient
+          (rather than a graduated blur, which CSS can't do directly) is the
+          standard way to fake this - it reads the same to the eye. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          background: `linear-gradient(180deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.12) 20%,
+            rgba(255, 255, 255, 0.24) 45%,
+            rgba(255, 255, 255, 0.35) 70%,
+            rgba(255, 255, 255, 0.4) 100%
+          )`,
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.25)",
+          pointerEvents: "none",
+        } as CSSProperties}
+      />
       {/* Continue Shopping Button - Yellow 3D Glass */}
-      <button 
+      <button
         className="relative overflow-hidden transition-all duration-300 ease-out"
         onClick={handleClose}
         style={{
@@ -50,6 +76,7 @@ const FooterCart = ({items, handleClose} : any) => {
           textDecoration: "none",
           transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           position: "relative",
+          zIndex: 1,
           whiteSpace: "nowrap" as const,
           minWidth: "180px",
           width: "auto",
@@ -116,6 +143,8 @@ const FooterCart = ({items, handleClose} : any) => {
           fontSize: "1.05rem",
           fontWeight: 600,
           color: "#1e293b",
+          position: "relative",
+          zIndex: 1,
           whiteSpace: "nowrap" as const,
           minWidth: "180px",
           background: "linear-gradient(180deg, #ffffff 0%, #eef2f7 100%)",
@@ -153,6 +182,7 @@ const FooterCart = ({items, handleClose} : any) => {
           textDecoration: "none",
           transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           position: "relative",
+          zIndex: 1,
           whiteSpace: "nowrap" as const,
           minWidth: "180px",
           width: "auto",
