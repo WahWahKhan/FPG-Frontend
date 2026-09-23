@@ -1,12 +1,13 @@
 import siteLinks from "constants/site-links";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FiMenu } from "react-icons/fi";
-import { useLockBodyScroll } from "react-use";
+import { useLockBodyScrollForOverlay } from "../../../../utils/useLockBodyScrollForOverlay";
 import NavSnackbar from "./NavSnackbar";
 
 const Snackbar = () => {
   const [menu, setMenu] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   const variants = {
     initial: { opacity: 0, y: -100 },
     animate: {
@@ -17,7 +18,7 @@ const Snackbar = () => {
     exit: { opacity: 0, y: -100, transition: { duration: 0.3 } },
   };
 
-  useLockBodyScroll(menu);
+  useLockBodyScrollForOverlay(menu, panelRef);
 
   return (
     <div className="relative">
@@ -91,6 +92,7 @@ const Snackbar = () => {
               onClick={() => setMenu(!menu)}
             ></motion.div>
             <motion.div
+              ref={panelRef}
               className="fixed left-0 right-0 z-50 p-6 border-b"
               style={{
                 // FLOW FIX: Use fixed positioning that's viewport-based, not container-based

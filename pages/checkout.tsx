@@ -10,7 +10,7 @@
 // 6. Extracted ShippingForm component
 // 7. Removed all form rendering and validation from this file
 
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Image from 'next/image';
@@ -94,7 +94,30 @@ export default function CheckoutPage() {
   // PHASE 3: Shipping details now managed by ShippingForm component
   // Parent only needs to store the validated details for payment step
   const [shippingDetails, setShippingDetails] = useState<ShippingDetails | null>(null);
-  
+
+  // The payment section (PayPal buttons) replaces the taller shipping form
+  // in place, at whatever scroll position the user was at after filling it
+  // out - on narrow mobile viewports that's usually scrolled down near the
+  // form's own "Continue" button, which sits well below where the shorter
+  // payment content naturally renders. Without correcting for it, the
+  // PayPal buttons can render above the viewport and the user has to
+  // manually scroll up to find them. Scrolled into view below once `step`
+  // flips to 'payment'.
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (step !== 'payment') return;
+    const el = paymentSectionRef.current;
+    if (!el) return;
+    // Wait a tick for the new section to actually be laid out before
+    // measuring its position.
+    const timer = setTimeout(() => {
+      const headerOffset = window.innerWidth < 768 ? 110 : 20;
+      const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [step]);
+
   // PDF Modal state
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [currentPDFUrl, setCurrentPDFUrl] = useState<string>('');
@@ -1605,7 +1628,9 @@ export default function CheckoutPage() {
                 initialDetails={shippingDetails || undefined}
               />
               ) : (
-                renderPaymentSection()
+                <div ref={paymentSectionRef}>
+                  {renderPaymentSection()}
+                </div>
               )}
             </div>
             
