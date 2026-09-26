@@ -253,6 +253,7 @@ const Header = ({ categories }: { categories: Category[] }) => {
                       new-tab / copy-link. preventDefault stops the browser's own full-page
                       navigation for that href so router.push's SPA transition still fires
                       exactly as before — this is additive, not a behaviour change. */}
+                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                   <a
                     href="/products/search"
                     onClick={(e) => {
