@@ -105,6 +105,19 @@ export interface PwaOrderItem {
 }
 
 /**
+ * HOSE360 native configurator's custom hose assembly. Same price-less
+ * selection shape as PwaLineConfig (kept as a separate type/kind per
+ * DECISIONS.md §5 — new frontend uses kind: 'hose360', not the legacy 'pwa').
+ */
+export type Hose360LineConfig = PwaLineConfig;
+
+export interface Hose360OrderItem {
+  kind: 'hose360';
+  cartId: number;
+  orderConfig: Hose360LineConfig;
+}
+
+/**
  * TUBE360 custom bent tube. Sends the price-less spec (tube id, ends, lengths,
  * angles, radius, quantity). The backend reprices from its own catalogue,
  * rate table and the live Swell price per metre (lib/pricing/tube360.js).
@@ -121,7 +134,8 @@ export type ServerOrderItem =
   | Function360OrderItem
   | Trac360OrderItem
   | PwaOrderItem
-  | Tube360OrderItem;
+  | Tube360OrderItem
+  | Hose360OrderItem;
 
 // ============================================================================
 // DEVELOPER / TEST MODE (server-gated)
@@ -336,6 +350,12 @@ export function buildServerOrderItems(items: IItemCart[]): ServerOrderItem[] {
       case 'pwa_order':
         return {
           kind: 'pwa',
+          cartId: item.cartId ?? 0,
+          orderConfig: pickPwaSelections(item.orderConfig),
+        };
+      case 'hose360_order':
+        return {
+          kind: 'hose360',
           cartId: item.cartId ?? 0,
           orderConfig: pickPwaSelections(item.orderConfig),
         };

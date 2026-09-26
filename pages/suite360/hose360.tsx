@@ -1,54 +1,56 @@
-import React, { useEffect } from 'react';
+/**
+ * HOSE360 Welcome / Start page — native replacement for the old bolted-on
+ * React Native/Expo bundle loader. Keeps the exact same URL,
+ * `/suite360/hose360`, per DECISIONS.md §2.
+ *
+ * Per 02_FRONTEND_PLAN.md Step F6 row 1: do NOT call resetConfig() on mount
+ * here — this page is also the SEO/bookmark landing page, and "Place New
+ * Order" (not a fresh visit here) is what's supposed to reset the config.
+ *
+ * Round 2 (DECISIONS_ADDENDUM_2.md §1 / 04_UX_FIDELITY_FIX_PLAN.md Step U1):
+ * restored OG's three separate copy lines + "Takes less than 5 minutes"
+ * line below START, and ported the "HOSE36" + spinning circular-arrow "0"
+ * title treatment (WelcomeScreen.js:13-21/77-93). The welcome_hose.gif hero
+ * image was already correct here (not the END-fitting diagram) — verified
+ * during this round, no change needed.
+ */
+
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
-import getConfig from 'next/config';
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/router';
+import Image from 'next/image';
+import { COLORS } from '../../components/Trac360/styles';
+import ContinueButton from '../../components/Trac360/Shared/ContinueButton';
 
-const { publicRuntimeConfig } = getConfig();
+export default function Hose360Welcome() {
+  const router = useRouter();
+  const [spinCount, setSpinCount] = useState(0);
 
-declare global {
-  interface Window {
-    __PUBLIC_PATH__?: string;
-  }
-}
+  const handleStart = () => {
+    router.push('/suite360/hose360/hose-selection');
+  };
 
-const HoseBuilder = () => {
+  // Port of WelcomeScreen.js's spinIcon() click-to-spin easter egg: the "0"
+  // in HOSE360 is a circular-arrow icon that does a 720deg spin on tap.
+  // Bumping spinCount changes the `animate` target so Framer Motion
+  // re-triggers the rotation on every click (matches the RN version's
+  // rotateAnim.setValue(0) + Animated.timing to 2 turns).
+  const handleSpinClick = () => setSpinCount((c) => c + 1);
+
+  // Don't spin until the page has fully loaded AND the entrance animations
+  // have settled, so the customer actually sees the intro spin (it used to
+  // run on mount, i.e. before anything was visible).
   useEffect(() => {
-    // Lock outer page scroll — PWA manages its own scroll internally
-    document.body.style.overflow = 'hidden';
-
-    // PHASE 2: Updated paths
-    window.__PUBLIC_PATH__ = publicRuntimeConfig.staticFolder || '/suite360/static/';
-    
-    const scripts = [
-      '/suite360/static/js/453.60f80263.js',
-      '/suite360/static/js/main.979e0a55.js'
-    ];
-
-    const loadScriptSequentially = async (scripts: string[]) => {
-      for (const src of scripts) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = src;
-          script.defer = true;
-          script.onload = () => {
-            console.log(`Script loaded: ${src}`);
-            resolve();
-          };
-          script.onerror = (e) => {
-            console.error('Script loading error:', src, e);
-            reject(e);
-          };
-          document.body.appendChild(script);
-        });
-      }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const start = () => {
+      timer = setTimeout(() => setSpinCount((c) => (c === 0 ? 1 : c)), 900);
     };
-
-    loadScriptSequentially(scripts).catch(console.error);
-
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
     return () => {
-      document.body.style.overflow = '';
-      document.querySelectorAll('script[src^="/suite360/"]').forEach(script => {
-        script.remove();
-      });
+      window.removeEventListener('load', start);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
@@ -56,96 +58,96 @@ const HoseBuilder = () => {
     <>
       <Head>
         <title>Hose360 - Fluid Power Group</title>
-        <meta name="description" content="Build your own custom hydraulic hose online. Select hose size, end fittings, cut length and quantity. Done in under 5 minutes. Order direct from FluidPower Group." />
+        <meta
+          name="description"
+          content="Build your own custom hydraulic hose online. Select hose size, end fittings, cut length and quantity. Done in under 5 minutes. Order direct from FluidPower Group."
+        />
         <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover" />
-        
-        <style>{`
-          .hosebuilder-container {
-            height: calc(100vh - 100px);
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            margin-top: 100px;
-            z-index: 1;
-          }
-
-          #root {
-            display: flex;
-            height: 100%;
-            position: relative;
-          }
-
-          ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-          }
-          ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-          }
-          ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-          }
-          ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-          }
-
-          @supports (-webkit-overflow-scrolling: touch) {
-            .scrollable-content {
-              -webkit-overflow-scrolling: touch;
-              overflow-y: auto;
-            }
-          }
-
-          .scroll-view {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            flex: 1;
-          }
-
-          .react-native-safe-area-view {
-            flex: 1 1 auto;
-          }
-
-          img {
-            max-width: 100%;
-            height: auto;
-          }
-
-          .next-button-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-          }
-
-          #fpg-chat-button {
-            position: fixed !important;
-            bottom: 60px !important;
-            right: 20px !important;
-            z-index: 10000 !important;
-            pointer-events: auto !important;
-          }
-
-          #fpg-chat-modal {
-            position: fixed !important;
-            z-index: 10001 !important;
-            pointer-events: auto !important;
-          }
-
-
-        `}</style>
-        <link rel="icon" type="image/png" sizes="16x16" href="/suite360/favicon-16.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/suite360/favicon-32.png" />
-        <link rel="manifest" href="/suite360/manifest.json" />
       </Head>
-      <div className="hosebuilder-container">
-        <h1 className="sr-only">Hose360 - Build Your Custom Hydraulic Hose Online</h1>
-        <div id="root"></div>
+
+      <div className="min-h-screen pb-12">
+        <div className="max-w-2xl mx-auto px-4 pt-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="flex justify-center mb-8"
+          >
+            <div className="relative w-60 h-60">
+              <Image src="/fluidpower_logo_transparent.gif" alt="Fluid Power Group" width={240} height={240} className="object-contain" unoptimized />
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex justify-center mb-8">
+            <div
+              className="inline-flex items-center gap-1"
+              style={{ color: COLORS.grey.dark, fontSize: 48, fontWeight: 700 }}
+            >
+              <span>HOSE36</span>
+              <button
+                type="button"
+                onClick={handleSpinClick}
+                aria-label="Spin"
+                className="inline-flex items-center justify-center"
+                style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+              >
+                {/* HTML wrapper rotates about its own centre, which is the arc's
+                    centre (16,16 of the 32x32 viewBox) — the arc is defined as a
+                    true circle of r=12 about that point so it stays concentric. */}
+                <motion.span
+                  key={spinCount}
+                  className="inline-flex"
+                  style={{ transformOrigin: '50% 50%' }}
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: spinCount === 0 ? 0 : 720 }}
+                  transition={{ duration: 0.6, ease: [0.45, 0, 0.55, 1] }}
+                >
+                <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
+                  <path
+                    d="M 16 4 A 12 12 0 1 1 10 5.61"
+                    stroke="#facc15"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path d="M9.5 4.5 L17.5 6.8 L13 12 Z" fill="#facc15" />
+                </svg>
+                </motion.span>
+              </button>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex justify-center mb-8">
+            <div className="relative w-full max-w-md h-64 flex items-center justify-center">
+              <Image src="/hose360/welcome_hose.gif" alt="Hose360 Custom Hydraulic Hose" width={400} height={250} className="object-contain" unoptimized />
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-center mb-10 space-y-2"
+          >
+            <p className="text-base" style={{ color: COLORS.grey.medium }}>
+              Build your own Hydraulic Hose.
+            </p>
+            <p className="text-base" style={{ color: COLORS.grey.medium }}>
+              Select Hose Size, End Fittings, Cut Length and the Quantity.
+            </p>
+            <p className="text-base" style={{ color: COLORS.grey.medium }}>
+              You are DONE, it is this SIMPLE.
+            </p>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-col items-center">
+            <ContinueButton onClick={handleStart} text="START" showArrow={true} />
+            <p className="mt-4 text-sm" style={{ color: COLORS.grey.medium }}>
+              Takes less than 5 minutes to complete
+            </p>
+          </motion.div>
+        </div>
       </div>
     </>
   );
-};
-
-export default HoseBuilder;
+}

@@ -1,3 +1,25 @@
 @import "base.css";
 @import "utilities.css";
 @import "components.css";
+
+/* HOSE360 — selectable buttons: subtle dark-grey tint that fades in/out on
+   mouse hover. Skipped on the selected button (it already has the yellow
+   highlight). Add class "h360-selectable" to a button, plus "h360-selected"
+   while it is the chosen option. */
+.h360-selectable {
+  position: relative;
+  overflow: hidden;
+}
+.h360-selectable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(55, 55, 55, 0.09);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.h360-selectable:not(.h360-selected):hover::after {
+  opacity: 1;
+}

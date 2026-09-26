@@ -246,9 +246,17 @@ const Header = ({ categories }: { categories: Category[] }) => {
                 }}
               >
                 <div className="flex items-center gap-1">
-                  {/* Search Button with Active State Detection */}
+                  {/* Search Button with Active State Detection.
+                      href is required here, not decorative: without it this was a real
+                      <a> tag with no destination at all, invisible to Googlebot (which
+                      follows href, not onClick) and unusable via middle-click / open-in-
+                      new-tab / copy-link. preventDefault stops the browser's own full-page
+                      navigation for that href so router.push's SPA transition still fires
+                      exactly as before — this is additive, not a behaviour change. */}
                   <a
-                    onClick={() => {
+                    href="/products/search"
+                    onClick={(e) => {
+                      e.preventDefault();
                       router.push("/products/search");
                     }}
                     className="relative overflow-hidden"

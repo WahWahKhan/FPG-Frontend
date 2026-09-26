@@ -17,10 +17,41 @@ interface GlassSecondaryButtonProps {
   onClick: () => void;
   children: React.ReactNode;
   disabled?: boolean;
+  /** black (default) | yellow (site theme) | white (inverted black: white at rest, black on hover) */
+  variant?: 'black' | 'yellow' | 'white';
 }
 
-export default function GlassSecondaryButton({ onClick, children, disabled = false }: GlassSecondaryButtonProps) {
+const BLACK_REST = {
+  color: '#fff',
+  background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.8) 70%, rgba(20, 20, 20, 0.85) 100%), rgba(0, 0, 0, 0.8)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 2px 8px rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
+};
+const WHITE_REST = {
+  color: '#000',
+  background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 20%, rgba(255, 255, 255, 0.9) 70%, rgba(245, 245, 245, 0.95) 100%), rgba(255, 255, 255, 0.9)',
+  border: '1px solid rgba(200, 200, 200, 0.8)',
+  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 0 rgba(255, 255, 255, 1), inset 0 3px 10px rgba(255, 255, 255, 0.8), inset 0 -1px 0 rgba(200, 200, 200, 0.4)',
+};
+const YELLOW_REST = {
+  color: '#000',
+  background: 'radial-gradient(ellipse at center, rgba(250, 204, 21, 0.9) 20%, rgba(250, 204, 21, 0.7) 60%, rgba(255, 215, 0, 0.8) 100%), rgba(250, 204, 21, 0.6)',
+  border: '1px solid rgba(255, 215, 0, 0.9)',
+  boxShadow: '0 6px 20px rgba(250, 204, 21, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.8)',
+};
+const YELLOW_HOVER = {
+  ...YELLOW_REST,
+  background: 'radial-gradient(ellipse at center, rgba(252, 211, 77, 1) 20%, rgba(250, 204, 21, 0.95) 60%, rgba(255, 215, 0, 1) 100%), rgba(250, 204, 21, 0.9)',
+  boxShadow: '0 10px 30px rgba(250, 204, 21, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.9)',
+};
+
+export default function GlassSecondaryButton({ onClick, children, disabled = false, variant = 'black' }: GlassSecondaryButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const hovered = isHovered && !disabled;
+  const theme =
+    variant === 'yellow' ? (hovered ? YELLOW_HOVER : YELLOW_REST)
+    : variant === 'white' ? (hovered ? BLACK_REST : WHITE_REST)
+    : hovered ? WHITE_REST : BLACK_REST;
 
   return (
     <button
@@ -45,15 +76,8 @@ export default function GlassSecondaryButton({ onClick, children, disabled = fal
         opacity: disabled ? 0.5 : 1,
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: isHovered && !disabled ? 'translateY(-2px) scale(1.02)' : 'translateY(0px) scale(1)',
-        color: isHovered && !disabled ? '#000' : '#fff',
-        background: isHovered && !disabled
-          ? 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 20%, rgba(255, 255, 255, 0.9) 70%, rgba(245, 245, 245, 0.95) 100%), rgba(255, 255, 255, 0.9)'
-          : 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.8) 70%, rgba(20, 20, 20, 0.85) 100%), rgba(0, 0, 0, 0.8)',
+        ...theme,
         backdropFilter: 'blur(15px)',
-        border: isHovered && !disabled ? '1px solid rgba(200, 200, 200, 0.8)' : '1px solid rgba(255, 255, 255, 0.2)',
-        boxShadow: isHovered && !disabled
-          ? '0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 0 rgba(255, 255, 255, 1), inset 0 3px 10px rgba(255, 255, 255, 0.8), inset 0 -1px 0 rgba(200, 200, 200, 0.4)'
-          : '0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 2px 8px rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.2)',
       }}
     >
       <div

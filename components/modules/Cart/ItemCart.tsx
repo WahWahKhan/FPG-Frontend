@@ -1,3 +1,4 @@
+import { openPdfInNewWindow } from '../../../utils/openPdfInNewWindow';
 import { CartContext } from "context/CartWrapper";
 import Image from "next/image";
 import { useContext, useState, useEffect } from "react";
@@ -28,7 +29,8 @@ const ItemCart = ({ item }: IItemCartProps) => {
   const isTrac360 = item.type === 'trac360_order';
   const isFunction360 = item.type === 'function360_order';
   const isTube360 = item.type === 'tube360_order';
-  const isCustomOrder = isPWA || isTrac360 || isFunction360 || isTube360;
+  const isHose360 = item.type === 'hose360_order';
+  const isCustomOrder = isPWA || isTrac360 || isFunction360 || isTube360 || isHose360;
   
   // Get item price safely (handles both price and totalPrice)
   const itemPrice = getItemPrice(item);
@@ -97,7 +99,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
           <div className="relative w-full h-full">
             <Image
               layout="fill"
-              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png': isTube360 ? '/Tube360.png' : (item.image || '/cartImage.jpeg')}
+              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png' : isTube360 ? '/Tube360.png' : isHose360 ? '/Hose360.png' : (item.image || '/cartImage.jpeg')}
               alt={item.name || "product"}
               objectFit="contain"
             />
@@ -121,25 +123,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
                   onClick={() => {
                     if (isMobile) {
                       // Open in new window for mobile
-                      const newWindow = window.open('', '_blank');
-                      if (newWindow) {
-                        newWindow.document.write(`
-                          <!DOCTYPE html>
-                          <html>
-                            <head>
-                              <title>${getPDFButtonLabel()}</title>
-                              <style>
-                                body { margin: 0; padding: 0; }
-                                iframe { width: 100vw; height: 100vh; border: none; }
-                              </style>
-                            </head>
-                            <body>
-                              <iframe src="${item.pdfDataUrl}"></iframe>
-                            </body>
-                          </html>
-                        `);
-                        newWindow.document.close();
-                      }
+                      openPdfInNewWindow(item.pdfDataUrl!, getPDFButtonLabel());
                     } else {
                       // Open modal for desktop
                       setShowPDFModal(true);

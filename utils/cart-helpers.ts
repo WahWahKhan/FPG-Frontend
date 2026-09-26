@@ -18,7 +18,7 @@ export const isTrac360Order = (item: IItemCart): boolean => {
  * Check if an item is a custom order (PWA or Trac 360)
  */
 export const isCustomOrder = (item: IItemCart): boolean => {
-  return isPWAOrder(item) || isTrac360Order(item) || item.type === 'function360_order' || item.type === 'tube360_order';
+  return isPWAOrder(item) || isTrac360Order(item) || item.type === 'function360_order' || item.type === 'tube360_order' || item.type === 'hose360_order';
 };
 
 /**
@@ -57,6 +57,7 @@ export const getItemTypeName = (item: IItemCart): string => {
   if (isPWAOrder(item)) return 'Custom Hose Assembly';
   if (isTrac360Order(item)) return 'Custom Tractor Configuration';
   if (item.type === 'tube360_order') return 'Custom Bent Tube';
+  if (item.type === 'hose360_order') return 'Custom Hose Order';
   return 'Product';
 };
 
@@ -82,7 +83,8 @@ export const separateCartItems = (items: IItemCart[]) => {
   const websiteItems: IItemCart[] = [];
   const trac360Items: IItemCart[] = [];
   const tube360Items: IItemCart[] = [];
-  const function360Items: IItemCart[] = [];  // â† ADD THIS
+  const function360Items: IItemCart[] = [];
+  const hose360Items: IItemCart[] = [];  // â† ADD THIS
 
   items.forEach((item) => {
     if (item.type === 'pwa_order') {
@@ -91,6 +93,8 @@ export const separateCartItems = (items: IItemCart[]) => {
       trac360Items.push(item);
     } else if (item.type === 'tube360_order') {
       tube360Items.push(item);
+    } else if (item.type === 'hose360_order') {
+      hose360Items.push(item);
     } else if (item.type === 'function360_order') {  // â† ADD THIS
       function360Items.push(item);
     } else {
@@ -98,7 +102,7 @@ export const separateCartItems = (items: IItemCart[]) => {
     }
   });
 
-  return { pwaItems, websiteItems, trac360Items, function360Items, tube360Items };  // â† ADD THIS
+  return { pwaItems, websiteItems, trac360Items, function360Items, tube360Items, hose360Items };  // â† ADD THIS
 };
 
 // Steel Tubes shipping rule — DISPLAY ONLY. The backend (server-authority
@@ -138,7 +142,7 @@ const isTube360OverLength = (item: IItemCart): boolean =>
  */
 export const calculateCartTotals = (items: IItemCart[]) => {
   const normalizedItems = items.map(normalizeCartItem);
-  const { websiteItems, pwaItems, trac360Items, function360Items, tube360Items } = separateCartItems(normalizedItems);
+  const { websiteItems, pwaItems, trac360Items, function360Items, tube360Items, hose360Items } = separateCartItems(normalizedItems);
   
   // Calculate totals for each type
   const websiteTotal = websiteItems.reduce((sum, item) => 
@@ -161,7 +165,11 @@ export const calculateCartTotals = (items: IItemCart[]) => {
     sum + getItemPrice(item), 0
   );
 
-  const subtotal = websiteTotal + pwaTotal + trac360Total + function360Total + tube360Total;
+  const hose360Total = hose360Items.reduce((sum, item) =>
+    sum + getItemPrice(item), 0
+  );
+
+  const subtotal = websiteTotal + pwaTotal + trac360Total + function360Total + tube360Total + hose360Total;
   const steelTubesShippingTriggered = normalizedItems.some((i) => isSteelTubesLine(i) || isTube360OverLength(i));
   const shipping = steelTubesShippingTriggered ? STEEL_TUBES_SHIPPING : 12.85;
   const gst = (subtotal + shipping) * 0.10;
@@ -173,6 +181,7 @@ export const calculateCartTotals = (items: IItemCart[]) => {
     trac360Total,
     function360Total,
     tube360Total,
+    hose360Total,
     subtotal,
     shipping,
     gst,
@@ -184,7 +193,8 @@ export const calculateCartTotals = (items: IItemCart[]) => {
       pwaItems: pwaItems.length,
       trac360Items: trac360Items.length,
       function360Items: function360Items.length,
-      tube360Items: tube360Items.length
+      tube360Items: tube360Items.length,
+      hose360Items: hose360Items.length
     }
   };
 };

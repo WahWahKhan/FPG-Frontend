@@ -10,6 +10,7 @@
 // 6. Extracted ShippingForm component
 // 7. Removed all form rendering and validation from this file
 
+import { openPdfInNewWindow } from '../utils/openPdfInNewWindow';
 import { useContext, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -779,25 +780,7 @@ export default function CheckoutPage() {
       // order-confirmation.tsx; PDFModal's effect-based version is only
       // used for the desktop in-page modal below.
       try {
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-          newWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>Custom Hose Assembly PDF</title>
-                <style>
-                  body { margin: 0; padding: 0; }
-                  iframe { width: 100vw; height: 100vh; border: none; }
-                </style>
-              </head>
-              <body>
-                <iframe src="${pdfDataUrl}"></iframe>
-              </body>
-            </html>
-          `);
-          newWindow.document.close();
-        }
+        openPdfInNewWindow(pdfDataUrl, 'Custom Hose Assembly PDF');
       } catch (error) {
         console.error('Error opening PDF:', error);
         alert('Unable to open PDF. Please try again.');

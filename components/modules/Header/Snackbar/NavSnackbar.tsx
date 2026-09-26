@@ -72,7 +72,7 @@ const NavSnackbar = ({ handleClose }: INavSnackbarProps) => {
               }}
               onTouchStart={() => handleItemPress(page.id, page.href)}
               onMouseDown={() => handleItemPress(page.id, page.href)}
-              className="cursor-pointer px-2 py-1 rounded-xl transition-all duration-200"
+              className="cursor-pointer px-2 py-1 rounded-xl transition-[background-color,border-color,box-shadow] duration-200"
               style={{
                 backgroundColor: pressedItem === page.id ? "rgba(0, 0, 0, 0.1)" : "transparent"
               }}

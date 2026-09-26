@@ -76,7 +76,7 @@ const BuySubMenu = ({ handleClose, onBack }: BuySubMenuProps) => {
         }}
         onTouchStart={handleBackPress}
         onMouseDown={handleBackPress}
-        className="flex items-center gap-3 cursor-pointer px-3 py-2 rounded-xl transition-all duration-200"
+        className="flex items-center gap-3 cursor-pointer px-3 py-2 rounded-xl transition-[background-color,border-color,box-shadow] duration-200"
         style={{
           background: backPressed 
             ? "rgba(250, 204, 21, 0.25)" 
@@ -112,7 +112,7 @@ const BuySubMenu = ({ handleClose, onBack }: BuySubMenuProps) => {
           }}
           onTouchStart={() => handleItemPress(option.id, option.href)}
           onMouseDown={() => handleItemPress(option.id, option.href)}
-          className="cursor-pointer px-4 py-3 rounded-xl transition-all duration-200"
+          className="cursor-pointer px-4 py-3 rounded-xl transition-[background-color,border-color,box-shadow] duration-200"
           style={{
             backgroundColor: pressedItem === option.id 
               ? "rgba(250, 204, 21, 0.2)" 

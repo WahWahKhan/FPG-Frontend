@@ -1,5 +1,6 @@
 // pages/order-confirmation.tsx
 
+import { openPdfInNewWindow } from '../utils/openPdfInNewWindow';
 import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -296,25 +297,7 @@ export default function OrderConfirmation() {
 
     if (isMobile) {
       try {
-        const newWindow = window.open('', '_blank');
-        if (newWindow) {
-          newWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <title>Order ${orderNumber || 'PDF'}</title>
-                <style>
-                  body { margin: 0; padding: 0; }
-                  iframe { width: 100vw; height: 100vh; border: none; }
-                </style>
-              </head>
-              <body>
-                <iframe src="${pdfDataUrl}"></iframe>
-              </body>
-            </html>
-          `);
-          newWindow.document.close();
-        }
+        openPdfInNewWindow(pdfDataUrl, `Order ${orderNumber || 'PDF'}`);
       } catch (error) {
         console.error('Error opening PDF:', error);
         alert('Unable to open PDF. Please try again.');
@@ -529,6 +512,7 @@ export default function OrderConfirmation() {
                           {pwaOrder.pdfDataUrl ? (
                             <button
                               onClick={() => handleViewPDF(pwaOrder.pdfDataUrl, pwaOrder.pwaOrderNumber)}
+                              onTouchStart={() => {}}
                               className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                               style={{
                                 padding: "6px 14px",
@@ -600,6 +584,7 @@ export default function OrderConfirmation() {
                           {trac360Order.pdfDataUrl ? (
                             <button
                               onClick={() => handleViewPDF(trac360Order.pdfDataUrl, trac360Order.trac360OrderNumber)}
+                              onTouchStart={() => {}}
                               className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                               style={{
                                 padding: "6px 14px",
@@ -681,6 +666,7 @@ export default function OrderConfirmation() {
                           {function360Order.pdfDataUrl ? (
                             <button
                               onClick={() => handleViewPDF(function360Order.pdfDataUrl, function360Order.function360OrderNumber)}
+                              onTouchStart={() => {}}
                               className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                               style={{
                                 padding: "6px 14px",
@@ -756,6 +742,7 @@ export default function OrderConfirmation() {
                           {tube360Order.pdfDataUrl ? (
                             <button
                               onClick={() => handleViewPDF(tube360Order.pdfDataUrl, tube360Order.tube360OrderNumber)}
+                              onTouchStart={() => {}}
                               className="text-xs cursor-pointer block mt-2 text-left transition-all duration-300"
                               style={{
                                 padding: "6px 14px",

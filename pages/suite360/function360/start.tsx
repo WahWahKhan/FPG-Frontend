@@ -3,7 +3,7 @@
  * Landing page with hero, features, and call-to-action
  */
 
-import React, {useEffect} from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -26,6 +26,22 @@ const staggerContainer = {
 
 export default function Start() {
   const router = useRouter();
+
+  // Spin the logo's "0" only once the page has fully loaded and the entrance
+  // animations have settled, so the customer actually sees it.
+  const [spinReady, setSpinReady] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const start = () => {
+      timer = setTimeout(() => setSpinReady(true), 900);
+    };
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+    return () => {
+      window.removeEventListener('load', start);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
   const { resetConfig } = useFunction360();
 
   // Clear Function360 context when user lands on start page
@@ -116,11 +132,10 @@ export default function Start() {
               <motion.span
                 key="rotating-zero"
                 initial={{ rotate: 0 }}
-                animate={{ rotate: 720 }}
+                animate={{ rotate: spinReady ? 720 : 0 }}
                 transition={{
                   duration: 1,
                   ease: 'easeInOut',
-                  delay: 0.8,
                 }}
                 whileHover={{
                   rotate: [0, 720],
@@ -141,7 +156,7 @@ export default function Start() {
                   fill="none"
                 >
                   <path
-                    d="M 16 4 A 12 12 0 1 1 11 5.5"
+                    d="M 16 4 A 12 12 0 1 1 10 5.61"
                     stroke="#facc15"
                     strokeWidth="3.5"
                     strokeLinecap="round"
