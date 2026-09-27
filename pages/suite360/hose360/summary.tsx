@@ -16,9 +16,9 @@ import { CartContext } from '../../../context/CartWrapper';
 import { COLORS } from '../../../components/Trac360/styles';
 import Hose360OptionsGate from '../../../components/Hose360/Layout/Hose360OptionsGate';
 import OrderSummaryDisplay from '../../../components/Hose360/Shared/OrderSummaryDisplay';
-import type { Hose360Options, Hose360PriceOrderConfig } from '../../../types/hose360';
+import type { Hose360Options } from '../../../types/hose360';
 
-function Hose360SummaryInner({ options }: { options: Hose360Options }) {
+function Hose360SummaryInner({ options: _options }: { options: Hose360Options }) {
   const router = useRouter();
   const { config, resetConfig } = useHose360();
   const { addItem } = useContext(CartContext);
@@ -146,7 +146,10 @@ function Hose360SummaryInner({ options }: { options: Hose360Options }) {
         // image URL (only the filename was relabeled) — DECISIONS_ADDENDUM_2.md
         // §6. Fixed to point at the real local Hose360 asset already used on
         // the Suite360 landing tile.
-        image: '/Hose360.png',
+        // Full Swell CDN URL, matching Trac360/Function360 — a local site path
+        // like '/Hose360.png' can't resolve in an email client (no domain),
+        // so the order-confirmation email showed no picture at all.
+        image: 'https://cdn.swell.store/fluidpowergroup/6959b1f1b8c9d700121d9651/b54c1b05d3da6917392f6c4a7b34ec33/Hose360.png',
         pdfDataUrl,
         orderConfig,
         cartId: Date.now(),

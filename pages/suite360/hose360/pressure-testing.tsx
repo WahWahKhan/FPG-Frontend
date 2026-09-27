@@ -18,7 +18,6 @@ import BackButton from '../../../components/Trac360/Shared/BackButton';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import { useHose360 } from '../../../context/Hose360Context';
 import { COLORS, GLASS_CARD, GLASS_CARD_SELECTED, hoverScale } from '../../../components/Trac360/styles';
-import FittingsReminder from '../../../components/Hose360/Shared/FittingsReminder';
 import Hose360OptionsGate from '../../../components/Hose360/Layout/Hose360OptionsGate';
 import type { Hose360Options, Hose360PressureTestOption } from '../../../types/hose360';
 
@@ -77,7 +76,6 @@ function PressureTestingInner({ options }: { options: Hose360Options }) {
 
   return (
     <Hose360Layout currentStep={10} totalSteps={11}>
-      <FittingsReminder />
       <BackButton onClick={() => router.push('/suite360/hose360/hose-protection')} />
 
       <div className="max-w-3xl mx-auto px-4">

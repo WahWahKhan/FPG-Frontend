@@ -17,10 +17,16 @@
  * blur, on Continue) — mirrors CutLengthsScreen.js's useState('') pattern.
  * U4b — fixed pill widths (120px quantity / 230px cut-length, matching the
  * OG) instead of w-full.
- * U4c — ported the OG's progressive scroll-into-view: quantity change ->
- * scroll/focus first cut-length field; a field becoming valid (on blur) and
- * not being last -> scroll/focus next field; last field becoming valid ->
- * scroll the price total into view.
+ *
+ * Round 3.9 — owner asked for the same two-step reveal already used by
+ * FittingFamilyPicker (shape, then size): land on a QUANTITY-only screen,
+ * Continue reveals a CUT LENGTHS-only screen in place (no navigation), and
+ * only that second Continue prices + moves on. This replaces U4c's
+ * progressive scroll-into-view (quantity -> first field -> next field ->
+ * total), which doesn't apply once the two are separate screens. Back from
+ * the lengths screen reverts to the quantity screen in place, matching
+ * FittingFamilyPicker's own Back behaviour; Back from the quantity screen
+ * navigates away as before.
  *
  * Round 3.6 — the owner caught that the "live" pricing from round 3 was
  * still not actually visible in the one moment that matters most: clicking
@@ -36,8 +42,9 @@
  * background effect to finish before the page is gone.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { AnimatePresence, motion } from 'framer-motion';
 import Hose360Layout from '../../../components/Hose360/Layout/Hose360Layout';
 import BackButton from '../../../components/Trac360/Shared/BackButton';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
@@ -45,9 +52,12 @@ import { useHose360 } from '../../../context/Hose360Context';
 import { fetchHose360Price } from '../../../lib/hose360/api';
 import { COLORS } from '../../../components/Trac360/styles';
 import { GLASS_BASE } from '../../../utils/trac360/glassmorphism';
-import FittingsReminder from '../../../components/Hose360/Shared/FittingsReminder';
 import Hose360OptionsGate from '../../../components/Hose360/Layout/Hose360OptionsGate';
 import type { Hose360Options } from '../../../types/hose360';
+
+// Matches FittingFamilyPicker.tsx's FADE_TRANSITION exactly, for the same
+// shape/size-style in-place reveal feel.
+const FADE_TRANSITION = { duration: 0.35, ease: [0.4, 0, 0.2, 1] as const };
 
 function CutLengthsInner({ options }: { options: Hose360Options }) {
   const router = useRouter();
@@ -67,50 +77,22 @@ function CutLengthsInner({ options }: { options: Hose360Options }) {
   const [lengths, setLengths] = useState<string[]>(
     config.cutLengths.length ? config.cutLengths.map((c) => c.length) : Array.from({ length: hoseQuantityMin }, () => '')
   );
+  // Round 3.9 — which screen is showing. A returning visit with a real prior
+  // quantity/lengths starts straight on the lengths screen (matches the old
+  // page's behaviour of showing both at once); a fresh visit starts on
+  // quantity only.
+  const [phase, setPhase] = useState<'quantity' | 'lengths'>(hasPriorSelection ? 'lengths' : 'quantity');
 
   const parsedQuantity = parseInt(quantityInput, 10);
   const quantityValid =
     !isNaN(parsedQuantity) && parsedQuantity >= hoseQuantityMin && parsedQuantity <= hoseQuantityMax;
-  // Only used to size the rendered field list — falls back to the last
-  // valid quantity while the field is transiently invalid/empty so the
-  // field list doesn't collapse while typing.
-  const effectiveQuantity = quantityValid ? parsedQuantity : lengths.length || hoseQuantityMin;
 
-  const prevEffectiveQuantity = useRef(effectiveQuantity);
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (!config.end2Shape || !config.end2Size) {
       router.replace('/suite360/hose360');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.end2Shape, config.end2Size]);
-
-  useEffect(() => {
-    setLengths((prev) => {
-      const next = [...prev];
-      while (next.length < effectiveQuantity) next.push('');
-      while (next.length > effectiveQuantity) next.pop();
-      return next;
-    });
-
-    // U4c trigger 1 — quantity changed and fields (re)rendered: scroll +
-    // focus the first cut-length field, matching CutLengthsScreen.js's
-    // ~150ms-after-mount rAF-wrapped scrollIntoViewById('cutLengthInput-0').
-    if (prevEffectiveQuantity.current !== effectiveQuantity) {
-      prevEffectiveQuantity.current = effectiveQuantity;
-      const timer = setTimeout(() => {
-        requestAnimationFrame(() => {
-          const el = document.getElementById('cutLengthInput-0') as HTMLInputElement | null;
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.focus();
-          }
-        });
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveQuantity]);
 
   if (!config.end2Shape) return null;
 
@@ -119,51 +101,42 @@ function CutLengthsInner({ options }: { options: Hose360Options }) {
     return !isNaN(n) && n >= cutLengthMinMm;
   };
 
-  const isValid =
-    quantityValid &&
-    lengths.length === effectiveQuantity &&
-    lengths.every((l) => isLengthValid(l));
+  const isValid = quantityValid && lengths.length === parsedQuantity && lengths.every((l) => isLengthValid(l));
 
   // Round 3 item 7.3 — the real live-pricing bug: setCutLengths (the only
   // thing the context's debounced auto-price effect watches) used to be
   // called ONLY from handleContinue, so the price bar sat frozen while the
   // user was actually typing on this page. Push a sync into context on every
-  // real "step forward" (a field becoming valid on blur/Enter), using the
-  // full current snapshot of all fields — partial/invalid typing never
-  // triggers a sync, only a field settling into a valid state does.
+  // real "step forward" (a field becoming valid), using the full current
+  // snapshot of all fields — partial/invalid typing never triggers a sync,
+  // only a field settling into a valid state does.
   const syncContextIfValid = (currentLengths: string[]) => {
     if (!quantityValid) return;
-    if (currentLengths.length !== effectiveQuantity) return;
+    if (currentLengths.length !== parsedQuantity) return;
     if (!currentLengths.every((l) => isLengthValid(l))) return;
     setCutLengths(
-      effectiveQuantity,
+      parsedQuantity,
       currentLengths.map((l) => ({ length: l }))
     );
   };
 
-  // U4c triggers 2 & 3 — a field becomes valid on blur: scroll to the next
-  // field, or to the total price if it was the last one.
-  const handleLengthBlur = (idx: number) => {
-    if (!isLengthValid(lengths[idx])) return;
-    syncContextIfValid(lengths);
-    requestAnimationFrame(() => {
-      if (idx < lengths.length - 1) {
-        const next = document.getElementById(`cutLengthInput-${idx + 1}`) as HTMLInputElement | null;
-        if (next) {
-          next.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          next.focus();
-        }
-      } else {
-        const total = document.getElementById('hoseTotalPrice');
-        if (total) total.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+  // Quantity screen's own Continue — commit the quantity, build the length
+  // fields for it, and reveal the lengths screen in place (no navigation).
+  const handleQuantityContinue = () => {
+    if (!quantityValid) return;
+    setLengths((prev) => {
+      const next = [...prev];
+      while (next.length < parsedQuantity) next.push('');
+      while (next.length > parsedQuantity) next.pop();
+      return next;
     });
+    setPhase('lengths');
   };
 
   const handleContinue = async () => {
     if (!isValid || isPricing) return;
     const finalLengths = lengths.map((l) => ({ length: l }));
-    setCutLengths(effectiveQuantity, finalLengths);
+    setCutLengths(parsedQuantity, finalLengths);
     setIsPricing(true);
 
     try {
@@ -176,7 +149,7 @@ function CutLengthsInner({ options }: { options: Hose360Options }) {
         cutLengths: finalLengths,
         selectedProtection: config.selectedProtection,
         selectedPressure: config.selectedPressure,
-        quantity: effectiveQuantity,
+        quantity: parsedQuantity,
         isOrderFittingMode: false,
       });
       applyPriceResult(res.amount, res.breakdown || null, res.swellProductIds || []);
@@ -197,119 +170,133 @@ function CutLengthsInner({ options }: { options: Hose360Options }) {
     router.push('/suite360/hose360/hose-protection');
   };
 
+  // Back: from the lengths screen, revert to the quantity screen in place
+  // (matches FittingFamilyPicker's own shape/size Back behaviour); from the
+  // quantity screen, navigate away as before.
+  const handleBack = () => {
+    if (phase === 'lengths') {
+      setPhase('quantity');
+      return;
+    }
+    // Round 3.5 fix: same ping-pong issue as end2-fitting.tsx/orientation.tsx
+    // — a bare router.back() here bounces forever once any earlier step's
+    // Back also used router.push(). Push explicitly: if the user actually
+    // went through Orientation (selectedAngle is only ever set by completing
+    // that step — cleared on every fitting change per the U7 fix), go back
+    // there; otherwise go straight back to the end2-* route they used
+    // (orientation was skipped for them).
+    router.push(
+      config.selectedAngle ? '/suite360/hose360/orientation' : `/suite360/hose360/${config.end2Route || 'end2-fitting'}`
+    );
+  };
+
   return (
     <Hose360Layout currentStep={8} totalSteps={11}>
-      {/* Round 3.5 fix: same ping-pong issue as end2-fitting.tsx/
-          orientation.tsx — a bare router.back() here bounces forever once
-          any earlier step's Back also used router.push(). Push explicitly:
-          if the user actually went through Orientation (selectedAngle is
-          only ever set by completing that step — cleared on every fitting
-          change per the U7 fix), go back there; otherwise go straight back
-          to the end2-* route they used (orientation was skipped for them). */}
-      <BackButton
-        onClick={() =>
-          router.push(
-            config.selectedAngle
-              ? '/suite360/hose360/orientation'
-              : `/suite360/hose360/${config.end2Route || 'end2-fitting'}`
-          )
-        }
-      />
-
-      <FittingsReminder />
+      <BackButton onClick={handleBack} />
 
       <div className="max-w-2xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <div className="inline-block px-8 py-3 rounded-full text-white text-lg font-semibold" style={{ background: COLORS.grey.dark }}>
-            CUT LENGTHS &amp; QUANTITY
-          </div>
-        </div>
+        <AnimatePresence exitBeforeEnter initial={false}>
+          {phase === 'quantity' ? (
+            <motion.div key="quantity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_TRANSITION}>
+              <div className="text-center mb-8">
+                <div className="inline-block px-8 py-3 rounded-full text-white text-lg font-semibold" style={{ background: COLORS.grey.dark }}>
+                  QUANTITY
+                </div>
+              </div>
 
-        <div className="mb-8 flex flex-col items-center" style={{ ...GLASS_BASE, borderRadius: 16, padding: 20 }}>
-          <label className="block text-sm font-semibold mb-2 text-center" style={{ color: COLORS.grey.dark }}>
-            Number of hoses ({hoseQuantityMin}-{hoseQuantityMax})
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={quantityInput}
-            onChange={(e) => {
-              // Free-text: allow empty/partial input while typing, no clamping here.
-              const raw = e.target.value;
-              if (raw === '' || /^[0-9]+$/.test(raw)) {
-                setQuantityInput(raw);
-              }
-            }}
-            onBlur={(e) => {
-              // Clamp only at point-of-use (blur) so a stray blur doesn't
-              // leave an out-of-range value sitting in the field forever.
-              const n = parseInt(quantityInput, 10);
-              if (isNaN(n)) return; // leave empty — isValid/Continue guard covers it
-              const clamped = Math.max(hoseQuantityMin, Math.min(hoseQuantityMax, n));
-              setQuantityInput(String(clamped));
-              // Live-pricing sync — quantity settled into a valid value.
-              if (clamped >= hoseQuantityMin && clamped <= hoseQuantityMax) {
-                syncContextIfValid(lengths.length === clamped ? lengths : lengths.slice(0, clamped));
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.currentTarget.blur();
-                setTimeout(() => {
-                  const el = document.getElementById('cutLengthInput-0') as HTMLInputElement | null;
-                  if (el && quantityValid) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.focus();
-                  }
-                }, 50);
-              }
-            }}
-            className="px-4 py-3 rounded-full text-center text-base font-medium border-none outline-none"
-            style={{ width: 120, background: 'rgba(255,255,255,0.8)', color: COLORS.grey.dark }}
-          />
-          {!quantityValid && quantityInput !== '' && (
-            <p className="mt-2 text-xs" style={{ color: COLORS.error }}>
-              Enter a number between {hoseQuantityMin} and {hoseQuantityMax}.
-            </p>
+              <div className="mb-8 flex flex-col items-center" style={{ ...GLASS_BASE, borderRadius: 16, padding: 20 }}>
+                <label className="block text-sm font-semibold mb-2 text-center" style={{ color: COLORS.grey.dark }}>
+                  Number of hoses ({hoseQuantityMin}-{hoseQuantityMax})
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoFocus
+                  value={quantityInput}
+                  onChange={(e) => {
+                    // Free-text: allow empty/partial input while typing, no clamping here.
+                    const raw = e.target.value;
+                    if (raw === '' || /^[0-9]+$/.test(raw)) {
+                      setQuantityInput(raw);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Clamp only at point-of-use (blur) so a stray blur doesn't
+                    // leave an out-of-range value sitting in the field forever.
+                    const n = parseInt(quantityInput, 10);
+                    if (isNaN(n)) return; // leave empty — isValid/Continue guard covers it
+                    const clamped = Math.max(hoseQuantityMin, Math.min(hoseQuantityMax, n));
+                    setQuantityInput(String(clamped));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
+                      handleQuantityContinue();
+                    }
+                  }}
+                  className="px-4 py-3 rounded-full text-center text-base font-medium border-none outline-none"
+                  style={{ width: 120, background: 'rgba(255,255,255,0.8)', color: COLORS.grey.dark }}
+                />
+                {!quantityValid && quantityInput !== '' && (
+                  <p className="mt-2 text-xs" style={{ color: COLORS.error }}>
+                    Enter a number between {hoseQuantityMin} and {hoseQuantityMax}.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-center mb-12">
+                <ContinueButton onClick={handleQuantityContinue} disabled={!quantityValid} />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="lengths" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={FADE_TRANSITION}>
+              <div className="text-center mb-8">
+                <div className="inline-block px-8 py-3 rounded-full text-white text-lg font-semibold" style={{ background: COLORS.grey.dark }}>
+                  CUT LENGTHS
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                {lengths.map((len, idx) => (
+                  <div key={idx} className="flex flex-col items-center" style={{ ...GLASS_BASE, borderRadius: 16, padding: 16 }}>
+                    <label className="block text-xs font-semibold mb-1 text-center" style={{ color: COLORS.grey.medium }}>
+                      Hose {idx + 1} cut length in mm (min {cutLengthMinMm}mm)
+                    </label>
+                    <input
+                      id={`cutLengthInput-${idx}`}
+                      type="number"
+                      min={cutLengthMinMm}
+                      autoFocus={idx === 0}
+                      value={len}
+                      onChange={(e) => {
+                        const next = [...lengths];
+                        next[idx] = e.target.value;
+                        setLengths(next);
+                        // Live pricing: push to context on every keystroke once all
+                        // fields are valid (no blur/Enter needed).
+                        syncContextIfValid(next);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                          const next = document.getElementById(`cutLengthInput-${idx + 1}`) as HTMLInputElement | null;
+                          if (next) next.focus();
+                        }
+                      }}
+                      className="px-4 py-2 rounded-full text-center text-base font-medium border-none outline-none"
+                      style={{ width: 230, background: 'rgba(255,255,255,0.8)', color: COLORS.grey.dark }}
+                      placeholder={`e.g. ${cutLengthMinMm}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center mb-12">
+                <ContinueButton onClick={handleContinue} disabled={!isValid || isPricing} text={isPricing ? 'Pricing…' : 'Continue'} />
+              </div>
+            </motion.div>
           )}
-        </div>
-
-        <div className="space-y-4 mb-8">
-          {lengths.map((len, idx) => (
-            <div key={idx} className="flex flex-col items-center" style={{ ...GLASS_BASE, borderRadius: 16, padding: 16 }}>
-              <label className="block text-xs font-semibold mb-1 text-center" style={{ color: COLORS.grey.medium }}>
-                Hose {idx + 1} cut length (mm, min {cutLengthMinMm}mm)
-              </label>
-              <input
-                id={`cutLengthInput-${idx}`}
-                type="number"
-                min={cutLengthMinMm}
-                value={len}
-                onChange={(e) => {
-                  const next = [...lengths];
-                  next[idx] = e.target.value;
-                  setLengths(next);
-                  // Live pricing: push to context on every keystroke once all
-                  // fields are valid (no blur/Enter needed).
-                  syncContextIfValid(next);
-                }}
-                onBlur={() => handleLengthBlur(idx)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.currentTarget.blur();
-                  }
-                }}
-                className="px-4 py-2 rounded-full text-center text-base font-medium border-none outline-none"
-                style={{ width: 230, background: 'rgba(255,255,255,0.8)', color: COLORS.grey.dark }}
-                placeholder={`e.g. ${cutLengthMinMm}`}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-center mb-12">
-          <ContinueButton onClick={handleContinue} disabled={!isValid || isPricing} text={isPricing ? 'Pricing…' : 'Continue'} />
-        </div>
+        </AnimatePresence>
       </div>
     </Hose360Layout>
   );

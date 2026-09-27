@@ -32,7 +32,6 @@ import BackButton from '../../../components/Trac360/Shared/BackButton';
 import ContinueButton from '../../../components/Trac360/Shared/ContinueButton';
 import { useHose360 } from '../../../context/Hose360Context';
 import { COLORS, GLASS_CARD, GLASS_CARD_SELECTED, hoverScale } from '../../../components/Trac360/styles';
-import FittingsReminder from '../../../components/Hose360/Shared/FittingsReminder';
 import Hose360OptionsGate from '../../../components/Hose360/Layout/Hose360OptionsGate';
 import type { Hose360Options, Hose360ProtectionOption } from '../../../types/hose360';
 
@@ -50,11 +49,17 @@ function ProtectionButton({
   const baseStyle = selected ? GLASS_CARD_SELECTED : GLASS_CARD;
   const { transition, ...glassStyle } = baseStyle as any;
 
+  // No-image options (e.g. "NOT REQUIRED") get the exact same dimensions
+  // and layout as PressureButton's own rows (400px, py-5/px-5, justify-
+  // between, no image gutter) instead of the image-card padding, and always
+  // show a price pill — "No extra charge" rather than a blank space.
   return (
     <motion.button
       onClick={onClick}
       style={{ ...glassStyle, position: 'relative', width: 400, maxWidth: '100%', overflow: 'hidden' }}
-      className={`h360-selectable ${selected ? 'h360-selected' : ''} flex flex-row items-center gap-4 text-left py-4 px-4`}
+      className={`h360-selectable ${selected ? 'h360-selected' : ''} flex flex-row items-center ${
+        option.image ? 'gap-4 text-left py-4 px-4' : 'justify-between gap-4 text-left py-5 px-5'
+      }`}
       whileHover={selected ? undefined : hoverScale}
       whileTap={{ scale: 0.98 }}
     >
@@ -63,19 +68,31 @@ function ProtectionButton({
           <Image src={option.image} alt={option.label} width={96} height={96} className="object-contain" unoptimized />
         </div>
       )}
-      <div className="flex-1 flex items-center justify-between gap-3 relative">
-        <span className="text-sm font-semibold" style={{ color: COLORS.grey.dark }}>
-          {option.label}
-        </span>
-        {priceText && (
+      {option.image ? (
+        <div className="flex-1 flex items-center justify-between gap-3 relative">
+          <span className="text-sm font-semibold" style={{ color: COLORS.grey.dark }}>
+            {option.label}
+          </span>
           <span
             className="inline-block px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap"
             style={{ color: '#000', background: 'rgba(250, 204, 21, 0.9)' }}
           >
             {priceText}
           </span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          <span className="relative text-base font-semibold" style={{ color: COLORS.grey.dark }}>
+            {option.label}
+          </span>
+          <span
+            className="relative inline-block px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap"
+            style={{ color: '#000', background: 'rgba(250, 204, 21, 0.9)' }}
+          >
+            {priceText}
+          </span>
+        </>
+      )}
     </motion.button>
   );
 }
@@ -108,14 +125,13 @@ function HoseProtectionInner({ options }: { options: Hose360Options }) {
   const assemblySubtotal = config.breakdown?.assemblySubtotal as number | undefined;
 
   const priceTextFor = (p: Hose360ProtectionOption) => {
-    if (p.multiplier === 1) return '';
+    if (p.multiplier === 1) return 'No extra charge';
     if (typeof assemblySubtotal !== 'number') return '';
     return `A$ ${(assemblySubtotal * (p.multiplier - 1)).toFixed(2)}`;
   };
 
   return (
     <Hose360Layout currentStep={9} totalSteps={11}>
-      <FittingsReminder />
       <BackButton onClick={() => router.push('/suite360/hose360/cut-lengths')} />
 
       <div className="max-w-3xl mx-auto px-4">

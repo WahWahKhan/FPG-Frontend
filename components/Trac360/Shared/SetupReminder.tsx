@@ -172,11 +172,9 @@ export default function SetupReminder() {
             </div>
           </div>
 
-          {!pos && (
-            <div className="px-3 pb-2">
-              <p className="text-[10px] text-center italic" style={{ color: COLORS.grey.medium }}>💡 Drag to reposition</p>
-            </div>
-          )}
+          <div className="px-3 pb-2">
+            <p className="text-[10px] text-center italic" style={{ color: COLORS.grey.medium }}>💡 Drag to reposition</p>
+          </div>
         </>
       )}
     </div>
