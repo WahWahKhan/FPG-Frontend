@@ -1,4 +1,4 @@
-// ProductSlider.tsx - Optimized with virtual scrolling and memoization
+// ProductSlider.tsx - centred dot-to-tile scrolling, edge fades, memoization
 import Anchor from "@/modules/Anchor";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -270,15 +270,24 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
 };
 
 // ─── Main ProductSlider ────────────────────────────────────────────────────
+// Width of each edge fade, signalling "more tiles this way".
+const EDGE_FADE_PX = 40;
+
 const ProductSlider = ({
   title,
   description,
   products,
   btn,
 }: IProductSliderProps) => {
-  const scrollRef = useRef<any>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tileRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Index a dot click is scrolling to. Takes precedence over the position-
+  // based guess once that scroll settles, so e.g. dot 5 of 7 stays selected
+  // on desktop even when the row can only scroll as far as its end.
+  const pendingIndex = useRef<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [edges, setEdges] = useState({ atStart: true, atEnd: true });
 
   const stripHtml = useMemo(() => createHtmlStripper(), []);
 
@@ -293,91 +302,106 @@ const ProductSlider = ({
       }));
   }, [products, stripHtml]);
 
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 6 });
-  const BUFFER_SIZE = 3;
+  // Dots, counter and tiles all come from the same filtered list, so there
+  // is exactly one dot per rendered tile.
+  const tileCount = processedProducts.length;
 
-  const scrollToTile = useCallback((index: number) => {
-    if (scrollRef.current) {
-      const tileWidth = 280;
-      setCurrentIndex(index);
-      scrollRef.current.scrollTo({
-        left: index * tileWidth,
-        behavior: 'smooth'
-      });
-    }
+  // scrollLeft that puts tile `index`'s centre in the middle of the viewport.
+  // Measured from the DOM rather than assuming a fixed tile width.
+  const centredScrollLeft = useCallback((index: number) => {
+    const el = scrollRef.current;
+    const tile = tileRefs.current[index];
+    if (!el || !tile) return 0;
+    const target = tile.offsetLeft + tile.offsetWidth / 2 - el.clientWidth / 2;
+    return Math.max(0, Math.min(target, el.scrollWidth - el.clientWidth));
   }, []);
 
-  const updateVisibleRange = useCallback(() => {
-    if (scrollRef.current) {
-      const scrollLeft = scrollRef.current.scrollLeft;
-      const containerWidth = scrollRef.current.clientWidth;
-      const tileWidth = 280;
-      
-      const startIndex = Math.floor(scrollLeft / tileWidth);
-      const visibleCount = Math.ceil(containerWidth / tileWidth);
-      
-      const newStart = Math.max(0, startIndex - BUFFER_SIZE);
-      const newEnd = Math.min(products.length, startIndex + visibleCount + BUFFER_SIZE);
-      
-      setVisibleRange({ start: newStart, end: newEnd });
+  const scrollToTile = useCallback((index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    pendingIndex.current = index;
+    setCurrentIndex(index);
+    el.scrollTo({ left: centredScrollLeft(index), behavior: 'smooth' });
+  }, [centredScrollLeft]);
+
+  const updateEdges = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const atStart = el.scrollLeft <= 2;
+    const atEnd = el.scrollLeft >= max - 2;
+    setEdges(prev =>
+      prev.atStart === atStart && prev.atEnd === atEnd ? prev : { atStart, atEnd }
+    );
+  }, []);
+
+  // Which tile is "in focus" after the user swipes/scrolls: the one whose
+  // centre is nearest the viewport centre, pinned to the first/last tile
+  // when the row is scrolled all the way to either end.
+  const updateCurrentIndex = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || tileCount === 0) return;
+
+    if (pendingIndex.current !== null) {
+      const index = pendingIndex.current;
+      pendingIndex.current = null;
+      setCurrentIndex(index);
+      return;
     }
-  }, [products.length]);
+
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 2) return; // nothing to scroll — keep whatever was clicked
+    if (el.scrollLeft <= 2) return setCurrentIndex(0);
+    if (el.scrollLeft >= max - 2) return setCurrentIndex(tileCount - 1);
+
+    const viewportCentre = el.scrollLeft + el.clientWidth / 2;
+    let nearest = 0;
+    let nearestDistance = Infinity;
+    tileRefs.current.slice(0, tileCount).forEach((tile, i) => {
+      if (!tile) return;
+      const distance = Math.abs(tile.offsetLeft + tile.offsetWidth / 2 - viewportCentre);
+      if (distance < nearestDistance) {
+        nearest = i;
+        nearestDistance = distance;
+      }
+    });
+    setCurrentIndex(nearest);
+  }, [tileCount]);
 
   useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
-    
+    const el = scrollRef.current;
+    if (!el) return;
+    let settleTimeout: ReturnType<typeof setTimeout>;
+
     const handleScroll = () => {
-      clearTimeout(scrollTimeout);
-      
-      scrollTimeout = setTimeout(() => {
-        if (scrollRef.current) {
-          const scrollLeft = scrollRef.current.scrollLeft;
-          const tileWidth = 280;
-          const containerWidth = scrollRef.current.clientWidth;
-          
-          let newIndex = Math.round(scrollLeft / tileWidth);
-          const maxScrollLeft = scrollRef.current.scrollWidth - containerWidth;
-          
-          if (scrollLeft >= maxScrollLeft - 10) {
-            newIndex = products.length - 1;
-          }
-          
-          const boundedIndex = Math.max(0, Math.min(newIndex, products.length - 1));
-          
-          if (boundedIndex !== currentIndex) {
-            setCurrentIndex(boundedIndex);
-          }
-          
-          updateVisibleRange();
-        }
-      }, 100);
+      updateEdges(); // immediate, so the fades track the finger
+      clearTimeout(settleTimeout);
+      settleTimeout = setTimeout(updateCurrentIndex, 100);
     };
 
-    const scrollElement = scrollRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll, { passive: true });
-      updateVisibleRange();
-      
-      return () => {
-        scrollElement.removeEventListener('scroll', handleScroll);
-        clearTimeout(scrollTimeout);
-      };
-    }
-  }, [currentIndex, products.length, updateVisibleRange]);
-
-  const visibleProducts = useMemo(() => {
-    return processedProducts.slice(visibleRange.start, visibleRange.end);
-  }, [processedProducts, visibleRange]);
-
-  const handleMouseEnter = useCallback((index: number) => {
-    setHoveredIndex(visibleRange.start + index);
-  }, [visibleRange.start]);
+    updateEdges();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', updateEdges);
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', updateEdges);
+      clearTimeout(settleTimeout);
+    };
+  }, [updateEdges, updateCurrentIndex]);
 
   const handleMouseLeave = useCallback(() => {
     setHoveredIndex(null);
   }, []);
 
   const cleanDescription = stripHtml(description);
+
+  // Fade whichever side still has tiles hidden beyond it: right only on the
+  // first tile, left only on the last, both in between.
+  const edgeMask = `linear-gradient(to right, ${
+    edges.atStart ? 'black' : 'transparent'
+  } 0, black ${EDGE_FADE_PX}px, black calc(100% - ${EDGE_FADE_PX}px), ${
+    edges.atEnd ? 'black' : 'transparent'
+  } 100%)`;
 
   return (
     <div className="w-full flex flex-col gap-8 lg:pl-16">
@@ -389,16 +413,23 @@ const ProductSlider = ({
 
       {/* Desktop layout */}
       <div className="w-full relative">
-        <div 
+        {/* `relative` makes this the tiles' offsetParent, so offsetLeft is
+            measured within the scrolling row. Mobile snaps each tile to the
+            centre; desktop scrolls freely past the title block. */}
+        <div
           ref={scrollRef}
-          className="w-full overflow-x-auto hide-scrollbar"
+          className="relative w-full overflow-x-auto hide-scrollbar snap-x snap-mandatory lg:snap-none"
           style={{
             scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
+            msOverflowStyle: 'none',
+            WebkitMaskImage: edgeMask,
+            maskImage: edgeMask,
           }}
         >
-          <div 
-            className="flex gap-4 pb-4 pl-1 pr-12 pt-16"
+          {/* Mobile side padding = half the viewport minus half a tile (w-56 =
+              224px), so the first and last tiles can sit dead centre too. */}
+          <div
+            className="flex gap-4 pb-4 pt-16 pl-[calc(50%_-_112px)] pr-[calc(50%_-_112px)] lg:pl-1 lg:pr-12"
             style={{ width: 'max-content' }}
           >
             {/* Desktop title + description */}
@@ -407,51 +438,44 @@ const ProductSlider = ({
               <DesktopDescription text={cleanDescription} />
             </div>
 
-            {/* Spacer for items before visible range */}
-            {visibleRange.start > 0 && (
-              <div style={{ width: visibleRange.start * 280, flexShrink: 0 }} />
-            )}
+            {processedProducts.map((product, i) => {
+              const isHovered = hoveredIndex === i;
+              const isNeighbor = hoveredIndex !== null && Math.abs(hoveredIndex - i) === 1;
+              const isDistant = hoveredIndex !== null && Math.abs(hoveredIndex - i) > 1;
 
-            {/* Render only visible products */}
-            {visibleProducts.map((product, i) => {
-              const actualIndex = visibleRange.start + i;
-              const isHovered = hoveredIndex === actualIndex;
-              const isNeighbor = hoveredIndex !== null && Math.abs(hoveredIndex - actualIndex) === 1;
-              const isDistant = hoveredIndex !== null && Math.abs(hoveredIndex - actualIndex) > 1;
-              
               return (
-                <ProductCard
+                <div
                   key={product.id}
-                  product={product}
-                  index={actualIndex}
-                  isHovered={isHovered}
-                  isNeighbor={isNeighbor}
-                  isDistant={isDistant}
-                  onMouseEnter={() => handleMouseEnter(i)}
-                  onMouseLeave={handleMouseLeave}
-                  stripHtml={stripHtml}
-                />
+                  ref={(node) => { tileRefs.current[i] = node; }}
+                  className="shrink-0 snap-center"
+                >
+                  <ProductCard
+                    product={product}
+                    index={i}
+                    isHovered={isHovered}
+                    isNeighbor={isNeighbor}
+                    isDistant={isDistant}
+                    onMouseEnter={() => setHoveredIndex(i)}
+                    onMouseLeave={handleMouseLeave}
+                    stripHtml={stripHtml}
+                  />
+                </div>
               );
             })}
-
-            {/* Spacer for items after visible range */}
-            {visibleRange.end < products.length && (
-              <div style={{ width: (products.length - visibleRange.end) * 280, flexShrink: 0 }} />
-            )}
           </div>
         </div>
 
-        {/* Dots Indicator */}
-        <div className="flex items-center gap-3 mt-6 px-4 lg:px-4 lg:ml-80">
-          {products.map((_, index) => (
+        {/* Dots Indicator — one per tile */}
+        <div className="flex items-center gap-3 mt-6 px-0 md:px-4 lg:ml-80">
+          {processedProducts.map((product, index) => (
             <button
-              key={index}
+              key={product.id}
               onClick={() => scrollToTile(index)}
               className="flex items-center justify-center transition-all duration-300 flex-shrink-0"
-              style={{ 
-                width: '32px', 
+              style={{
+                width: '32px',
                 height: '32px',
-                minWidth: '32px', 
+                minWidth: '32px',
                 minHeight: '32px',
                 transform: 'none',
                 border: 'none',
@@ -459,10 +483,11 @@ const ProductSlider = ({
                 padding: 0
               }}
               aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === currentIndex ? 'true' : undefined}
             >
               <div
                 className="rounded-full flex items-center justify-center transition-all duration-300"
-                style={{ 
+                style={{
                   width: '30px',
                   height: '30px',
                   backgroundColor: index === currentIndex ? '#ffc100' : '#ffffff',
@@ -472,9 +497,9 @@ const ProductSlider = ({
               />
             </button>
           ))}
-          
-          <span className="text-sm text-gray-600 ml-4">
-            {currentIndex + 1} of {products.length}
+
+          <span className="text-sm text-gray-600 ml-4 whitespace-nowrap">
+            {currentIndex + 1} of {tileCount}
           </span>
         </div>
       </div>

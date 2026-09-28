@@ -1,5 +1,5 @@
 // /pages/catalogue.tsx
-// SSR conversion: getServerSideProps added at bottom
+// Static + ISR: getStaticProps (revalidate 300s) at bottom — was getServerSideProps
 // SWR and axios removed — data now arrives as props, fully rendered for Googlebot
 // fetchCategories imported from new utility — getCategories.ts API route untouched
 
@@ -8,7 +8,7 @@ import { ProductSlider } from "@/views/Catalogue";
 import React from "react";
 import { Category } from "types/products";
 import Head from 'next/head';
-import { GetServerSideProps } from 'next';
+import { GetStaticProps } from 'next';
 import { fetchCategories } from 'utils/swell/fetchCategories';
 
 interface CataloguePageProps {
@@ -54,8 +54,11 @@ const CataloguePage = ({ categories, error }: CataloguePageProps) => {
         <title>Products | FluidPower Group</title>
         <meta name="description" content="Browse our full range of hydraulic hoses, steel tubes, fittings, adaptors, valves, quick couplings and accessories. Quality hydraulic products Australia-wide." />
       </Head>
-      <div className="wrapper px-8 md:px-12 flex flex-col gap-10 mb-32">
-        <div className="flex flex-col gap-4 p-8 pt-16">
+      {/* Phones: 16px total side margin (was 32px wrapper + 32px inner = 64px,
+          which left the carousel only ~1 tile wide with no room to show the
+          neighbouring tiles). md and up unchanged. */}
+      <div className="wrapper px-4 md:px-12 flex flex-col gap-10 mb-32">
+        <div className="flex flex-col gap-4 px-0 pb-8 pt-16 md:p-8 md:pt-16">
           <h1 className="text-[4rem] md:text-[6rem] lg:text-[8rem] xl:text-[10rem] font-semibold text-slate-200/50">
             Products
           </h1>
@@ -79,23 +82,40 @@ const CataloguePage = ({ categories, error }: CataloguePageProps) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async () => {
+// ISR instead of getServerSideProps: the page is pre-built and served from
+// Vercel's CDN, then regenerated in the background at most every 5 minutes.
+// With gSSP every visit (and every client-side click, via /_next/data) waited
+// on a cold serverless function + Swell round-trip — measured 3s on a cold
+// start, never cached. Googlebot still gets fully rendered HTML either way.
+const REVALIDATE_SECONDS = 300;
+
+export const getStaticProps: GetStaticProps = async () => {
   try {
     const categories = await fetchCategories();
 
     return {
       props: {
         categories
-      }
+      },
+      revalidate: REVALIDATE_SECONDS
     };
   } catch (err: any) {
-    console.error('getServerSideProps error in catalogue.tsx:', err);
+    console.error('getStaticProps error in catalogue.tsx:', err);
 
+    // During a background regeneration, throwing makes Next keep serving the
+    // last good version instead of replacing it with the error page.
+    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+      throw err;
+    }
+
+    // At build time there's no previous version to fall back on, and throwing
+    // would fail the whole deploy — ship the error page and retry in a minute.
     return {
       props: {
         categories: [],
         error: 'Failed to load categories'
-      }
+      },
+      revalidate: 60
     };
   }
 };

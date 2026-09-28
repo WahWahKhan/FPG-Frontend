@@ -1,5 +1,6 @@
 import Footer from "@/modules/Footer";
 import Header from "@/modules/Header";
+import RouteProgressBar from "@/modules/RouteProgressBar";
 import { useEffect, useState, useContext } from "react";
 import { useRouter } from 'next/router';
 import CartWrapper, { CartContext } from "context/CartWrapper";
@@ -64,7 +65,8 @@ function AppContent({ Component, pageProps, router }: AppProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      
+      <RouteProgressBar />
+
       <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-1868GVBDGX"
           strategy="afterInteractive"

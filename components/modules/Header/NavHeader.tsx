@@ -2,6 +2,7 @@ import clsx from "clsx";
 import siteLinks from "constants/site-links";
 import { HoverContext } from "context/HoverWrapper";
 import React, { useContext } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 
 interface NavHeaderProps {
@@ -65,8 +66,15 @@ const NavHeader = ({ isProductsActive, isBuyActive }: NavHeaderProps) => {
               }}
               key={page.id}
             >
+              {/* next/link, not a bare <a>: a bare <a> did a full page reload on
+                  every nav click (re-downloading all JS + menu data). Link still
+                  renders a real <a href> in the server HTML, so crawlers,
+                  middle-click and open-in-new-tab behave exactly as before.
+                  The key remounts the <a> when its active state flips: the hover
+                  handlers write inline styles straight to the DOM, which the old
+                  full reload wiped but a client-side route change doesn't. */}
+              <Link href={page.href} passHref key={`${page.id}-${isActive}`}>
               <a
-                href={page.href}
                 className="relative text-sm capitalize font-semibold overflow-hidden"
                 style={{
                   all: "unset",
@@ -146,6 +154,7 @@ const NavHeader = ({ isProductsActive, isBuyActive }: NavHeaderProps) => {
                 />
                 {page.title}
               </a>
+              </Link>
             </div>
           );
         })}

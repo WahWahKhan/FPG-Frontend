@@ -157,6 +157,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     console.log(`Total processing time: ${Date.now() - startTime}ms`);
+    // _app.tsx fetches this on every page load for the nav menu. Let Vercel's
+    // CDN hold it for 5 min and serve a stale copy while refreshing, so
+    // visitors don't wait on a cold function + Swell (measured 2.6s uncached).
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400');
     res.status(200).json({ categories: cleanCategories });
     
   } catch (err: any) {
