@@ -1,142 +1,41 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface BannerItem {
-  id: string;
-  type: 'announcement' | 'deal' | 'product';
-  title: string;
-  description: string;
-  href: string;
-  ctaText: string;
-  target?: '_self' | '_blank';
-  active: boolean;
-  startDate: string;
-  endDate: string;
-}
+import { BannerItem, filterByDate } from '../lib/banner/fetchBannerItems';
 
 interface CompanyNewsBannerProps {
-  sheetId: string; // Google Sheet ID
+  // Active rows from the Google Sheet, fetched on the server by the homepage's
+  // getStaticProps (lib/banner/fetchBannerItems.ts) so the banner is in the
+  // page from the first paint - no "Loading..." box and no layout shift.
+  // null = the sheet could not be read at build time (banner simply hidden).
+  items: BannerItem[] | null;
+  // The server's "today" (YYYY-MM-DD) when the page was built, so the first
+  // client render filters exactly like the server did (no hydration mismatch).
+  asOf: string;
 }
 
-const CompanyNewsBanner = ({ sheetId }: CompanyNewsBannerProps) => {
-  const [bannerData, setBannerData] = useState<{
-    announcements: BannerItem[];
-    deals: BannerItem[];
-    products: BannerItem[];
-  }>({
-    announcements: [],
-    deals: [],
-    products: []
-  });
+const groupByType = (items: BannerItem[]) => ({
+  announcements: items.filter(item => item.type === 'announcement'),
+  deals: items.filter(item => item.type === 'deal'),
+  products: items.filter(item => item.type === 'product')
+});
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const CompanyNewsBanner = ({ items, asOf }: CompanyNewsBannerProps) => {
+  // First render filters with the server's build date (asOf), so server and
+  // client output match exactly. After mount we re-check start/end dates against the
+  // visitor's clock, so an item that ended today disappears on time even though
+  // the page itself is cached for up to 5 minutes.
+  const [bannerData, setBannerData] = useState(() => groupByType(filterByDate(items || [], new Date(`${asOf}T12:00:00Z`))));
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off post-hydration date re-check
+    setBannerData(groupByType(filterByDate(items || [])));
+  }, [items]);
 
   // State for current indices
   const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
   const [currentDeal, setCurrentDeal] = useState(0);
   const [currentProduct, setCurrentProduct] = useState(0);
-
-  // Fetch data from Google Sheets
-  useEffect(() => {
-    const fetchBannerData = async () => {
-      try {
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-        const response = await fetch(csvUrl);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const csvText = await response.text();
-        const lines = csvText.split('\n').filter(line => line.trim());
-        
-        if (lines.length < 2) {
-          throw new Error('No data found in spreadsheet');
-        }
-        
-        const rawData: BannerItem[] = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (!line.trim()) continue;
-          
-          // Better CSV parsing to handle commas in content
-          const values: string[] = [];
-          let current = '';
-          let inQuotes = false;
-          
-          for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              values.push(current.trim());
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          values.push(current.trim());
-          
-          // Skip empty rows
-          if (!values[0] || values[0].trim() === '') {
-            continue;
-          }
-          
-          if (values.length >= 8) {
-            const item: BannerItem = {
-              id: `${values[0]}-${i}`,
-              type: values[0] as 'announcement' | 'deal' | 'product',
-              title: values[1],
-              description: values[2],
-              href: values[3],
-              ctaText: values[4],
-              active: values[5].toLowerCase() === 'true',
-              startDate: values[6],
-              endDate: values[7],
-              target: '_self'
-            };
-            
-            rawData.push(item);
-          }
-        }
-        
-        // Filter active items within date range
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        
-        const activeItems = rawData.filter(item => {
-          if (!item.active) return false;
-          if (item.startDate && item.startDate > today) return false;
-          if (item.endDate && item.endDate < today) return false;
-          return true;
-        });
-        
-        // Group by type
-        const announcements = activeItems.filter(item => item.type === 'announcement');
-        const deals = activeItems.filter(item => item.type === 'deal');
-        const products = activeItems.filter(item => item.type === 'product');
-        
-        setBannerData({ announcements, deals, products });
-        setLoading(false);
-        
-      } catch (err: any) {
-        console.error('Error fetching banner data:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load banner content';
-        setError(`Failed to load banner content: ${errorMessage}`);
-        setLoading(false);
-      }
-    };
-
-    if (sheetId) {
-      fetchBannerData();
-      
-      // Refresh data every 5 minutes
-      const interval = setInterval(fetchBannerData, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [sheetId]);
 
   // Auto-rotation effects
   useEffect(() => {
@@ -471,32 +370,6 @@ const CompanyNewsBanner = ({ sheetId }: CompanyNewsBannerProps) => {
       </div>
     );
   };
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="w-full bg-gray-900 border-b border-gray-700 shadow-lg pt-10">
-        <div className="wrapper">
-          <div className="flex items-center justify-center h-[100px]">
-            <div className="text-gray-400 text-sm">Loading banner content...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="w-full bg-gray-900 border-b border-gray-700 shadow-lg pt-10">
-        <div className="wrapper">
-          <div className="flex items-center justify-center h-[100px]">
-            <div className="text-red-400 text-sm">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Don't render if no content
   if (!hasAnnouncements && !hasDeals && !hasProducts) {

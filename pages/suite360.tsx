@@ -330,8 +330,7 @@ const BuyPage = () => {
                   >
                     <Image
                       src={product.image}
-                      layout="fill"
-                      objectFit="contain"
+                      fill sizes="200px" style={{ objectFit: "contain" }}
                       alt={product.title}
                       priority
                     />
@@ -468,8 +467,7 @@ const BuyPage = () => {
                 >
                   <Image
                     src={selectedProduct.image}
-                    layout="fill"
-                    objectFit="contain"
+                    fill sizes="120px" style={{ objectFit: "contain" }}
                     alt={selectedProduct.title}
                   />
                 </div>

@@ -9,7 +9,7 @@ const ContactPage: NextPage = () => {
     <>
     <Head>
       <title>Contact Us | FluidPower Group</title>
-      <meta name="description" content="Contact FluidPower Group for general queries at info@fluidpowergroup.com.au and order queries at orders@fluidpowergroup.com.au or call +61 409 517 333." />
+      <meta name="description" content="Contact FluidPower Group for general queries at info@fluidpowergroup.com.au and order queries at orders@fluidpowergroup.com.au or call 03 4720 3323." />
     </Head>
     <div className="">
       <div className="wrapper px-8 md:px-12 py-6 sm:py-12 lg:py-16  flex flex-col gap-6 sm:gap-16">

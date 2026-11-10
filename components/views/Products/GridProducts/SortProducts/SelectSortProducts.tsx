@@ -1,6 +1,6 @@
 import { Listbox } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 
 const sortingOptions = [
@@ -27,17 +27,16 @@ const SelectSortProducts = () => {
             </Listbox.Button>
             <AnimatePresence>
               {open && (
-                <Listbox.Options
-                  as={motion.div}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className={
-                    "absolute top-10 right-0 z-50 bg-white p-3 rounded-lg shadow-lg w-full min-w-max text-lg flex flex-col gap-1 list-none focus:outline-none "
-                  }
-                  static
-                >
+                <Listbox.Options as={Fragment} static>
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className={
+                      "absolute top-10 right-0 z-50 bg-white p-3 rounded-lg shadow-lg w-full min-w-max text-lg flex flex-col gap-1 list-none focus:outline-none "
+                    }
+                  >
                   {sortingOptions.map((option) => (
                     <Listbox.Option
                       key={option.id}
@@ -47,6 +46,7 @@ const SelectSortProducts = () => {
                       {option.name}
                     </Listbox.Option>
                   ))}
+                  </motion.div>
                 </Listbox.Options>
               )}
             </AnimatePresence>

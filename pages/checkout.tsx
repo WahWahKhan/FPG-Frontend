@@ -19,6 +19,7 @@ import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { CartContext } from '../context/CartWrapper';
 import { separateCartItems, calculateCartTotals, isCustomOrder } from '../utils/cart-helpers';
 import { IItemCart } from '../types/cart';
+import { trackEvent, cartItemValue } from '../lib/metaPixel';
 
 // Server-authority checkout contract (price tampering fix)
 import {
@@ -91,6 +92,19 @@ export default function CheckoutPage() {
 
   // Hydration state
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Meta Pixel: InitiateCheckout once per visit, once the cart has loaded
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (!isHydrated || checkoutTracked.current || items.length === 0) return;
+    checkoutTracked.current = true;
+    trackEvent('InitiateCheckout', {
+      content_ids: items.map((i) => i.id),
+      num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),
+      value: items.reduce((sum, i) => sum + cartItemValue(i), 0),
+      currency: 'AUD',
+    });
+  }, [isHydrated, items]);
   
   // PHASE 3: Shipping details now managed by ShippingForm component
   // Parent only needs to store the validated details for payment step
@@ -1294,7 +1308,7 @@ export default function CheckoutPage() {
           <p className="text-red-700 font-semibold">❌ {paymentError}</p>
           <button
             onClick={handleRetryPayment}
-            className="mt-2 text-sm text-red-600 underline hover:text-red-800"
+            className="mt-3 !bg-red-600 hover:!bg-red-700 !text-white !text-base !py-2 !px-6 !rounded-full !no-underline font-semibold"
           >
             Try Again
           </button>
@@ -1319,17 +1333,29 @@ export default function CheckoutPage() {
       ) : (
         <>
           {/* PayPal Button */}
-          {!isProcessing && paypalOptions.clientId && (
+          {/* Hidden while an error/cancel message is showing: the customer must click
+              "Try Again" first, which clears paymentError and mounts fresh buttons. */}
+          {!isProcessing && !paymentError && paypalOptions.clientId && (
             <div className="mb-6 flex justify-center">
               <div style={{ width: "100%", maxWidth: "450px" }}>
                 <PayPalScriptProvider options={paypalOptions}>
+                  {/* Each funding button gets its own glass wrapper (PayPal renders the
+                      button inside a cross-origin iframe, so the glass effect lives on
+                      the wrapper - see .fpg-pp-glass in styles/base.css). */}
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                  {(['paypal', 'card'] as const).map((fundingSource) => (
+                  <div key={fundingSource} className={`fpg-pp-glass fpg-pp-glass--${fundingSource}`} style={{ height: isMobile ? 46 : 55 }}>
                   <PayPalButtons
+                    fundingSource={fundingSource}
                     style={{
-                      layout: 'vertical',
-                      color: 'gold',
+                      // horizontal + tagline:false => no built-in "Powered by PayPal"
+                      // line inside the button iframe (we render a single one below)
+                      layout: 'horizontal',
+                      tagline: false,
+                      color: fundingSource === 'paypal' ? 'gold' : 'black',
                       shape: 'pill',
-                      label: 'paypal',
-                      height: 55
+                      ...(fundingSource === 'paypal' ? { label: 'paypal' as const } : {}),
+                      height: isMobile ? 46 : 55
                     }}
                     className="paypal-buttons-custom"
                     createOrder={async (data, actions) => {
@@ -1433,6 +1459,10 @@ export default function CheckoutPage() {
                     onCancel={handlePayPalCancel}
                     onError={handlePayPalError}
                   />
+                  </div>
+                  ))}
+                  </div>
+                  <p className="mt-3 text-center text-xs italic text-gray-500">Powered by PayPal</p>
                 </PayPalScriptProvider>
               </div>
             </div>

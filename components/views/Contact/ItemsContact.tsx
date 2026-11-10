@@ -1,4 +1,4 @@
-import { FiMail, FiPhone } from "react-icons/fi";
+import { FiMail, FiPhone, FiMessageSquare } from "react-icons/fi";
 import ItemContact from "./ItemContact";
 
 const ItemsContact = () => {
@@ -17,9 +17,16 @@ const ItemsContact = () => {
     },
     {
       label: "Sales",
-      href: "tel:61409517333",
+      href: "tel:+61347203323",
       icon: FiPhone,
-      title: "+61 409 517 333",
+      title: "03 4720 3323",
+    },
+    {
+      label: "Text / MMS Only",
+      href: "sms:+61409517333",
+      icon: FiMessageSquare,
+      title: "0409 517 333",
+      note: "Strictly for text/MMS \u2013 sharing technical details or part photos. Please do not call this number.",
     },
   ];
 

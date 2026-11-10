@@ -10,6 +10,7 @@ interface OptimizedImageProps {
   className?: string;
   useContainMode?: boolean;
   priority?: boolean;
+  blurDataURL?: string; // tiny preview shown blurred while loading
 }
 
 const OptimizedImage = ({ 
@@ -19,7 +20,8 @@ const OptimizedImage = ({
   height = 300, 
   className = '',
   useContainMode = false,
-  priority = false
+  priority = false,
+  blurDataURL
 }: OptimizedImageProps) => {
   const [isError, setIsError] = useState(false);
   const [useUnoptimized, setUseUnoptimized] = useState(false);
@@ -58,6 +60,31 @@ const OptimizedImage = ({
     }
   };
   
+  // Contain mode: fill the (relatively-positioned) parent box and letterbox the
+  // photo inside it. Without this, tall/wide photos render at their natural
+  // aspect ratio (height:auto), spill out of the square tile and overlap the text.
+  if (useContainMode) {
+    return (
+      <Image
+        key={imgKey}
+        src={src}
+        alt={alt}
+        fill
+        // Product/category tiles: 1 col on phones, 2 on sm, 3-4 (~280px each) from lg up.
+        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 300px"
+        style={{ objectFit: 'contain' }}
+        className={className}
+        onError={handleImageError}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        placeholder={blurDataURL ? 'blur' : 'empty'}
+        blurDataURL={blurDataURL}
+        quality={75}
+        unoptimized={useUnoptimized}
+      />
+    );
+  }
+
   return (
     <Image
       key={imgKey}
@@ -67,7 +94,10 @@ const OptimizedImage = ({
       height={height}
       className={className}
       onError={handleImageError}
-      priority={priority}
+      loading={priority ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : 'auto'}
+      placeholder={blurDataURL ? 'blur' : 'empty'}
+      blurDataURL={blurDataURL}
       quality={75}
       unoptimized={useUnoptimized}
     />

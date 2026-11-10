@@ -188,8 +188,8 @@ const PrivacyPolicyPage: NextPage = () => {
               <p>A.B.N: 29 644 885 932</p>
               <p>
                 Tel:{" "}
-                <a href="tel:0409517333" className="underline hover:text-primary">
-                  0409 517 333
+                <a href="tel:0347203323" className="underline hover:text-primary">
+                  03 4720 3323
                 </a>
               </p>
               <p>

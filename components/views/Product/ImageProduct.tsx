@@ -111,7 +111,7 @@ const ImageProduct = ({ images = [], productName }: Props) => {
     <div className="relative w-full border rounded-3xl overflow-hidden flex-1 md:flex md:flex-col md:justify-center">
       {/* Mobile: Original behavior */}
       <div className="w-full h-full min-h-[200px] max-h-[350px] flex items-center justify-center p-4 md:hidden">
-        <AnimatePresence exitBeforeEnter>
+        <AnimatePresence mode="wait">
           <motion.div
             variants={variants}
             className="flex items-center justify-center max-w-[300px] max-h-[300px]"
@@ -139,7 +139,7 @@ const ImageProduct = ({ images = [], productName }: Props) => {
           Padding insets the image so it clears the ~62px-wide nav arrows
           on each side and the carousel dots along the bottom. */}
       <div className="hidden md:flex w-full items-center justify-center" style={{ minHeight: '400px', maxHeight: '600px', height: '500px' }}>
-        <AnimatePresence exitBeforeEnter>
+        <AnimatePresence mode="wait">
           <motion.div
             variants={variants}
             className="relative w-full h-full"
@@ -170,8 +170,9 @@ const ImageProduct = ({ images = [], productName }: Props) => {
                 key={selectedImage}
                 src={selectedImage}
                 alt={altText}
-                layout="fill"
-                objectFit="contain"
+                fill
+                sizes="(max-width: 1024px) 90vw, 55vw"
+                style={{ objectFit: "contain" }}
                 unoptimized={unoptimizedUrls.has(selectedImage)}
                 onError={() => {
                   setUnoptimizedUrls((prev) => {
@@ -272,9 +273,9 @@ const ImageProduct = ({ images = [], productName }: Props) => {
               type="button"
               onClick={() => setIsModalOpen(false)}
               aria-label="Close"
-              className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 shadow-md transition-colors hover:bg-gray-100 hover:text-black"
+              className="absolute right-3 top-3 z-20 flex h-12 w-12 items-center justify-center !rounded-full !border-0 !bg-white !p-0 !text-gray-800 shadow-md transition-colors hover:!bg-gray-100 hover:!text-black"
             >
-              <FiX className="text-3xl" />
+              <FiX size={28} strokeWidth={2.5} />
             </button>
 
             {/* Enlarged image + navigation arrows */}
@@ -293,17 +294,17 @@ const ImageProduct = ({ images = [], productName }: Props) => {
                     type="button"
                     onClick={showPrev}
                     aria-label="Previous image"
-                    className="group absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-2 hover:bg-slate-200/60 sm:left-4"
+                    className="group absolute left-2 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center !rounded-full !border-0 !bg-white/90 !p-0 !text-black shadow-md hover:!bg-slate-100 sm:left-4"
                   >
-                    <FiChevronLeft className="text-3xl text-black/60 transition-all duration-200 group-hover:scale-110 group-hover:text-black" />
+                    <FiChevronLeft className="text-3xl text-black/70 transition-all duration-200 group-hover:scale-110 group-hover:text-black" />
                   </button>
                   <button
                     type="button"
                     onClick={showNext}
                     aria-label="Next image"
-                    className="group absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 hover:bg-slate-200/60 sm:right-4"
+                    className="group absolute right-2 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center !rounded-full !border-0 !bg-white/90 !p-0 !text-black shadow-md hover:!bg-slate-100 sm:right-4"
                   >
-                    <FiChevronRight className="text-3xl text-black/60 transition-all duration-200 group-hover:scale-110 group-hover:text-black" />
+                    <FiChevronRight className="text-3xl text-black/70 transition-all duration-200 group-hover:scale-110 group-hover:text-black" />
                   </button>
                 </>
               )}
@@ -322,8 +323,8 @@ const ImageProduct = ({ images = [], productName }: Props) => {
                       setSelectedImage(item);
                     }}
                     className={clsx(
-                      'h-2 w-2 rounded-full transition-colors',
-                      item === selectedImage ? 'bg-black/70' : 'bg-gray-300 hover:bg-gray-400'
+                      '!h-2.5 !w-2.5 !min-w-0 !rounded-full !border-0 !p-0 transition-colors',
+                      item === selectedImage ? '!bg-black/70' : '!bg-gray-300 hover:!bg-gray-400'
                     )}
                   />
                 ))}

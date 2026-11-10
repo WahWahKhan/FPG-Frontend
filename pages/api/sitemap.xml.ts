@@ -1,6 +1,7 @@
 // /pages/api/sitemap.xml.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { fetchCategories } from 'utils/swell/fetchCategories';
+import { HIDDEN_ROOT_SLUG } from 'utils/swell/fetchSeriesDetails';
 
 const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/', priority: '1.0', changefreq: 'weekly' },
@@ -18,10 +19,11 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/privacy-policy', priority: '0.3', changefreq: 'yearly' },
 ];
 
-// Slug of the hidden "Build My Hose" parent. This branch holds supplier/developer
-// -only products and must never appear in the sitemap. Skipping the node here also
-// skips its entire subtree, since we stop recursing into its children.
-const HIDDEN_ROOT_SLUG = 'hydraulic-hoses-custom-hose-assembly';
+// The hidden "Build My Hose" parent (supplier/developer-only products) is pruned
+// below at ANY depth, which also skips its entire subtree. The slug is imported
+// from fetchSeriesDetails.ts — the same constant the page's noindex check and the
+// dead-product redirect use — rather than kept as a third copy that could drift
+// and silently expose a hidden page.
 
 // ---------------------------------------------------------------------------
 // <lastmod>
@@ -31,16 +33,21 @@ const HIDDEN_ROOT_SLUG = 'hydraulic-hoses-custom-hose-assembly';
 // template change — which really does alter every page — leaves it untouched.
 //
 // TEMPLATE_CONTENT_UPDATED is that missing half: the date the shared category
-// template last changed in a way a reader would notice. 2026-09-03 shipped the
-// SEO Plan 2 work (section <h2>s, real CMS meta descriptions, related-category
-// links, footer category links), which altered ~220 pages at once.
+// template last changed in a way a reader would notice.
+//   2026-09-03  SEO Plan 2 (section <h2>s, CMS meta descriptions, related-category
+//               links, footer category links) — ~220 pages at once.
+//   2026-09-21  meta-description fix (c999639): entity-decoded text + Swell's own
+//               meta_description field, which changed the <head> and JSON-LD of
+//               ~124 pages. Footer hover/version stamp (09-10) and Tube360 also
+//               landed in this window. Nothing since has touched category pages.
+// A template change on main after this date means bump it again.
 //
 // lastmod = max(category date_updated, TEMPLATE_CONTENT_UPDATED), capped at now.
 // Both halves are true dates. Do NOT substitute `new Date()` here: Google checks
 // lastmod against what it actually finds, and a site that stamps every crawl with
 // today's date gets its lastmod ignored domain-wide. Bump this constant by hand,
 // only when a template change genuinely alters page content.
-const TEMPLATE_CONTENT_UPDATED = '2026-09-03';
+const TEMPLATE_CONTENT_UPDATED = '2026-09-21';
 
 // Emit W3C date (YYYY-MM-DD). Returns undefined for unparseable input so the
 // entry simply omits <lastmod> rather than emitting a bad one.
@@ -99,13 +106,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         urlEntry(loc, priority, changefreq, toLastmod(TEMPLATE_CONTENT_UPDATED)))
       .join('');
 
-    // Depth 0 = root categories (e.g. "Hydraulic Hoses") — these are top-level
-    // nav groupings on /catalogue, not individual pages, so excluded as before.
-    // Depth 1+ = real navigable pages.
+    // Every visible category is listed, INCLUDING depth 0. Roots were excluded
+    // until 2026-10-20 on the assumption they were mere nav groupings — but each
+    // is a real, indexable page with the site's richest copy (208-541 words vs
+    // 36-150 on a typical leaf), i.e. the natural hub page for broad searches
+    // ("hydraulic valves", "adapters"). Search Console showed `hoses` and
+    // `steel-tubes` already being crawled yet never indexed, with the sitemap
+    // giving Google no signal they matter. Hidden-branch safety is unchanged:
+    // flattenCategories() still prunes HIDDEN_ROOT_SLUG and its whole subtree,
+    // and no root is itself hidden (verified against the live tree).
     const dynamicXml = allCategories
-      .filter(({ depth }) => depth > 0)
       .map(({ slug, depth, dateUpdated }) => {
-        const priority = depth === 1 ? '0.8' : '0.7';
+        const priority = depth === 0 ? '0.9' : depth === 1 ? '0.8' : '0.7';
         return urlEntry(
           `https://www.fluidpowergroup.com.au/products/${slug}`,
           priority,

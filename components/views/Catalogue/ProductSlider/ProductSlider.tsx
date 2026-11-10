@@ -195,6 +195,7 @@ const ProductCard = ({
       >
         <LazyImage
           src={product.image || "/product-4.png"}
+          blurDataURL={product.blurDataURL}
           alt="product"
           className="w-full h-36 mb-4 rounded-lg"
         />
@@ -220,7 +221,7 @@ const ProductCard = ({
 };
 
 // ─── Lazy Image ────────────────────────────────────────────────────────────
-const LazyImage = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+const LazyImage = ({ src, alt, className, blurDataURL }: { src: string; alt: string; className: string; blurDataURL?: string }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
@@ -235,7 +236,8 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
       },
       { 
         threshold: 0.1,
-        rootMargin: '50px'
+        // Start loading a little before the tile scrolls into view
+        rootMargin: '300px'
       }
     );
 
@@ -248,7 +250,9 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
 
   return (
     <div ref={imgRef} className={`relative ${className}`}>
-      {!isLoaded && (
+      {/* With a real blur preview the image itself is the placeholder; the
+          grey "Loading..." box is only the fallback when there is no preview. */}
+      {!isLoaded && !blurDataURL && (
         <div className="w-full h-full animate-pulse bg-gray-200 rounded-lg flex items-center justify-center">
           <div className="text-gray-400 text-sm">Loading...</div>
         </div>
@@ -259,10 +263,10 @@ const LazyImage = ({ src, alt, className }: { src: string; alt: string; classNam
           alt={alt}
           width={224}
           height={144}
-          className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded || blurDataURL ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setIsLoaded(true)}
-          placeholder="blur"
-          blurDataURL="/product-2.png"
+          placeholder={blurDataURL ? 'blur' : 'empty'}
+          blurDataURL={blurDataURL}
         />
       )}
     </div>

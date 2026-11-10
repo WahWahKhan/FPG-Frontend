@@ -30,7 +30,7 @@ const AccordionFilter = ({
           {open ? <FiChevronUp /> : <FiChevronDown />}
         </motion.div>
       </motion.button>
-      <AnimatePresence exitBeforeEnter>
+      <AnimatePresence mode="wait">
         {open && (
           <motion.div
             className="flex flex-col gap-2 py-2"

@@ -12,7 +12,7 @@ export const COMPANY_INFO = {
   abn: '29 644 885 932',
   website: 'www.fluidpowergroup.com.au',
   email: 'info@fluidpowergroup.com.au',
-  phone: '+61 409 517 333',
+  phone: '03 4720 3323',
   bankDetails: {
     accountName: 'FluidPower Group Pty Ltd',
     bsb: '063 531',

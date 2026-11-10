@@ -16,8 +16,7 @@ const TeamAbout = () => {
               <div className="w-full h-80  relative">
                 <Image
                   alt="portrait"
-                  layout="fill"
-                  objectFit="cover"
+                  fill sizes="320px" style={{ objectFit: "cover" }}
                   src="https://images.unsplash.com/flagged/photo-1573603867003-89f5fd7a7576?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=892&q=80"
                 />
               </div>

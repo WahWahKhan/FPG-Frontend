@@ -2,6 +2,7 @@
 
 import { openPdfInNewWindow } from '../utils/openPdfInNewWindow';
 import React, { useEffect, useState } from 'react';
+import { trackEvent } from '../lib/metaPixel';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -126,6 +127,24 @@ export default function OrderConfirmation() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Meta Pixel: Purchase, once per order number (a refresh or revisit must not double count)
+  useEffect(() => {
+    if (!orderData?.orderNumber || !orderData.totals) return;
+    try {
+      const key = 'metaPurchaseSent';
+      const sent: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+      if (sent.includes(orderData.orderNumber)) return;
+      trackEvent('Purchase', {
+        value: orderData.totals.total,
+        currency: 'AUD',
+        content_type: 'product',
+      });
+      localStorage.setItem(key, JSON.stringify([...sent, orderData.orderNumber].slice(-20)));
+    } catch {
+      // Tracking must never break the confirmation page.
+    }
+  }, [orderData]);
 
   // ✅ UPDATED: Delay increased to 5000ms so customers can review their order first
   useEffect(() => {
@@ -855,8 +874,8 @@ export default function OrderConfirmation() {
                       }
                     </a>
                     {' '}or call{' '}
-                    <a href="tel:+61409517333" className="text-blue-600 hover:underline font-semibold">
-                      +61 409 517 333
+                    <a href="tel:+61347203323" className="text-blue-600 hover:underline font-semibold">
+                      03 4720 3323
                     </a>
                   </p>
                 </div>
@@ -937,8 +956,8 @@ export default function OrderConfirmation() {
                   }
                 </a>
                 {' | '}
-                <a href="tel:+61409517333" className="text-blue-600 hover:underline">
-                  +61 409 517 333
+                <a href="tel:+61347203323" className="text-blue-600 hover:underline">
+                  03 4720 3323
                 </a>
               </p>
               <p>

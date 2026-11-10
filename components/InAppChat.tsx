@@ -59,7 +59,7 @@ const InAppChat: React.FC<InAppChatProps> = ({
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   
   // Determine z-index based on page
   const buttonZIndex = isPWAPage ? 10000 : 999;

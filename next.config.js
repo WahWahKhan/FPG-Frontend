@@ -31,12 +31,14 @@ const nextConfig = {
     NEXT_PUBLIC_BUILD_DATE: gitBuildInfo.date,
   },
   images: {
-    domains: [
-      "fluidpowergroup.s3.ap-southeast-2.amazonaws.com",
-      "images.unsplash.com",
-      "cdn.schema.io",
-      "cdn.swell.store" 
+    remotePatterns: [
+      { protocol: "https", hostname: "fluidpowergroup.s3.ap-southeast-2.amazonaws.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "cdn.schema.io" },
+      { protocol: "https", hostname: "cdn.swell.store" },
     ],
+    // Next 16 only allows quality 75 unless listed; the site uses quality={100}.
+    qualities: [75, 100],
     formats: ['image/webp', 'image/avif'],
   },
   
@@ -103,16 +105,24 @@ const nextConfig = {
       //
       //   /products?subcategory=[slug]  →  /products/[slug]
       //   /products?category=[slug]     →  /products/[slug]
+      //
+      // The slug pattern MUST be `.+`, not `.*`. With `.*` an EMPTY value
+      // (`/products?subcategory=`) also matched, so the destination became
+      // `/products/` — which Next normalises (trailing slash) straight back to
+      // `/products?subcategory=`, and round it went: a redirect loop. Confirmed
+      // 2026-10-20 by curl (8+ hops, never terminates) and it's the likely
+      // source of the "Redirect error" row that appeared in Search Console.
+      // `.+` leaves an empty value alone, so it just serves /products (noindex).
       // ========================================
       {
         source: '/products',
-        has: [{ type: 'query', key: 'subcategory', value: '(?<slug>.*)' }],
+        has: [{ type: 'query', key: 'subcategory', value: '(?<slug>.+)' }],
         destination: '/products/:slug',
         permanent: true,
       },
       {
         source: '/products',
-        has: [{ type: 'query', key: 'category', value: '(?<slug>.*)' }],
+        has: [{ type: 'query', key: 'category', value: '(?<slug>.+)' }],
         destination: '/products/:slug',
         permanent: true,
       },

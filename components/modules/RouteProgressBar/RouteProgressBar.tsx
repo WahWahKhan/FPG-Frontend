@@ -17,9 +17,9 @@ const RouteProgressBar = () => {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
-  const showTimer = useRef<number>();
-  const hideTimer = useRef<number>();
-  const trickle = useRef<number>();
+  const showTimer = useRef<number | undefined>(undefined);
+  const hideTimer = useRef<number | undefined>(undefined);
+  const trickle = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const clearTimers = () => {

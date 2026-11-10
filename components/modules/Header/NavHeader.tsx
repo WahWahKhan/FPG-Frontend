@@ -73,7 +73,7 @@ const NavHeader = ({ isProductsActive, isBuyActive }: NavHeaderProps) => {
                   The key remounts the <a> when its active state flips: the hover
                   handlers write inline styles straight to the DOM, which the old
                   full reload wiped but a client-side route change doesn't. */}
-              <Link href={page.href} passHref key={`${page.id}-${isActive}`}>
+              <Link href={page.href} passHref key={`${page.id}-${isActive}`} legacyBehavior>
               <a
                 className="relative text-sm capitalize font-semibold overflow-hidden"
                 style={{

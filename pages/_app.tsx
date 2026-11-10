@@ -7,7 +7,6 @@ import CartWrapper, { CartContext } from "context/CartWrapper";
 import { Trac360Provider } from 'context/Trac360Context'; // ✅ IMPORTANT: Named import, NOT default
 import { Function360Provider } from '../context/Function360Context';
 import { Tube360Provider } from '../context/Tube360Context';
-import { Hose360Provider } from '../context/Hose360Context';
 import { AnimatePresence, motion } from "framer-motion";
 import type { AppProps } from "next/app";
 import InAppChat from '../components/InAppChat';
@@ -16,6 +15,9 @@ import "styles/globals.css";
 import axios from "axios";
 import { Category } from "types/products";
 import Script from 'next/script';
+import { META_PIXEL_ID, trackPageView } from '../lib/metaPixel';
+import { warmImages } from '../utils/warmImages';
+import { buyOptions } from '@/modules/Header/MenuHeader/BuyMenuHeader';
 
 // Create a new component that has access to CartContext
 function AppContent({ Component, pageProps, router }: AppProps) {
@@ -31,7 +33,19 @@ function AppContent({ Component, pageProps, router }: AppProps) {
     axios
       .get(`/api/getCategories`)
       .then((result) => {
-        if (!cancelled) setCategories(result.data.categories);
+        if (cancelled) return;
+        const cats: Category[] = result.data.categories || [];
+        setCategories(cats);
+        // Pre-load the BuyProducts mega-menu thumbnails while the page is idle,
+        // so the menu opens with images instead of empty boxes. sizes must
+        // match the <Image sizes="96px"> in SubCategories / BuyMenuHeader.
+        warmImages(
+          [
+            ...buyOptions.map((o) => o.image),
+            ...cats.flatMap((c) => (c.subCategories || []).map((sc) => sc?.image || '/product-3.png')),
+          ],
+          { sizes: '96px' }
+        );
       })
       .catch((err) => {
         console.error('Failed to load nav categories:', err);
@@ -52,6 +66,9 @@ function AppContent({ Component, pageProps, router }: AppProps) {
   // Log when routes change
   useEffect(() => {
     const handleRouteChange = (url: string) => {
+      // Meta Pixel: the base code fires the first PageView; later in-site
+      // (client-side) navigations need an explicit one.
+      trackPageView();
     };
 
     nextRouter.events.on('routeChangeComplete', handleRouteChange);
@@ -71,6 +88,22 @@ function AppContent({ Component, pageProps, router }: AppProps) {
           src="https://www.googletagmanager.com/gtag/js?id=G-1868GVBDGX"
           strategy="afterInteractive"
         />
+        {META_PIXEL_ID && (
+          <Script id="meta-pixel" strategy="afterInteractive">
+            {`
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '${META_PIXEL_ID}');
+              fbq('track', 'PageView');
+            `}
+          </Script>
+        )}
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -86,6 +119,9 @@ function AppContent({ Component, pageProps, router }: AppProps) {
           <link rel="canonical" href={canonicalUrl} key="canonical" />
           <meta name="description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions. Strength & reliability delivered." />
           <meta name="google-site-verification" content="_gR0pKYQplY_yqDv8fZIJfD_FWFNrKhcgWpvGf9kMFg" />
+          {process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION && (
+            <meta name="facebook-domain-verification" content={process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION} />
+          )}
           <meta property="og:site_name" content="FluidPower Group" key="og:site_name" />
           <meta property="og:type" content="website" key="og:type" />
           <meta property="og:url" content={canonicalUrl} key="og:url" />
@@ -115,7 +151,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
                 ],
                 "description": "Australia's hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom hydraulic solutions.",
                 "url": "https://www.fluidpowergroup.com.au",
-                "telephone": "+61409517333",
+                "telephone": "+61347203323",
                 "email": "info@fluidpowergroup.com.au",
                 "image": "https://www.fluidpowergroup.com.au/logo-schema.png",
                 "address": {
@@ -178,7 +214,7 @@ function AppContent({ Component, pageProps, router }: AppProps) {
         </Head>
 
         <AnimatePresence
-          exitBeforeEnter
+          mode="wait"
           onExitComplete={() => window.scrollTo(0, 0)}
         >
           <motion.div
@@ -211,9 +247,7 @@ function MyApp(props: AppProps) {
       <Trac360Provider>
       <Function360Provider>
       <Tube360Provider>
-      <Hose360Provider>
         <AppContent {...props} />
-        </Hose360Provider>
         </Tube360Provider>
         </Function360Provider>
       </Trac360Provider>

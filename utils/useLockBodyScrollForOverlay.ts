@@ -89,7 +89,7 @@ function unlockBody() {
 // `scrollableRef` is kept in the signature for call-site compatibility
 // (Cart.tsx / Snackbar.tsx both already pass one) but is no longer used -
 // the position:fixed technique doesn't need to know which element to exempt.
-export function useLockBodyScrollForOverlay(locked: boolean, _scrollableRef?: RefObject<HTMLElement>) {
+export function useLockBodyScrollForOverlay(locked: boolean, _scrollableRef?: RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!locked || typeof document === 'undefined') return;
 

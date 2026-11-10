@@ -29,8 +29,7 @@ const ItemCart = ({ item }: IItemCartProps) => {
   const isTrac360 = item.type === 'trac360_order';
   const isFunction360 = item.type === 'function360_order';
   const isTube360 = item.type === 'tube360_order';
-  const isHose360 = item.type === 'hose360_order';
-  const isCustomOrder = isPWA || isTrac360 || isFunction360 || isTube360 || isHose360;
+  const isCustomOrder = isPWA || isTrac360 || isFunction360 || isTube360;
   
   // Get item price safely (handles both price and totalPrice)
   const itemPrice = getItemPrice(item);
@@ -98,10 +97,9 @@ const ItemCart = ({ item }: IItemCartProps) => {
         >
           <div className="relative w-full h-full">
             <Image
-              layout="fill"
-              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png' : isTube360 ? '/Tube360.png' : isHose360 ? '/Hose360.png' : (item.image || '/cartImage.jpeg')}
+              fill sizes="80px" style={{ objectFit: "contain" }}
+              src={isTrac360 ? '/Trac360_Cart.png' : isPWA ? '/Hose360.png': isTube360 ? '/Tube360.png' : (item.image || '/cartImage.jpeg')}
               alt={item.name || "product"}
-              objectFit="contain"
             />
           </div>
         </div>

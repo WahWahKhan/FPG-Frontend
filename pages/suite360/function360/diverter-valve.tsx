@@ -259,7 +259,7 @@ function DiverterValveInner({ options }: { options: any }) {
                   <li key={key} className="flex items-start gap-2 text-sm" style={{ color: COLORS.grey.medium }}>
                     <span style={{ color: COLORS.yellow.primary }}>•</span>
                     <span>
-                      <span className="font-semibold">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {value}
+                      <span className="font-semibold">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {value as React.ReactNode}
                     </span>
                   </li>
                 ))}

@@ -2,6 +2,7 @@
 // Static + ISR: getStaticProps (revalidate 300s) at bottom — was getServerSideProps
 // SWR and axios removed — data now arrives as props, fully rendered for Googlebot
 // fetchCategories imported from new utility — getCategories.ts API route untouched
+import { withBlurPlaceholders } from '../utils/swell/blurPlaceholders';
 
 import withLayout from "@/hoc/withLayout";
 import { ProductSlider } from "@/views/Catalogue";
@@ -91,7 +92,15 @@ const REVALIDATE_SECONDS = 300;
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const categories = await fetchCategories();
+    const fetched = await fetchCategories();
+    // Blurred previews for the first 6 tiles of each slider (what's on screen
+    // first). Capped to keep the page data small - it is already ~228 kB.
+    const categories = await Promise.all(
+      fetched.map(async (c: any) => ({
+        ...c,
+        subCategories: await withBlurPlaceholders(c.subCategories || [], 6)
+      }))
+    );
 
     return {
       props: {

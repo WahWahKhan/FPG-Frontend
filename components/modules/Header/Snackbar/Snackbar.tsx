@@ -77,7 +77,7 @@ const Snackbar = () => {
         />
       </div>
 
-      <AnimatePresence exitBeforeEnter>
+      <AnimatePresence mode="wait">
         {menu && (
           <>
             <motion.div

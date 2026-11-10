@@ -16,7 +16,7 @@ interface BuyOption {
   isActive: boolean;
 }
 
-const buyOptions: BuyOption[] = [
+export const buyOptions: BuyOption[] = [
   {
     id: "hose360",
     title: "Hose360",
@@ -125,7 +125,7 @@ const BuyMenuHeader = ({ onClose }: BuyMenuHeaderProps) => {
           <div className="wrapper relative z-10">
             {/* Horizontal layout with wrapping */}
             <div className="flex flex-wrap gap-4">
-              <AnimatePresence exitBeforeEnter>
+              <AnimatePresence mode="wait">
                 {buyOptions.map((option, index) => (
                   <div
                   key={option.id}
@@ -170,8 +170,7 @@ const BuyMenuHeader = ({ onClose }: BuyMenuHeaderProps) => {
                         <div className="relative w-full h-full">
                           <Image
                             src={option.image}
-                            layout="fill"
-                            objectFit="contain"
+                            fill sizes="96px" loading="eager" style={{ objectFit: "contain" }}
                             alt={option.title}
                           />
                         </div>

@@ -32,6 +32,12 @@ function ValveSetupInner({ options }: { options: any }) {
     config.valveSetup?.id || null
   );
 
+  // GIF sync: each GIF starts animating when its own download finishes, so the
+  // tiles drift out of phase. Once every GIF has loaded, remount them together
+  // (now served from cache) so all loops start on the same tick.
+  const [loadedGifs, setLoadedGifs] = useState(0);
+  const [gifSyncKey, setGifSyncKey] = useState(0);
+
   // Sync local state with context when context changes
   React.useEffect(() => {
     const contextSetupId = config.valveSetup?.id || null;
@@ -173,6 +179,15 @@ function ValveSetupInner({ options }: { options: any }) {
               {/* GIF Container */}
               <div className="w-full aspect-video bg-gray-50 relative flex items-center justify-center p-6">
                 <Image
+                  key={`${setup.id}-${gifSyncKey}`}
+                  onLoad={() => {
+                    if (gifSyncKey !== 0) return;
+                    setLoadedGifs((n) => {
+                      const next = n + 1;
+                      if (next === availableSetups.length) setGifSyncKey(1);
+                      return next;
+                    });
+                  }}
                   src={`/trac360/${protectionType.toUpperCase()}_(${setup.code}).gif`}
                   alt={`Setup ${setup.code} - ${setup.name}`}
                   width={400}

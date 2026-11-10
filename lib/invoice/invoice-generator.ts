@@ -42,6 +42,7 @@ export const generateInvoicePDF = (invoiceData: SupplierInvoiceData): jsPDF => {
   doc.text(`A.B.N: ${COMPANY_INFO.abn}`, companyX, 32);
   doc.text(COMPANY_INFO.website, companyX, 36);
   doc.text(COMPANY_INFO.email, companyX, 40);
+  doc.text(`Phone: ${COMPANY_INFO.phone}`, companyX, 44);
 
   // Right side - Invoice title + Details
   const rightX = pageWidth - margin;

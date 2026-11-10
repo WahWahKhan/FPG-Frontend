@@ -5,6 +5,7 @@ import { Children } from 'types/general';
 import SaveCartModal from '../components/cart/SaveCartModal';
 import SavedCartNotice from '../components/cart/SavedCartNotice';
 import { API_BASE_URL } from '../lib/checkout/checkout-config';
+import { trackEvent, cartItemValue } from '../lib/metaPixel';
 
 export const CartContext = createContext<{
   items: IItemCart[];
@@ -46,6 +47,7 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   
   // 🔧 Track when user is actively modifying cart (delete/clear actions)
   const isUserAction = useRef(false);
+  const pwaTrackedIds = useRef<Set<string>>(new Set());
   
   // 🆕 NEW: Track if viewing order confirmation (for UI display only)
   const [isViewingOrderConfirmation, setIsViewingOrderConfirmation] = useState(false);
@@ -201,6 +203,24 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   // ✅ NEW: Listen for PWA cart item additions (custom event)
   useEffect(() => {
     const handlePWACartAdd = (event: CustomEvent) => {
+      // Meta Pixel: the old Hose360 bundle bypasses addItem, so track it here.
+      // Deduped by cartId (the bundle fires this from inside a state updater).
+      try {
+        const pwaItem = event?.detail?.item;
+        const key = String(pwaItem?.cartId ?? '');
+        if (pwaItem && key && !pwaTrackedIds.current.has(key)) {
+          pwaTrackedIds.current.add(key);
+          trackEvent('AddToCart', {
+            content_name: pwaItem.name || 'HOSE360 Custom Order',
+            content_ids: [pwaItem.id || 'hose360'],
+            content_type: 'product',
+            value: cartItemValue(pwaItem),
+            currency: 'AUD',
+          });
+        }
+      } catch {
+        /* tracking must never break the cart */
+      }
       setCart(prevCart => ({
         ...prevCart,
         open: true  // ✅ Open cart when PWA adds item
@@ -300,6 +320,15 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   };
 
   const addItem = (item: IItemCart) => {
+    // Meta Pixel: covers website products and every Suite360 configurator,
+    // as they all add through here. No personal data is sent.
+    trackEvent('AddToCart', {
+      content_name: item.name,
+      content_ids: [item.id],
+      content_type: 'product',
+      value: cartItemValue(item),
+      currency: 'AUD',
+    });
     setCart((prevCart) => ({
       open: true,
       items: [...prevCart.items, item],

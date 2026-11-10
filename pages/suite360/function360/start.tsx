@@ -177,16 +177,15 @@ export default function Start() {
               transition={{ delay: 0.3 }}
               className="flex justify-center mb-8"
             >
-              <div className="relative w-120 h-80 flex items-center justify-center">
-                <div style={{ opacity: 1 }}>
+              <div className="relative w-full max-w-[340px] h-80">
                 <Image
-                  src="/Function360.png"  // ← USE LOGO DIRECTLY
+                  src="/Function360.png"
                   alt="Hydraulic Function Kit"
-                  width={340}
-                  height={340}
-                  unoptimized
+                  fill
+                  sizes="340px"
+                  style={{ objectFit: 'contain' }}
+                    unoptimized
                 />
-                </div>
               </div>
             </motion.div>
 

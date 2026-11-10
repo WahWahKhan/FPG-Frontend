@@ -82,7 +82,7 @@ export default function PDFModal({
               justifyContent: "center"
             }}
           >
-            <FiX style={{ width: "100%", height: "100%" }} />
+            <FiX style={{ width: "100%", height: "100%", minWidth: "20px", minHeight: "20px" }} />
           </div>
         </button>
 

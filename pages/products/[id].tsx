@@ -15,6 +15,7 @@ import {
 } from '@/views/Product';
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
+import { trackEvent } from '../../lib/metaPixel';
 import Head from 'next/head';
 import { FiInfo } from 'react-icons/fi';
 
@@ -24,10 +25,12 @@ const CATEGORY_DESCRIPTION_LINE_CLAMP = 3;
 import Link from 'next/link';
 import { IItemCart } from 'types/cart';
 import { useRouter } from 'next/router';
-import { GetServerSideProps } from 'next';
+import { GetStaticPaths, GetStaticProps } from 'next';
+import { withBlurPlaceholders } from '../../utils/swell/blurPlaceholders';
 import { fetchProducts, fetchProductsBySlug } from 'utils/swell/fetchProducts';
 import { fetchSeriesDetails, fetchSeriesDetailsBySlug, fetchBreadcrumbs, fetchSiblingCategories, isUnderHiddenRoot, ISeries, IBreadcrumb, ISiblingCategory } from 'utils/swell/fetchSeriesDetails';
 import { sortProductsAlphanumerically } from '../../utils/productSorting';
+import { findLiveFamilyCategorySlug } from 'utils/swell/findLiveFamilyCategory';
 
 interface ProductPageProps {
   initialItems: IItemCart[];
@@ -48,9 +51,7 @@ const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
     <nav aria-label="Breadcrumb" className="wrapper px-8 md:px-12 pt-28 pb-2">
       <ol className="flex flex-wrap items-center gap-1 text-gray-500" style={{ fontSize: "1.125rem" }}>
         <li>
-          <Link href="/catalogue">
-            <a className="hover:text-gray-800 transition-colors duration-150">Products</a>
-          </Link>
+          <Link href="/catalogue" className="hover:text-gray-800 transition-colors duration-150">Products</Link>
         </li>
 
         {crumbs.map((crumb, index) => {
@@ -63,11 +64,7 @@ const Breadcrumbs = ({ crumbs }: { crumbs: IBreadcrumb[] }) => {
                   {crumb.name}
                 </span>
               ) : (
-                <Link href={`/products/${crumb.slug}`}>
-                  <a className="hover:text-gray-800 transition-colors duration-150">
-                    {crumb.name}
-                  </a>
-                </Link>
+                <Link href={`/products/${crumb.slug}`} className="hover:text-gray-800 transition-colors duration-150">{crumb.name}</Link>
               )}
             </li>
           );
@@ -137,9 +134,7 @@ const RelatedCategories = ({ categories }: { categories: ISiblingCategory[] }) =
       <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-500" style={{ fontSize: '1.125rem' }}>
         {categories.map((category) => (
           <li key={category.id}>
-            <Link href={`/products/${category.slug}`}>
-              <a className="hover:text-gray-800 transition-colors duration-150">{category.name}</a>
-            </Link>
+            <Link href={`/products/${category.slug}`} className="hover:text-gray-800 transition-colors duration-150">{category.name}</Link>
           </li>
         ))}
       </ul>
@@ -199,6 +194,17 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
   useEffect(() => {
     setItems(initialItems);
   }, [id, initialItems]);
+
+  // Meta Pixel: ViewContent once per product page view
+  useEffect(() => {
+    if (series?.slug) {
+      trackEvent('ViewContent', {
+        content_name: series.name,
+        content_ids: [series.slug],
+        content_type: 'product_group',
+      });
+    }
+  }, [series?.slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep scroll UX — purely client-side, unrelated to data fetching
   useEffect(() => {
@@ -425,9 +431,25 @@ const OBJECT_ID_REGEX = /^[0-9a-f]{24}$/i;
 const isUuid = (value: string) => UUID_REGEX.test(value) || OBJECT_ID_REGEX.test(value);
 
 // ---------------------------------------------------------------------------
-// getServerSideProps
+// getStaticPaths + getStaticProps (ISR) - was getServerSideProps
 // ---------------------------------------------------------------------------
-export const getServerSideProps: GetServerSideProps = async (context) => {
+// Each page is built on its first request (fallback: 'blocking', so visitors
+// and Googlebot always get full HTML, never a loading shell), served from
+// Vercel's CDN, and regenerated in the background at most every 5 minutes.
+// With gSSP every visit ran ~5 Swell round-trips (~1.0-1.2s after idle) and
+// Next could not prefetch the data, so a menu click always waited. As a static
+// page, <Link> prefetches its data while the menu is open -> instant clicks.
+// Same 5-minute freshness as /catalogue and the in-memory taxonomyCache.
+const REVALIDATE_SECONDS = 300;
+// Short so a newly added category/slug starts resolving within a minute.
+const NOT_FOUND_REVALIDATE_SECONDS = 60;
+
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: 'blocking'
+});
+
+export const getStaticProps: GetStaticProps = async (context) => {
   const { id: param } = context.params as { id: string };
 
   try {
@@ -451,7 +473,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       const seriesById = await fetchSeriesDetails(param);
 
       if (!seriesById) {
-        return { notFound: true };
+        return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
       }
 
       if (seriesById.slug && seriesById.slug !== param) {
@@ -470,7 +492,25 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     ]);
 
     if (!series) {
-      return { notFound: true };
+      // A deleted product: rather than a dead end, send it to the still-live
+      // family category its slug names (hydraulic-valves-fpg-gdv60 ->
+      // hydraulic-valves). Conservative by design — see findLiveFamilyCategory.ts;
+      // anything it isn't sure about is a plain 404, which is the right answer
+      // for a page that is gone. Permanent, matching the legacy-UUID redirect
+      // above: a deleted product isn't expected back, and if it ever is, this
+      // branch simply stops running because the slug exists again.
+      if (!isUuidParam) {
+        const familySlug = await findLiveFamilyCategorySlug(param);
+        if (familySlug) {
+          return {
+            redirect: {
+              destination: `/products/${familySlug}`,
+              permanent: true
+            }
+          };
+        }
+      }
+      return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
     }
 
     // Breadcrumbs and sibling categories both need series resolved first,
@@ -489,8 +529,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       ? sortProductsAlphanumerically(productResult.products)
       : [];
 
+    // Tiles get a real blurred preview of their photo (up to 24 - the ones a
+    // visitor sees first); fetched here, at build/regeneration time only.
     const initialSubcategories = productResult && productResult.series.length > 0
-      ? sortProductsAlphanumerically(productResult.series.filter((s: any) => s.slug !== 'hydraulic-hoses-custom-hose-assembly'))
+      ? await withBlurPlaceholders(
+          sortProductsAlphanumerically(productResult.series.filter((s: any) => s.slug !== 'hydraulic-hoses-custom-hose-assembly')),
+          24
+        )
       : [];
 
     return {
@@ -501,12 +546,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         breadcrumbs,
         relatedCategories,
         noIndex
-      }
+      },
+      revalidate: REVALIDATE_SECONDS
     };
   } catch (err: any) {
-    console.error('getServerSideProps error in [id].tsx:', err);
+    console.error('getStaticProps error in [id].tsx:', err);
 
-    return { notFound: true };
+    // Throwing during a background regeneration makes Next keep serving the
+    // last good version (previously a Swell hiccup returned a 404, which
+    // Google could see). A page that was never built yet shows the error page
+    // and is retried on the next request - nothing gets cached.
+    throw err;
   }
 };
 

@@ -39,7 +39,7 @@ const NavSnackbar = ({ handleClose }: INavSnackbarProps) => {
   };
 
   return (
-    <AnimatePresence exitBeforeEnter>
+    <AnimatePresence mode="wait">
       {!showBuySubMenu ? (
         <motion.div
           key="main-menu"

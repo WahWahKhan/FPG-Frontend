@@ -26,7 +26,7 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
       }} />
       
       <div className="grid grid-rows-3 grid-cols-3 w-4/5 grid-flow-row gap-y-4 gap-x-6 pl-12 xl:pl-20">
-        <AnimatePresence exitBeforeEnter>
+        <AnimatePresence mode="wait">
           {subCategories.map((subCategory) => (
             <Anchor
               key={subCategory.id}
@@ -48,8 +48,7 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
                   <div className="relative w-full h-full">
                     <Image
                       src={subCategory?.image || "/product-3.png"}
-                      layout="fill"
-                      objectFit="contain"
+                      fill sizes="96px" loading="eager" style={{ objectFit: "contain" }}
                       alt="Site logo"
                     />
                   </div>

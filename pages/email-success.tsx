@@ -148,8 +148,8 @@ export default function EmailSuccess() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 mb-2">Need immediate assistance?</p>
             <p className="text-sm">
-              <a href="tel:+61409517333" className="text-blue-600 hover:underline font-semibold">
-                +61 409 517 333
+              <a href="tel:+61347203323" className="text-blue-600 hover:underline font-semibold">
+                03 4720 3323
               </a>
               {' | '}
               <a href="mailto:info@fluidpowergroup.com.au" className="text-blue-600 hover:underline font-semibold">

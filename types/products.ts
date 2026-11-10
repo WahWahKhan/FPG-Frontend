@@ -14,6 +14,8 @@ export interface SubCategory {
   slug: string;
   category: string;
   description: string;
+  // Tiny base64 preview (utils/swell/blurPlaceholders.ts) shown blurred while the image loads
+  blurDataURL?: string;
 }
 
 export interface Product extends SubCategory {

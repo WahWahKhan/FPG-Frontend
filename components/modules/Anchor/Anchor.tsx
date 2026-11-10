@@ -13,7 +13,7 @@ interface IAnchorProps {
 
 const Anchor = ({ href, children, className }: IAnchorProps) => {
   return (
-    <Link href={href} scroll={false} passHref>
+    <Link href={href} scroll={false} passHref legacyBehavior>
       <motion.a
         className={clsx(className, "hover:no-underline")}
         layout="position"

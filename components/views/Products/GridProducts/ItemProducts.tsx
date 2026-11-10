@@ -7,7 +7,7 @@ import OptimizedImage from "../../../../utils/OptimizedImage";
 const TILE_DESCRIPTION_FONT_SIZE = '0.9rem'; // equivalent to text-xs, try '0.8rem', '0.875rem' (text-sm), etc.
 // ───────────────────────────────────────────────────────────────────────────
 
-const ItemProducts = ({ item, showDescription = false }: { item: any, showDescription?: boolean }) => {
+const ItemProducts = ({ item, showDescription = false, priority = false }: { item: any, showDescription?: boolean, priority?: boolean }) => {
   const getDescriptions = (description: string) => {
     const text = description.split("<br>")[0];
     const stripped = text.replace(/(<([^>]+)>)/ig, "").replace(/&nbsp;/g, "");
@@ -68,6 +68,8 @@ const ItemProducts = ({ item, showDescription = false }: { item: any, showDescri
                 height={300}
                 className="object-contain"
                 useContainMode={true}
+                priority={priority}
+                blurDataURL={item.blurDataURL}
               />
             </motion.div>
           </div>
