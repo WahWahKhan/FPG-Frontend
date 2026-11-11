@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.4c47a88f.css",
-    "main.js": "/static/js/main.07d3d6bc.js",
+    "main.js": "/static/js/main.e98fddd3.js",
     "static/js/331.d16c3da6.chunk.js": "/static/js/331.d16c3da6.chunk.js",
     "static/js/159.6cd2578e.chunk.js": "/static/js/159.6cd2578e.chunk.js",
     "static/js/453.60f80263.js": "/static/js/453.60f80263.js",
@@ -35,6 +35,7 @@
     "static/media/bsp_female_90.png": "/static/media/bsp_female_90.9e6db798f816ea1cc0af.png",
     "static/media/orfs_male_straight.png": "/static/media/orfs_male_straight.f1895c84bf2762c66569.png",
     "static/media/Ferrule.PNG": "/static/media/Ferrule.79d8d261f1f4050c01d3.PNG",
+    "static/media/logo-pdf.png": "/static/media/logo-pdf.d85d6032d331dfd4eb83.png",
     "static/media/nylon_sleeve.png": "/static/media/nylon_sleeve.b6f54ae0bfbb057b0c57.png",
     "static/media/bsp_banjo.png": "/static/media/bsp_banjo.a46d56c03d0497430baf.png",
     "static/media/orfs_female_straight.png": "/static/media/orfs_female_straight.3c98117daa087d468e8d.png",
@@ -71,7 +72,7 @@
     "serve.json": "/serve.json",
     "config.js": "/config.js",
     "main.4c47a88f.css.map": "/static/css/main.4c47a88f.css.map",
-    "main.07d3d6bc.js.map": "/static/js/main.07d3d6bc.js.map",
+    "main.e98fddd3.js.map": "/static/js/main.e98fddd3.js.map",
     "331.d16c3da6.chunk.js.map": "/static/js/331.d16c3da6.chunk.js.map",
     "159.6cd2578e.chunk.js.map": "/static/js/159.6cd2578e.chunk.js.map",
     "453.60f80263.js.map": "/static/js/453.60f80263.js.map"
@@ -79,6 +80,6 @@
   "entrypoints": [
     "static/js/453.60f80263.js",
     "static/css/main.4c47a88f.css",
-    "static/js/main.07d3d6bc.js"
+    "static/js/main.e98fddd3.js"
   ]
 }

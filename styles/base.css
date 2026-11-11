@@ -122,3 +122,18 @@
 @media (prefers-reduced-motion: reduce) {
   .fpg-pp-glass, .fpg-pp-glass:hover { transition: none; transform: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   next/image fixed-size images (width/height props, data-nimg="1"): never
+   taller than their box. Tailwind's preflight gives every img height:auto, so
+   a tall photo rendered at e.g. width={120} became ~220px tall and spilled out
+   of a 128px card (Trac360 circuits page). max-height:100% only applies when
+   the parent has a definite height, so free-flowing images are unaffected;
+   when it does clamp, object-fit:contain keeps the photo's proportions.
+   :where() = zero specificity, so any class on the image (object-cover,
+   h-*, max-h-*) still wins.
+   --------------------------------------------------------------------------- */
+:where(img[data-nimg="1"]) {
+  max-height: 100%;
+  object-fit: contain;
+}

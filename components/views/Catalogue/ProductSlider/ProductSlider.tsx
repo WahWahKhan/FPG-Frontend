@@ -261,9 +261,9 @@ const LazyImage = ({ src, alt, className, blurDataURL }: { src: string; alt: str
         <Image
           src={src}
           alt={alt}
-          width={224}
-          height={144}
-          className={`w-full h-full object-contain transition-opacity duration-300 ${isLoaded || blurDataURL ? 'opacity-100' : 'opacity-0'}`}
+          fill
+          sizes="224px"
+          className={`object-contain transition-opacity duration-300 ${isLoaded || blurDataURL ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setIsLoaded(true)}
           placeholder={blurDataURL ? 'blur' : 'empty'}
           blurDataURL={blurDataURL}

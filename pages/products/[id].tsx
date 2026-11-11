@@ -261,7 +261,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
     return (
       <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-4 sm:gap-8">
         <Head>
-          <title>{series.name} | FluidPower Group</title>
+          <title>{`${series.name} | FluidPower Group`}</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
           <meta name="description" content={metaDescription} />
@@ -298,7 +298,7 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
   return (
     <div className="pt-4 pb-12 lg:pt-6 lg:pb-20 flex flex-col gap-10 sm:gap-16">
       <Head>
-        <title>{series.name} | FluidPower Group</title>
+        <title>{`${series.name} | FluidPower Group`}</title>
           {noIndex && <meta name="robots" content="noindex, nofollow" />}
           <link rel="canonical" href={`https://www.fluidpowergroup.com.au/products/${series.slug}`} key="canonical" />
         <meta name="description" content={metaDescription} />

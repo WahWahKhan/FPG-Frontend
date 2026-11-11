@@ -10,6 +10,7 @@ const InfoFooter = () => {
         alt="Fluid Power Group logo"
         width={220}
         height={90}
+        style={{ width: "auto", height: "auto" }}
       />
 
       <div className=" text-lg flex items-center gap-2">

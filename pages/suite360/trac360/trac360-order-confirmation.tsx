@@ -29,6 +29,32 @@ const getStepNumbers = (hasCircuits: boolean) => {
   };
 };
 
+/**
+ * Photo for a saved add-on. The saved objects often carry no image, so work one out from what we
+ * know (selected sub-option, chosen variant, or the product's standard picture).
+ */
+const getAddonImage = (addon: Addon, operationTypeId?: string): string | undefined => {
+  const direct = (addon as any).image as string | undefined;
+  if (direct) return direct;
+  // Add-ons whose picture does not depend on a chosen option (checked first: e.g. Mounting Brackets'
+  // selected option id "valve-joystick-bracket" has no picture file of its own).
+  switch (addon.id) {
+    case 'valve-adaptors':
+      return ['cables-joystick-10', 'cables-levers-11', 'setup-d-handles', 'setup-d-joystick'].includes(operationTypeId || '')
+        ? '/trac360/valve-adaptors-2.png'
+        : '/trac360/valve-adaptors.png';
+    case 'tractor-hose-kit':
+      return '/trac360/hose-kit.png';
+    case 'mounting-brackets':
+      return '/trac360/mounting-bracket.png';
+  }
+  // Add-ons that show the chosen option's picture (Hose Protection, Joystick upgrade)
+  const sub = addon.subOptions?.find((o: SubOption) => o.id === addon.selectedSubOption);
+  if (sub?.image) return sub.image;
+  if (addon.selectedSubOption) return `/trac360/${addon.selectedSubOption}.png`;
+  return undefined;
+};
+
 export default function OrderConfirmation() {
   const router = useRouter();
   const { config, resetConfig, removeAddon } = useTrac360();
@@ -74,102 +100,102 @@ export default function OrderConfirmation() {
       console.log('🛒 Starting Add to Cart process...');
       console.log('📊 Current config:', config);
       
-      console.log('📄 Generating PDF using hidden clone...');
-      
-      const originalElement = targetRef.current;
-      
-      if (!originalElement) {
-        throw new Error('PDF content element not found');
-      }
-
-      // Import libraries dynamically
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
-
-      // CREATE HIDDEN CLONE FOR PDF CAPTURE
-      const clone = originalElement.cloneNode(true) as HTMLElement;
-      
-      // Style the clone for desktop PDF capture (off-screen, desktop width)
-      clone.style.position = 'fixed';
-      clone.style.left = '-9999px'; // Position off-screen
-      clone.style.top = '0';
-      clone.style.minWidth = '800px'; // Force desktop width
-      clone.style.width = '800px';
-      clone.style.background = '#ffffff';
-      clone.style.padding = '30px 20px';
-      clone.style.zIndex = '-1000';
-      
-      // Hide delete buttons in the clone
-      const deleteButtonsInClone = clone.querySelectorAll('.pdf-hide-button');
-      deleteButtonsInClone.forEach(btn => {
-        (btn as HTMLElement).style.display = 'none';
+      // Draw the PDF directly with jsPDF (no html2canvas screenshot): sharp text, small file,
+      // and no canvas read-back for privacy browsers such as DuckDuckGo to block.
+      const { buildSuite360Pdf, loadImageBytes, thumbUrlFor } = await import('../../../utils/pdf/suite360Pdf');
+      const logo = await loadImageBytes('/pdf-thumbs/logo.png');
+      const vs = config.valveSetup!;
+      const op = config.operationType!;
+      const valveImg = thumbUrlFor(`/trac360/${config.tractorInfo.protectionType?.toUpperCase()}_(${vs.code}).jpg`);
+      const opImg = thumbUrlFor(op.image);
+      const addonRows = config.addons.map((addon: Addon) => {
+        let addonPrice = addon.basePrice || 0;
+        let subOptionName = '';
+        if (addon.selectedSubOption && addon.subOptions) {
+          const subOption = addon.subOptions.find((o: SubOption) => o.id === addon.selectedSubOption);
+          if (subOption) {
+            addonPrice += subOption.additionalPrice || 0;
+            subOptionName = subOption.name;
+          }
+        }
+        return { addon, addonPrice, subOptionName };
       });
-      
-      // Add clone to DOM temporarily
-      document.body.appendChild(clone);
-      
-      // Wait for clone to render
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      console.log('📸 Capturing clone as canvas...');
-      
-      // Capture the CLONE (not the original visible element)
-      const canvas = await html2canvas(clone, {
-        scale: 1.3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowHeight: clone.scrollHeight,
-        windowWidth: 800,
+      const circuitImg = thumbUrlFor((config.circuits as any)?.image);
+      const [valveBytes, opBytes, circuitBytes, ...addonBytes] = await Promise.all([
+        valveImg ? loadImageBytes(valveImg) : null,
+        opImg ? loadImageBytes(opImg) : null,
+        circuitImg ? loadImageBytes(circuitImg) : null,
+        ...addonRows.map(({ addon }) => {
+          const u = thumbUrlFor(getAddonImage(addon, op.id));
+          return u ? loadImageBytes(u) : null;
+        }),
+      ]);
+      const pdfDataUrl = await buildSuite360Pdf({
+        title: 'ORDER CONFIRMATION',
+        logo,
+        sections: [
+          {
+            title: 'Step 1: Tractor Information',
+            items: [
+              { kind: 'kv', k: 'Brand', v: String(config.tractorInfo.brand ?? '') },
+              { kind: 'kv', k: 'Model', v: String(config.tractorInfo.model ?? '') },
+              { kind: 'kv', k: 'Drive Type', v: String(config.tractorInfo.driveType ?? '') },
+              { kind: 'kv', k: 'Protection', v: config.tractorInfo.protectionType === 'cab' ? 'Cabin' : 'ROPS' },
+            ],
+          },
+          {
+            title: 'Step 2: Valve Setup',
+            items: [{ kind: 'product', align: 'center', img: valveBytes, title: `Setup ${vs.code}`, sub: vs.name }],
+          },
+          {
+            title: `Step ${stepNumbers.operationType}: Operation Type`,
+            items: [{
+              kind: 'product',
+              img: opBytes,
+              title: op.name,
+              bullets: op.components,
+              price: circuitsPrice > 0 ? formatPrice(circuitsPrice) : undefined,
+              priceSub: circuitsPrice > 0 ? 'Base Price' : undefined,
+            }],
+          },
+          ...(config.circuits
+            ? [{
+                title: `Step ${stepNumbers.circuits}: Circuits`,
+                items: [{
+                  kind: 'product' as const,
+                  align: 'center' as const,
+                  img: circuitBytes,
+                  title: `${config.circuits.circuits}-Circuit`,
+                  sub: config.circuits.description,
+                }],
+              }]
+            : []),
+          ...(addonRows.length > 0
+            ? [{
+                title: `Steps ${stepNumbers.addons}-${stepNumbers.addons + 4}: Add-ons`,
+                items: addonRows.map(({ addon, addonPrice, subOptionName }, idx) => ({
+                  kind: 'product' as const,
+                  img: addonBytes[idx],
+                  title: addon.name,
+                  sub: subOptionName && subOptionName !== addon.description ? subOptionName : undefined,
+                  price: formatPrice(addonPrice),
+                })),
+              }]
+            : []),
+          ...(config.additionalInfo && config.additionalInfo.trim()
+            ? [{ title: 'Additional Information', items: [{ kind: 'note' as const, text: config.additionalInfo }] }]
+            : []),
+        ],
+        price: {
+          title: 'Price Breakdown',
+          rows: [
+            ...(circuitsPrice > 0 ? [[`Base price${config.circuits ? ` (incl. ${config.circuits.circuits}-Circuit)` : ''}:`, formatPrice(circuitsPrice)] as [string, string]] : []),
+            ...(config.addons.length > 0 ? [[`Add-ons (${config.addons.length} items):`, formatPrice(addonsTotal)] as [string, string]] : []),
+          ],
+          totalLabel: 'TOTAL:',
+          totalValue: formatPrice(config.totalPrice),
+        },
       });
-
-      console.log('✅ Canvas captured:', canvas.width, 'x', canvas.height);
-
-      // Remove the clone immediately after capture
-      document.body.removeChild(clone);
-
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
-
-      // Calculate dimensions to fit on ONE page
-      const pdfWidth = 210; // A4 width
-      const pdfHeight = 297; // A4 height
-      const margin = 5; // Small margins
-      
-      const imgWidth = pdfWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Scale down if too tall for single page
-      let finalWidth = imgWidth;
-      let finalHeight = imgHeight;
-      
-      if (imgHeight > (pdfHeight - margin * 2)) {
-        const scale = (pdfHeight - margin * 2) / imgHeight;
-        finalHeight = pdfHeight - (margin * 2);
-        finalWidth = imgWidth * scale;
-      }
-
-      // Convert canvas to JPEG with compression
-      const imgData = canvas.toDataURL('image/jpeg', 0.7);
-      
-      console.log('📄 Adding image to PDF as single page...');
-
-      // Center the image on the page
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      
-      // Add to PDF - SINGLE PAGE ONLY
-      pdf.addImage(imgData, 'JPEG', xOffset, margin, finalWidth, finalHeight, undefined, 'FAST');
-
-      // Convert to base64 data URL
-      const pdfDataUrl = pdf.output('dataurlstring');
-      
-      console.log('✅ PDF generated successfully (single page)');
-      console.log(`📦 PDF size: ${Math.round(pdfDataUrl.length / 1024)}KB`);
 
       // Step 2: Create cart item
       const cartItem = {
@@ -521,7 +547,20 @@ export default function OrderConfirmation() {
                 <h3 className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: COLORS.yellow.primary }}>
                   Step {stepNumbers.circuits}: Circuits
                 </h3>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {(config.circuits as any).image && (
+                    <div className="flex-shrink-0">
+                      <Image
+                        src={(config.circuits as any).image}
+                        alt={`${config.circuits.circuits}-Circuit`}
+                        width={90}
+                        height={90}
+                        className="rounded"
+                        style={{ width: 90, height: 90, objectFit: 'contain' }}
+                        unoptimized
+                      />
+                    </div>
+                  )}
                   <div className="flex-1">
                     <p className="font-semibold text-sm" style={{ color: COLORS.grey.dark }}>
                       {config.circuits.circuits}-Circuit
@@ -530,11 +569,7 @@ export default function OrderConfirmation() {
                       {config.circuits.description}
                     </p>
                   </div>
-                  <div className="text-right ml-3">
-                    <p className="font-bold text-sm" style={{ color: COLORS.yellow.primary }}>
-                      {formatPrice(circuitsPrice)}
-                    </p>
-                  </div>
+                  {/* No price here: the circuit cost is the Base Price shown under Operation Type. */}
                 </div>
               </div>
             )}
@@ -560,11 +595,11 @@ export default function OrderConfirmation() {
 
                     return (
                       <div key={addon.id} className="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0">
-                        {/* Addon Image - Only show if image property exists */}
-                        {(addon as any).image && (
+                        {/* Addon photo (resolved from the add-on / its chosen option) */}
+                        {getAddonImage(addon, config.operationType?.id) && (
                           <div className="flex-shrink-0">
                             <Image
-                              src={(addon as any).image}
+                              src={getAddonImage(addon, config.operationType?.id) as string}
                               alt={addon.name}
                               width={60}
                               height={60}
@@ -651,10 +686,10 @@ export default function OrderConfirmation() {
                 Price Breakdown
               </h3>
               <div className="space-y-1.5 text-xs mb-3">
-                {config.circuits && (
+                {circuitsPrice > 0 && (
                   <div className="flex justify-between">
                     <span style={{ color: COLORS.grey.medium }}>
-                      Circuits ({config.circuits.circuits}-Circuit):
+                      Base price{config.circuits ? ` (incl. ${config.circuits.circuits}-Circuit)` : ''}:
                     </span>
                     <span className="font-semibold" style={{ color: COLORS.grey.dark }}>
                       {formatPrice(circuitsPrice)}

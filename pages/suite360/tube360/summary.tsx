@@ -80,51 +80,77 @@ function SummaryInner({ options }: { options: Tube360Options }) {
     if (!price) return;
     setIsAddingToCart(true);
     try {
-      const originalElement = targetRef.current;
-      if (!originalElement) throw new Error('PDF content element not found');
-
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
-
-      const clone = originalElement.cloneNode(true) as HTMLElement;
-      clone.style.position = 'fixed';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.minWidth = '800px';
-      clone.style.width = '800px';
-      clone.style.background = '#ffffff';
-      clone.style.padding = '30px 20px';
-      clone.style.zIndex = '-1000';
-      document.body.appendChild(clone);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const canvas = await html2canvas(clone, {
-        scale: 1.3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowHeight: clone.scrollHeight,
-        windowWidth: 800,
-      });
-      document.body.removeChild(clone);
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 5;
-      const imgWidth = pdfWidth - margin * 2;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let finalWidth = imgWidth;
-      let finalHeight = imgHeight;
-      if (imgHeight > pdfHeight - margin * 2) {
-        const scale = (pdfHeight - margin * 2) / imgHeight;
-        finalHeight = pdfHeight - margin * 2;
-        finalWidth = imgWidth * scale;
+      // Draw the PDF directly with jsPDF (no html2canvas screenshot): sharp text, small file,
+      // and no canvas read-back for privacy browsers such as DuckDuckGo to block.
+      const bd = price.breakdown;
+      const bends = config.bends.count ? parseInt(config.bends.count, 10) : 0;
+      const { buildSuite360Pdf, loadImageBytes } = await import('../../../utils/pdf/suite360Pdf');
+      const logo = await loadImageBytes('/pdf-thumbs/logo.png');
+      const kv = (k: string, v: string) => ({ kind: 'kv' as const, k, v });
+      const priceRows: Array<[string, string, boolean?]> = [
+        [`Tube material (${bd.material.sku}, ${formatPrice(bd.material.pricePerMetre)}/m x ${(bd.material.billedLengthMm / 1000).toFixed(1)} m):`, formatPrice(bd.material.cost)],
+      ];
+      if (bends > 0) {
+        priceRows.push([
+          `Bending (${bd.bending.count} x ${formatPrice(bd.bending.ratePerBend)}${bd.bending.multiplier > 1 ? ` x ${bd.bending.multiplier} complexity` : ''}):`,
+          formatPrice(bd.bending.cost),
+        ]);
       }
-      const imgData = canvas.toDataURL('image/jpeg', 0.7);
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      pdf.addImage(imgData, 'JPEG', xOffset, margin, finalWidth, finalHeight, undefined, 'FAST');
-      const pdfDataUrl = pdf.output('dataurlstring');
+      priceRows.push(
+        [`End A - ${bd.labels.endA}:`, formatPrice(bd.ends.endA.cost)],
+        [`End B - ${bd.labels.endB}:`, formatPrice(bd.ends.endB.cost)],
+        ['Price per tube:', formatPrice(bd.perTube), true],
+        [`x ${bd.quantity} tube(s):`, formatPrice(bd.tubesSubtotal)],
+      );
+      if (bd.setupFee > 0) priceRows.push(['CNC set-up (once per order line):', formatPrice(bd.setupFee)]);
+      const lengthMm = Number(spec.totalLengthMm);
+      const freight = options.freight;
+      const pdfDataUrl = await buildSuite360Pdf({
+        title: 'ORDER SUMMARY',
+        logo,
+        sections: [
+          {
+            title: 'Tube specification',
+            items: [
+              kv('Material', bd.labels.material),
+              kv('Size system', bd.labels.sizeSystem),
+              kv('Outer diameter', bd.labels.od),
+              kv('Wall thickness', `${bd.labels.wallMm} mm`),
+              kv('End A', bd.labels.endA),
+              kv('End B', bd.labels.endB),
+              kv('Total length', `${spec.totalLengthMm} mm`),
+              kv('Quantity', String(spec.quantity)),
+              kv('Tube SKU', bd.material.sku),
+            ],
+          },
+          {
+            title: 'Bend schedule',
+            items:
+              bends > 0
+                ? [
+                    { kind: 'text' as const, text: `Bend radius (CLR): ${spec.bendRadiusMm} mm - all bends in one plane` },
+                    {
+                      kind: 'table' as const,
+                      head: ['#', 'Section (mm)', 'Bend angle (°)'],
+                      rows: spec.sectionsMm.map((sec, i) => [String(i + 1), String(sec), String(spec.anglesDeg[i] ?? '')]),
+                    },
+                  ]
+                : [{ kind: 'text' as const, text: 'Straight tube - no bends' }],
+          },
+          ...(config.bends.notes ? [{ title: 'Notes', items: [{ kind: 'note' as const, text: config.bends.notes }] }] : []),
+        ],
+        price: {
+          title: 'Price breakdown',
+          rows: priceRows,
+          totalLabel: 'TOTAL (ex GST):',
+          totalValue: formatPrice(price.amount),
+          note: 'GST and shipping are added at checkout.',
+        },
+        notice:
+          Number.isFinite(lengthMm) && lengthMm > freight.oversizeThresholdMm
+            ? `Tubes longer than ${freight.oversizeThresholdMm / 1000} metre are shipped at a flat A$${freight.oversizeShipping} to cover the additional freight required for longer lengths. This is the actual cost of freight — we don't add a margin to shipping charges.`
+            : undefined,
+      });
 
       const cartItem: IItemCart = {
         id: 'tube-360',

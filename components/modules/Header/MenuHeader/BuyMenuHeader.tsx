@@ -125,7 +125,7 @@ const BuyMenuHeader = ({ onClose }: BuyMenuHeaderProps) => {
           <div className="wrapper relative z-10">
             {/* Horizontal layout with wrapping */}
             <div className="flex flex-wrap gap-4">
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {buyOptions.map((option, index) => (
                   <div
                   key={option.id}

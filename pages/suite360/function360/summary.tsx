@@ -155,87 +155,56 @@ const getMountingBracketsVariant = (functionType: string | null): string => {
       console.log('🛒 Starting Add to Cart process...');
       console.log('📊 Current config:', config);
       
-      const originalElement = targetRef.current;
-      
-      if (!originalElement) {
-        throw new Error('PDF content element not found');
-      }
-
-      // Import libraries dynamically
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).default;
-
-      // CREATE HIDDEN CLONE FOR PDF CAPTURE
-      const clone = originalElement.cloneNode(true) as HTMLElement;
-      
-      clone.style.position = 'fixed';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.minWidth = '800px';
-      clone.style.width = '800px';
-      clone.style.background = '#ffffff';
-      clone.style.padding = '30px 20px';
-      clone.style.zIndex = '-1000';
-      
-      // Hide delete buttons in clone
-      const deleteButtonsInClone = clone.querySelectorAll('.pdf-hide-button');
-      deleteButtonsInClone.forEach(btn => {
-        (btn as HTMLElement).style.display = 'none';
+      // Draw the PDF directly with jsPDF (no html2canvas screenshot): sharp text, small file,
+      // and no canvas read-back for privacy browsers such as DuckDuckGo to block.
+      const { buildSuite360Pdf, loadImageBytes, thumbUrlFor } = await import('../../../utils/pdf/suite360Pdf');
+      const logo = await loadImageBytes('/pdf-thumbs/logo.png');
+      const thumbs = await Promise.all(
+        selectedComponents.map(async (c) => {
+          const u = thumbUrlFor(c.image);
+          return u ? loadImageBytes(u) : null;
+        })
+      );
+      const hp = config.equipment.horsepower === 'above_50hp' ? 'Above 50HP' : 'Below 50HP';
+      const fnType =
+        config.equipment.functionType === 'electric_3rd' ? 'Electric 3rd Function' :
+        config.equipment.functionType === 'live_3rd' ? 'Live 3rd Function' :
+        'Electric 3rd & 4th Function';
+      const pdfDataUrl = await buildSuite360Pdf({
+        title: 'ORDER CONFIRMATION',
+        logo,
+        sections: [
+          {
+            title: 'Step 1: Equipment Selection',
+            items: [
+              { kind: 'kv', k: 'Horsepower', v: hp },
+              { kind: 'kv', k: 'Function Type', v: fnType },
+            ],
+          },
+          ...(selectedComponents.length > 0
+            ? [{
+                title: 'Steps 2-7: Selected Components',
+                items: selectedComponents.map((c, idx) => ({
+                  kind: 'product' as const,
+                  img: thumbs[idx],
+                  title: c.name,
+                  price: formatPrice(c.price),
+                })),
+              }]
+            : []),
+          ...(config.additionalNotes && config.additionalNotes.trim()
+            ? [{ title: 'Step 8: Additional Notes', items: [{ kind: 'note' as const, text: config.additionalNotes }] }]
+            : []),
+        ],
+        price: {
+          title: 'Price Breakdown',
+          rows: selectedComponents.length > 0
+            ? [[`Components (${selectedComponents.length} items):`, formatPrice(config.totalPrice)]]
+            : [],
+          totalLabel: 'TOTAL:',
+          totalValue: formatPrice(config.totalPrice),
+        },
       });
-      
-      document.body.appendChild(clone);
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      console.log('📸 Capturing clone as canvas...');
-      
-      const canvas = await html2canvas(clone, {
-        scale: 1.3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowHeight: clone.scrollHeight,
-        windowWidth: 800,
-      });
-
-      console.log('✅ Canvas captured:', canvas.width, 'x', canvas.height);
-
-      document.body.removeChild(clone);
-
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
-
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 5;
-      
-      const imgWidth = pdfWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      let finalWidth = imgWidth;
-      let finalHeight = imgHeight;
-      
-      if (imgHeight > (pdfHeight - margin * 2)) {
-        const scale = (pdfHeight - margin * 2) / imgHeight;
-        finalHeight = pdfHeight - (margin * 2);
-        finalWidth = imgWidth * scale;
-      }
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.7);
-      
-      console.log('📄 Adding image to PDF as single page...');
-
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      pdf.addImage(imgData, 'JPEG', xOffset, margin, finalWidth, finalHeight, undefined, 'FAST');
-
-      const pdfDataUrl = pdf.output('dataurlstring');
-      
-      console.log('✅ PDF generated successfully');
-      console.log(`📦 PDF size: ${Math.round(pdfDataUrl.length / 1024)}KB`);
 
       // Create cart item
       const cartItem = {

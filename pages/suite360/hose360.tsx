@@ -17,7 +17,7 @@ const HoseBuilder = () => {
     
     const scripts = [
       '/suite360/static/js/453.60f80263.js',
-      '/suite360/static/js/main.07d3d6bc.js'
+      '/suite360/static/js/main.e98fddd3.js'
     ];
 
     const loadScriptSequentially = async (scripts: string[]) => {

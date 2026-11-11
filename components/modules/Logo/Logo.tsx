@@ -21,7 +21,7 @@ const Logo = ({ type = "header" }: ILogoProps) => {
         src={`${process.env.NEXT_PUBLIC_BASE_URL || ''}${logoError ? '/logo-header.png' : '/fluidpower_logo_transparent.gif'}`}
         alt="Site logo"
         width={275}
-        height={140}
+        height={112}
         className="object-contain w-full h-full"
         priority
         quality={100}

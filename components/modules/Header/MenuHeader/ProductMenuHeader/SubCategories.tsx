@@ -25,8 +25,15 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
         `
       }} />
       
-      <div className="grid grid-rows-3 grid-cols-3 w-4/5 grid-flow-row gap-y-4 gap-x-6 pl-12 xl:pl-20">
+      <div className="w-4/5">
+        {/* One keyed child: the old category's grid fades out first, then the new one's tiles slide in. */}
         <AnimatePresence mode="wait">
+          <motion.div
+            key={subCategories[0]?.id}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="grid grid-rows-3 grid-cols-3 grid-flow-row gap-y-4 gap-x-6 pl-12 xl:pl-20"
+          >
           {subCategories.map((subCategory) => (
             <Anchor
               key={subCategory.id}
@@ -37,7 +44,6 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
                 key={subCategory?.id}
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 50, opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 className="w-full h-full flex rounded-lg group cursor-pointer"
               >
@@ -59,6 +65,7 @@ const SubCategories = ({ subCategories }: ICategoriesProps) => {
               </motion.div>
             </Anchor>
           ))}
+          </motion.div>
         </AnimatePresence>
       </div>
     </>
