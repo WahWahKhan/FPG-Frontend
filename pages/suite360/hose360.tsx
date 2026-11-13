@@ -12,12 +12,23 @@ const HoseBuilder = () => {
     // Lock outer page scroll — PWA manages its own scroll internally
     document.body.style.overflow = 'hidden';
 
+    // While a text box is focused the on-screen keyboard is up. The white fade along the bottom of the
+    // app would then sit right above the keyboard and wash out the field being typed in, so flag that
+    // state and let the fade step aside (see .hose-typing below). We deliberately do NOT resize or scroll
+    // anything here: iOS already moves the page enough to show the focused field.
+    const root = document.documentElement;
+    const isTextBox = (t: EventTarget | null) => !!t && /^(INPUT|TEXTAREA)$/.test((t as HTMLElement).tagName);
+    const onFocusIn = (e: Event) => { if (isTextBox(e.target)) root.classList.add('hose-typing'); };
+    const onFocusOut = (e: Event) => { if (isTextBox(e.target)) root.classList.remove('hose-typing'); };
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+
     // PHASE 2: Updated paths
     window.__PUBLIC_PATH__ = '/suite360/static/';
     
     const scripts = [
       '/suite360/static/js/453.60f80263.js',
-      '/suite360/static/js/main.57a66a5b.js'
+      '/suite360/static/js/main.18c5620d.js'
     ];
 
     const loadScriptSequentially = async (scripts: string[]) => {
@@ -42,6 +53,9 @@ const HoseBuilder = () => {
     loadScriptSequentially(scripts).catch(console.error);
 
     return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+      root.classList.remove('hose-typing');
       document.body.style.overflow = '';
       document.querySelectorAll('script[src^="/suite360/"]').forEach(script => {
         script.remove();
@@ -59,6 +73,7 @@ const HoseBuilder = () => {
         <style>{`
           .hosebuilder-container {
             height: calc(100vh - 100px);
+            height: calc(100dvh - 100px);
             width: 100%;
             position: relative;
             overflow: hidden;
@@ -93,6 +108,10 @@ const HoseBuilder = () => {
               -webkit-overflow-scrolling: touch;
               overflow-y: auto;
             }
+          }
+
+          .hose-typing .hose-footer-fade {
+            opacity: 0 !important;
           }
 
           .scroll-view {

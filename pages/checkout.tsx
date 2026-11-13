@@ -78,6 +78,16 @@ export default function CheckoutPage() {
   // capture) so the money path is untouched. Null = fall back to client estimate.
   const [liveQuote, setLiveQuote] = useState<ServerBreakdown | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // True from the moment the Card button is clicked until our server has created the PayPal order
+  // (a 2-3s wait before PayPal's card form can open). Drives a short loading overlay so the click
+  // visibly registers. Card button only - the PayPal button is untouched.
+  const [cardStarting, setCardStarting] = useState(false);
+  useEffect(() => {
+    if (!cardStarting) return;
+    // Safety net: never leave the overlay stuck on screen.
+    const t = setTimeout(() => setCardStarting(false), 15000);
+    return () => clearTimeout(t);
+  }, [cardStarting]);
   const [paymentError, setPaymentError] = useState<string>('');
   const [paymentSuccessful, setPaymentSuccessful] = useState(false);
 
@@ -712,12 +722,14 @@ export default function CheckoutPage() {
 
   const handlePayPalCancel = (data: any) => {
     console.log('🚫 Payment cancelled:', data);
+    setCardStarting(false);
     setOrderStatus('idle');
     setPaymentError('Payment was cancelled. Your cart is still saved.');
   };
 
   const handlePayPalError = (error: any) => {
     console.error('❌ PayPal error:', error);
+    setCardStarting(false);
     setOrderStatus('failed');
     setPaymentError('There was a problem with PayPal. Please try again.');
   };
@@ -1339,12 +1351,11 @@ export default function CheckoutPage() {
             <div className="mb-6 flex justify-center">
               <div style={{ width: "100%", maxWidth: "450px" }}>
                 <PayPalScriptProvider options={paypalOptions}>
-                  {/* Each funding button gets its own glass wrapper (PayPal renders the
-                      button inside a cross-origin iframe, so the glass effect lives on
-                      the wrapper - see .fpg-pp-glass in styles/base.css). */}
+                  {/* Plain wrapper only: PayPal's card form expands inline (~600px tall) below
+                      the card button, so the wrapper must never fix its height or clip. */}
                   <div className="flex flex-col gap-3 sm:gap-4">
                   {(['paypal', 'card'] as const).map((fundingSource) => (
-                  <div key={fundingSource} className={`fpg-pp-glass fpg-pp-glass--${fundingSource}`} style={{ height: isMobile ? 46 : 55 }}>
+                  <div key={fundingSource}>
                   <PayPalButtons
                     fundingSource={fundingSource}
                     style={{
@@ -1358,6 +1369,7 @@ export default function CheckoutPage() {
                       height: isMobile ? 46 : 55
                     }}
                     className="paypal-buttons-custom"
+                    {...(fundingSource === 'card' ? { onClick: () => setCardStarting(true) } : {})}
                     createOrder={async (data, actions) => {
                       // ============================================================
                       // SERVER-AUTHORITY FLOW: the backend is the price authority.
@@ -1421,10 +1433,12 @@ export default function CheckoutPage() {
                           console.log('🧾 Server quote:', quote.amount, quote.breakdown);
                           setServerQuote(quote);
                           setPaymentError('');
+                          setCardStarting(false);
                           return quote.orderID;
                         } catch (err: any) {
                           clearTimeout(timeoutId);
                           console.error('❌ create-order failed:', err);
+                          setCardStarting(false);
                           setPaymentError(
                             err?.name === 'AbortError'
                               ? 'Starting payment timed out. Please try again.'
@@ -1438,6 +1452,7 @@ export default function CheckoutPage() {
                       // LEGACY FLOW (client-side amount). Unchanged. Compatible
                       // with the current backend until SERVER_PRICING_ENABLED flips.
                       // ============================================================
+                      setCardStarting(false);
                       const orderAmount = isDeveloperMode ? DEVELOPER_MODE_PAYMENT_AMOUNT : totals.total.toFixed(2);
 
                       console.log(isDeveloperMode ? '🔧 Developer Mode: Using test amount $0.20' : `Creating order for $${orderAmount}`);
@@ -1649,6 +1664,17 @@ export default function CheckoutPage() {
             
             {/* Global Processing Overlay */}
             {renderProcessingOverlay()}
+            {cardStarting && (
+              // zIndex above 100: PayPal draws its button frames at z-index 100, which beat the
+              // usual z-50 overlay and showed the buttons on top of the loading card.
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 10000 }}>
+                <div className="bg-white rounded-lg p-8 max-w-md text-center shadow-2xl">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2">Starting secure card payment...</h3>
+                  <p className="text-gray-600">Please wait a moment.</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* PHASE 1: Using PDFModal component */}
