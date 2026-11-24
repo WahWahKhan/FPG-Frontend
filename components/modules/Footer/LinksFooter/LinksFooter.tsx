@@ -20,6 +20,7 @@ const LinksFooter = (props: Props) => {
         <LinkFooter href="/downloads">Downloads</LinkFooter>
         <LinkFooter href="/catalogue">Products</LinkFooter>
         <LinkFooter href="/services">Services</LinkFooter>
+        <LinkFooter href="/hydraulic-hoses-wangaratta">Hydraulic Hoses Wangaratta</LinkFooter>
         <LinkFooter href="/design">Design</LinkFooter>
         <LinkFooter href="/about">About</LinkFooter>
       </div>

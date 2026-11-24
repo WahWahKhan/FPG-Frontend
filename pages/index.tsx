@@ -16,8 +16,8 @@ const Home: NextPage<HomeProps> = ({ bannerItems, bannerAsOf }) => {
   return (
     <>
       <Head>
-        <title>FluidPower Group</title>
-        <meta name="description" content="Australia's growing hydraulics company providing competitive prices using new technology and cutting edge services to deliver products & custom solutions. Strength & reliability delivered." />
+        <title>Hydraulic Hoses, Fittings & Tube Bending | Wangaratta VIC | FluidPower Group</title>
+        <meta name="description" content="Hydraulic hoses, fittings, adapters and tube bending from Wangaratta VIC. Build custom hoses and tractor hydraulic kits online with Suite360. Call 03 4720 3323." />
       </Head>
       <div className="flex flex-col w-full">
         <CompanyNewsBanner items={bannerItems} asOf={bannerAsOf} />

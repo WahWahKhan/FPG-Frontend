@@ -3,6 +3,7 @@
 import { openPdfInNewWindow } from '../utils/openPdfInNewWindow';
 import React, { useEffect, useState } from 'react';
 import { trackEvent } from '../lib/metaPixel';
+import { gaEvent, toGa4Item } from '../lib/ga4';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -135,6 +136,22 @@ export default function OrderConfirmation() {
       const key = 'metaPurchaseSent';
       const sent: string[] = JSON.parse(localStorage.getItem(key) || '[]');
       if (sent.includes(orderData.orderNumber)) return;
+      // GA4 purchase (Google Ads conversion). transaction_id also lets GA4 dedupe.
+      const ga4Items = [
+        ...(orderData.websiteProducts || []),
+        ...(orderData.pwaOrders || []),
+        ...(orderData.trac360Orders || []),
+        ...(orderData.function360Orders || []),
+        ...(orderData.tube360Orders || []),
+      ].map(toGa4Item);
+      gaEvent('purchase', {
+        transaction_id: orderData.orderNumber,
+        value: orderData.totals.total,
+        tax: orderData.totals.gst,
+        shipping: orderData.totals.shipping,
+        currency: 'AUD',
+        items: ga4Items,
+      });
       trackEvent('Purchase', {
         value: orderData.totals.total,
         currency: 'AUD',

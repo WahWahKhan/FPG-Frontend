@@ -12,6 +12,7 @@ const STATIC_URLS = [
   { loc: 'https://www.fluidpowergroup.com.au/suite360/function360/start', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/suite360/tube360/start', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/services', priority: '0.8', changefreq: 'monthly' },
+  { loc: 'https://www.fluidpowergroup.com.au/hydraulic-hoses-wangaratta', priority: '0.8', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/design', priority: '0.7', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/about', priority: '0.7', changefreq: 'monthly' },
   { loc: 'https://www.fluidpowergroup.com.au/contact', priority: '0.7', changefreq: 'monthly' },
@@ -47,7 +48,7 @@ const STATIC_URLS = [
 // lastmod against what it actually finds, and a site that stamps every crawl with
 // today's date gets its lastmod ignored domain-wide. Bump this constant by hand,
 // only when a template change genuinely alters page content.
-const TEMPLATE_CONTENT_UPDATED = '2026-09-21';
+const TEMPLATE_CONTENT_UPDATED = '2026-11-18'; // Wangaratta page, homepage copy, review count 19
 
 // Emit W3C date (YYYY-MM-DD). Returns undefined for unparseable input so the
 // entry simply omits <lastmod> rather than emitting a bad one.

@@ -16,6 +16,7 @@ import axios from "axios";
 import { Category } from "types/products";
 import Script from 'next/script';
 import { META_PIXEL_ID, trackPageView } from '../lib/metaPixel';
+import { gaEvent } from '../lib/ga4';
 import { warmImages } from '../utils/warmImages';
 import { buyOptions } from '@/modules/Header/MenuHeader/BuyMenuHeader';
 
@@ -62,6 +63,20 @@ function AppContent({ Component, pageProps, router }: AppProps) {
     if (typeof window !== 'undefined') {
     }
   }, [nextRouter.asPath, nextRouter.query, nextRouter.pathname]);
+
+  // GA4: contact-link clicks (phone, email, text) anywhere on the site, as
+  // conversion events for Google Ads. One delegated listener; no number/address is sent.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="tel:"], a[href^="mailto:"], a[href^="sms:"]');
+      if (!a) return;
+      const href = a.getAttribute('href') || '';
+      const name = href.startsWith('tel:') ? 'click_to_call' : href.startsWith('sms:') ? 'click_sms' : 'click_email';
+      gaEvent(name, { link_location: window.location.pathname });
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
 
   // Log when routes change
   useEffect(() => {

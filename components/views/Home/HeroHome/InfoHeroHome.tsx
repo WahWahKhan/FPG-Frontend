@@ -87,14 +87,32 @@ const InfoHeroHome = () => {
   return (
     <div className="md:w-1/2 h-full flex flex-col justify-center gap-4 items-center text-left md:text-left md:items-start relative z-20">
       <h1 className="text-3xl sm:text-4xl xl:text-4xl font-semibold">
-        Welcome to{" "}
-        <span className="text-yellow-400 font-bold">FluidPower Group</span>
+        Hydraulic hoses, fittings &amp; tube bending in{" "}
+        <span className="text-yellow-400 font-bold">Wangaratta</span>
       </h1>
       <h2 className="text-lg">
-        A growing hydraulics company investing in talented personnel & new
-        technology to deliver cutting edge services and products with
-        competitive prices.
+        FluidPower Group is a growing hydraulics company investing in talented
+        personnel & new technology to deliver cutting edge services and
+        products with competitive prices.
       </h2>
+      <a
+        href="tel:+61347203323"
+        className="text-lg font-semibold text-black underline underline-offset-4"
+      >
+        Call us: 03 4720 3323
+      </a>
+      <a
+        href="https://maps.app.goo.gl/GDwwS9JjkjVnNK1BA"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="5.0 stars from 19 Google reviews. Opens our Google Maps listing"
+        className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-4 py-1.5 text-sm text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-black"
+      >
+        <span aria-hidden="true" className="tracking-wider text-amber-500">★★★★★</span>
+        <span className="font-semibold text-black">5.0</span>
+        <span className="text-slate-400" aria-hidden="true">·</span>
+        <span>19 Google reviews</span>
+      </a>
 
       {/* Buttons Container */}
       <div className="flex flex-col gap-6 mt-6 w-full max-w-[280px] items-start">

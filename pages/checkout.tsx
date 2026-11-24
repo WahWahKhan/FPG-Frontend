@@ -20,6 +20,7 @@ import { CartContext } from '../context/CartWrapper';
 import { separateCartItems, calculateCartTotals, isCustomOrder } from '../utils/cart-helpers';
 import { IItemCart } from '../types/cart';
 import { trackEvent, cartItemValue } from '../lib/metaPixel';
+import { gaEvent, toGa4Item, ga4Value } from '../lib/ga4';
 
 // Server-authority checkout contract (price tampering fix)
 import {
@@ -108,6 +109,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isHydrated || checkoutTracked.current || items.length === 0) return;
     checkoutTracked.current = true;
+    const ga4Items = items.map(toGa4Item);
+    gaEvent('begin_checkout', { currency: 'AUD', value: ga4Value(ga4Items), items: ga4Items });
     trackEvent('InitiateCheckout', {
       content_ids: items.map((i) => i.id),
       num_items: items.reduce((n, i) => n + (i.quantity || 1), 0),

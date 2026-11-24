@@ -16,6 +16,7 @@ import {
 import { GridProducts } from '@/views/Products';
 import { useEffect, useState } from 'react';
 import { trackEvent } from '../../lib/metaPixel';
+import { gaEvent } from '../../lib/ga4';
 import Head from 'next/head';
 import { FiInfo } from 'react-icons/fi';
 
@@ -198,6 +199,10 @@ const ProductPage = ({ initialItems, initialSubcategories, series, breadcrumbs, 
   // Meta Pixel: ViewContent once per product page view
   useEffect(() => {
     if (series?.slug) {
+      gaEvent('view_item_list', {
+        item_list_id: series.slug,
+        item_list_name: series.name,
+      });
       trackEvent('ViewContent', {
         content_name: series.name,
         content_ids: [series.slug],

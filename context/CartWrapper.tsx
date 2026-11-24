@@ -6,6 +6,7 @@ import SaveCartModal from '../components/cart/SaveCartModal';
 import SavedCartNotice from '../components/cart/SavedCartNotice';
 import { API_BASE_URL } from '../lib/checkout/checkout-config';
 import { trackEvent, cartItemValue } from '../lib/metaPixel';
+import { gaEvent, toGa4Item, ga4Value } from '../lib/ga4';
 
 export const CartContext = createContext<{
   items: IItemCart[];
@@ -210,6 +211,8 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
         const key = String(pwaItem?.cartId ?? '');
         if (pwaItem && key && !pwaTrackedIds.current.has(key)) {
           pwaTrackedIds.current.add(key);
+          const ga4Item = toGa4Item({ ...pwaItem, name: pwaItem.name || 'HOSE360 Custom Order', id: pwaItem.id || 'hose360' });
+          gaEvent('add_to_cart', { currency: 'AUD', value: ga4Value([ga4Item]), items: [ga4Item] });
           trackEvent('AddToCart', {
             content_name: pwaItem.name || 'HOSE360 Custom Order',
             content_ids: [pwaItem.id || 'hose360'],
@@ -322,6 +325,8 @@ const CartWrapper = ({ children }: ICartWrapperProps) => {
   const addItem = (item: IItemCart) => {
     // Meta Pixel: covers website products and every Suite360 configurator,
     // as they all add through here. No personal data is sent.
+    const ga4Item = toGa4Item(item);
+    gaEvent('add_to_cart', { currency: 'AUD', value: ga4Value([ga4Item]), items: [ga4Item] });
     trackEvent('AddToCart', {
       content_name: item.name,
       content_ids: [item.id],
