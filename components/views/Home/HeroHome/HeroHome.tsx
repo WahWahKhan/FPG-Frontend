@@ -4,8 +4,10 @@ import ProductsHeroHome from "./ProductsHeroHome";
 import BackgroundPhotosSlideshow from "../../../BackgroundPhotosSlideshow";
 
 const HeroHome = () => {
+  // Mobile: the hero grows with its content (a fixed 600px height clipped the
+  // heading under the news banner and pushed the last button into the footer).
   return (
-    <div className="flex flex-col h-[600px] md:h-[1100px] md:min-h-[40rem] wrapper w-full items-center overflow-hidden relative">
+    <div className="flex flex-col min-h-[600px] md:h-[1100px] md:min-h-[40rem] wrapper w-full items-center overflow-hidden relative">
       {/* Background Photos - First for lowest layer */}
       <BackgroundPhotosSlideshow />
       
@@ -35,7 +37,7 @@ const HeroHome = () => {
         }}
       />
       
-      <div className="h-full flex flex-col-reverse md:flex-row px-8 pt-8 md:pb-0 pb-10 lg:max-w-none lg:justify-start lg:pl-8 lg:pr-0 lg:pt-0 lg:pb-0 gap-8 md:gap-0 relative z-20">
+      <div className="h-full flex flex-col-reverse md:flex-row px-8 pt-12 md:pt-8 md:pb-0 pb-14 lg:max-w-none lg:justify-start lg:pl-8 lg:pr-0 lg:pt-0 lg:pb-0 gap-8 md:gap-0 relative z-20">
         <InfoHeroHome />
         <ProductsHeroHome />
       </div>
